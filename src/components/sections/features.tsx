@@ -8,50 +8,67 @@ type Feature = {
 const FEATURES: Feature[] = [
   {
     icon: "🤖",
-    title: "AI Financial Copilot & Receipt Scanner",
-    body: "Ask TrackKaro's Gemini-powered assistant for money advice, log expenses by typing or speaking naturally, or snap a receipt photo and let AI extract the merchant, amount and category for you.",
+    title: "AI Financial Copilot & Receipt OCR",
+    body: "Ask TrackKaro's Gemini-powered assistant for money advice, log expenses by speaking or typing naturally, or snap a bill photo to extract the merchant, amount and category in seconds.",
   },
   {
     icon: "📖",
     title: "Digital Bahi Khata Ledger",
-    body: "A familiar double-entry ledger for peer-to-peer debts — You Gave / You Got — with consolidated customer balances, WhatsApp statement sharing and printable PDF statements.",
+    body: "A familiar double-entry ledger for peer debts — You Gave / You Got — with native phonebook contact import, WhatsApp statement sharing, UPI reminders, and 1-tap settle up.",
   },
   {
     icon: "👥",
     title: "Shared Expense Groups",
-    body: "Split trips, rent and dinners equally, by exact amount, or by percentage. A built-in debt-simplification engine works out who owes whom with the fewest possible payments.",
+    body: "Split trips, rent and dinners equally, by exact ₹ amounts, or by %. A built-in greedy pairwise algorithm simplifies debt to settle who owes whom in the fewest transactions.",
   },
   {
     icon: "✅",
     tag: "New",
     title: "Confirm Group Expenses",
-    body: "One page lists every group expense split you're part of, anywhere across your groups, so you decide exactly when a shared cost gets added to your personal spending.",
+    body: "A unified view lists every group expense split you're part of across all groups, giving you full control to file shared expenses into your personal ledger without double-counting.",
   },
   {
     icon: "🎯",
-    title: "Budgets with Smart Alerts",
-    body: "Set monthly limits per category and get warned at 80% and 100% spent — with a master progress view across every category at a glance.",
+    title: "Budgets with Smart Warnings",
+    body: "Set monthly spending limits per category and get intelligent warnings at 80% and 100% spent, with quick step-adjustments (+₹500 to +₹5,000) and master progress bars.",
   },
   {
     icon: "🛍️",
-    title: "Deal Finder & Price Alerts",
-    body: "Live AI deal discovery across Amazon, Flipkart, Myntra, Swiggy, Zomato and more — with coupon stacking, cashback math and custom price-drop alerts.",
+    tag: "Live",
+    title: "Live Amazon India Deals",
+    body: "Search any product in real time (smartphones, earbuds, fashion, essentials) across Amazon India with authentic INR prices, genuine discount percentages, and verified seller star ratings.",
+  },
+  {
+    icon: "🧠",
+    tag: "New",
+    title: "AI Purchase Conscience",
+    body: "\"Should you buy this?\" TrackKaro evaluates item costs against your remaining monthly category budget and upcoming bills, giving instant SAFE (green) or WAIT (amber) recommendations.",
+  },
+  {
+    icon: "🔍",
+    title: "Amazon-Style Search History",
+    body: "Persistent search history pills with 1-tap re-queries, individual deletion, and \"Clear All\", plus seamless edge-to-edge fluid horizontal carousel or 2-column full grid layouts.",
+  },
+  {
+    icon: "🏷️",
+    title: "Price Drop Alerts & Lows",
+    body: "Append-only historical price tracking detects all-time lows and lets you subscribe to target price-drop alerts with one tap, with clean affiliate redirection directly to Amazon.",
   },
   {
     icon: "📱",
     title: "Subscriptions & Bill Reminders",
-    body: "Track recurring costs with AI redundancy detection for duplicate subscriptions, plus due-date countdowns for bills so nothing sneaks up on you.",
+    body: "Track recurring plans with AI redundancy detection for duplicate or overlapping subscriptions, plus smart countdown badges (Due in 3 days, Due Today!) to prevent late fees.",
   },
   {
     icon: "📤",
     tag: "New",
     title: "Download Reports — CSV & PDF",
-    body: "Export a clean spreadsheet or a fully formatted PDF statement — filtered by date range and by transactions, khata, budgets or group expenses — in one tap.",
+    body: "Export a clean spreadsheet or a branded PDF statement with KPI cards, category graphs, and itemized ledgers — filtered by date range and customized by data scope in one tap.",
   },
   {
     icon: "🌐",
-    title: "Trilingual by Default",
-    body: "Every screen, toast and button is natively available in English, Hindi (हिंदी) and Gujarati (ગુજરાતી) — plus light, dark and system theme modes.",
+    title: "100% Trilingual & Multi-Theme",
+    body: "Every screen, toast, and action is natively translated in English, Hindi (हिंदी), and Gujarati (ગુજરાતી), with Obsidian Dark, Clean Light, and System Default themes.",
   },
 ];
 

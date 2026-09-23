@@ -2,6 +2,8 @@ import Link from "next/link";
 
 const TRUST_CHIPS = [
   "🤖 Gemini AI Copilot",
+  "🛍️ Live Amazon India Deals",
+  "🧠 AI Purchase Conscience",
   "📖 Digital Bahi Khata",
   "👥 Shared Expense Groups",
   "🌐 English · हिंदी · ગુજરાતી",
@@ -29,8 +31,23 @@ function PhoneMock() {
             </div>
           </div>
 
+          {/* AI Deal Conscience badge snippet */}
+          <div className="mt-3.5 rounded-xl border border-primary/30 bg-primary/5 p-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">🎧</span>
+                <span className="text-[11px] font-bold text-foreground">OnePlus Buds Pro</span>
+              </div>
+              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[8.5px] font-extrabold text-primary">SAFE TO BUY</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[10px] text-foreground-muted">
+              <span>Amazon · ₹4,499 (25% off)</span>
+              <span className="font-semibold text-primary">₹8,500 headroom</span>
+            </div>
+          </div>
+
           {/* budget bar */}
-          <div className="mt-4 rounded-xl border border-border bg-surface p-3">
+          <div className="mt-3 rounded-xl border border-border bg-surface p-3">
             <div className="flex items-center justify-between text-[11px] font-bold text-foreground">
               <span>Food Budget</span>
               <span className="text-primary">68%</span>
@@ -41,20 +58,19 @@ function PhoneMock() {
           </div>
 
           {/* transaction rows */}
-          <div className="mt-4 space-y-2.5">
+          <div className="mt-3 space-y-2">
             {[
               { icon: "🍔", name: "Swiggy", amt: "-₹450" },
               { icon: "⛽", name: "Petrol", amt: "-₹1,200" },
-              { icon: "💰", name: "Salary", amt: "+₹65,000" },
             ].map((t) => (
-              <div key={t.name} className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2.5">
+              <div key={t.name} className="flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-2">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg text-sm" style={{ background: "var(--color-primary-soft)" }}>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg text-xs" style={{ background: "var(--color-primary-soft)" }}>
                     {t.icon}
                   </span>
-                  <span className="text-[12px] font-bold text-foreground">{t.name}</span>
+                  <span className="text-[11.5px] font-bold text-foreground">{t.name}</span>
                 </div>
-                <span className={`text-[12px] font-extrabold ${t.amt.startsWith("+") ? "text-primary" : "text-foreground"}`}>
+                <span className={`text-[11.5px] font-extrabold ${t.amt.startsWith("+") ? "text-primary" : "text-foreground"}`}>
                   {t.amt}
                 </span>
               </div>
@@ -73,15 +89,15 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[11.5px] font-bold text-primary">
-            ✨ New: Confirm Group Expenses &amp; Download Reports
+            ✨ Live Amazon Deals · AI Purchase Conscience · Bahi Khata
           </span>
           <h1 className="mt-5 text-[clamp(30px,5vw,48px)] font-extrabold leading-[1.1] tracking-tight text-foreground">
             Track spending, split expenses &amp; stay ahead — all in one app.
           </h1>
           <p className="mt-5 max-w-lg text-[15.5px] leading-relaxed text-foreground-sub">
-            TrackKaro is a privacy-first personal finance app for India — a digital bahi khata,
-            shared group expenses, AI-powered insights, smart bill reminders and deal discovery,
-            built natively in English, Hindi and Gujarati.
+            TrackKaro is a privacy-first personal finance app for India — combining digital bahi khata,
+            shared group expenses, real-time Amazon deals with an AI purchase conscience, smart bill reminders,
+            and trilingual support in English, Hindi and Gujarati.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">

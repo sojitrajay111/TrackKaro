@@ -2,7 +2,7 @@ export const SITE = {
   name: "TrackKaro",
   tagline: "AI-Powered Personal Finance, Digital Ledger & Group Expense Management",
   description:
-    "TrackKaro brings together expense tracking, a digital bahi khata ledger, shared group expenses, AI-powered insights and smart deal discovery in one privacy-first app for India.",
+    "TrackKaro brings together expense tracking, a digital bahi khata ledger, shared group expenses, live Amazon India deals with an AI purchase conscience, and smart bill reminders in one privacy-first app for India.",
   // TODO: replace with your real production domain and support inbox before this site goes live.
   url: "https://trackkaro.app",
   supportEmail: "support@trackkaro.app",

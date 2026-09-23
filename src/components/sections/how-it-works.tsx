@@ -19,9 +19,9 @@ const STEPS = [
   },
   {
     n: "04",
-    icon: "📊",
-    title: "Get insights & export",
-    body: "Ask the AI copilot for advice, discover live deals, and download a full CSV or PDF report anytime.",
+    icon: "🛍️",
+    title: "Shop smart & export",
+    body: "Search live Amazon India deals with AI budget-safety checks, consult your Gemini copilot, and export PDF statements anytime.",
   },
 ];
 
