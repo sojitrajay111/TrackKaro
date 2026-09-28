@@ -7,6 +7,8 @@ export const SITE = {
   url: "https://trackkaro.app",
   supportEmail: "support@trackkaro.app",
   privacyEmail: "privacy@trackkaro.app",
+  instagramUrl: "https://www.instagram.com/trackkaro.app?stkn=d20xZmZvN2wyNnY1",
+  instagramHandle: "@trackkaro.app",
 } as const;
 
 export const NAV_LINKS = [

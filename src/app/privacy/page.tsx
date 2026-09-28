@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
       <LegalHeader
         title="Privacy Policy"
         updated={UPDATED}
-        intro={`This policy explains what data ${SITE.name} ("we", "our", "the app") collects when you use our mobile and web application, why we collect it, and the choices you have. We built ${SITE.name} to be privacy-first: your financial records are yours, we don't sell data, and we don't run third-party ad networks.`}
+        intro={`This policy explains what data ${SITE.name} ("we", "our", "the app") collects when you use our mobile and web application, why we collect it, and the choices you have. We built ${SITE.name} to be privacy-first: your financial records are yours, and TrackKaro does not sell users' personal or financial data.`}
       />
       <LegalBody>
         <LegalSection id="data-we-collect" n={1} title="Data We Collect">
@@ -73,11 +73,12 @@ export default function PrivacyPolicyPage() {
             items={[
               <><strong className="text-foreground">Google Gemini API</strong> — processes AI assistant prompts, receipt images and deal-search queries. Subject to Google&rsquo;s own privacy terms.</>,
               <><strong className="text-foreground">Gmail SMTP</strong> — delivers password-reset OTP emails to the address you registered with.</>,
-              <><strong className="text-foreground">MongoDB Atlas</strong> — hosts our database; data is encrypted in transit (TLS/HTTPS).</>,
-              <>Deal &amp; shopping links to third-party platforms (e.g. Amazon, Flipkart, Myntra, Swiggy, Zomato) — these are external sites with their own privacy policies; we don&rsquo;t control or receive data back from them.</>,
+              <><strong className="text-foreground">MongoDB Atlas</strong> — hosts our database; all data is encrypted in transit (TLS/HTTPS) and at rest.</>,
+              <><strong className="text-foreground">Google AdMob (Advertising)</strong> — displays contextual, non-personalized banner, native, and interstitial advertisements strictly limited to the Deals discovery feed and group bill splits. No personal financial records, khata ledger entries, or banking details are shared with Google AdMob.</>,
+              <><strong className="text-foreground">Cuelinks &amp; E-Commerce Partners (Affiliate Links)</strong> — deal links to third-party platforms (such as Amazon India) may route through affiliate networks like Cuelinks. If you choose to make a purchase, TrackKaro may earn a referral commission at no additional cost to you. External merchant websites operate under their own independent privacy policies.</>,
             ]}
           />
-          <p>We do <strong className="text-foreground">not</strong> sell your data, and we do not integrate third-party advertising networks.</p>
+          <p className="mt-4 font-medium text-foreground">TrackKaro does not sell users&rsquo; personal or financial data.</p>
         </LegalSection>
 
         <LegalSection id="security" n={4} title="How We Protect Your Data">
