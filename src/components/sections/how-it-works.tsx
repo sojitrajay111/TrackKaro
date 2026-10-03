@@ -1,56 +1,58 @@
+import { SectionHeading } from "@/components/section-heading";
+
 const STEPS = [
   {
-    n: "01",
-    icon: "✍️",
-    title: "Log it in seconds",
-    body: "Type it, speak it, or scan the receipt — AI turns it into a categorized transaction instantly.",
+    step: "01",
+    title: "Install & set your language",
+    body: "When we launch on Play and the App Store, pick Hindi, English, or Gujarati and set a monthly budget that feels realistic.",
   },
   {
-    n: "02",
-    icon: "🎯",
-    title: "Track budgets & khata",
-    body: "Watch category budgets and peer-to-peer balances update live, with alerts before you overspend.",
+    step: "02",
+    title: "Log expenses your way",
+    body: "Tap to add, scan a bill, or speak an amount. Khata and group splits stay in sync as you go.",
   },
   {
-    n: "03",
-    icon: "👥",
-    title: "Split with your group",
-    body: "Add a shared expense once — TrackKaro works out who owes whom, and you confirm your own share.",
+    step: "03",
+    title: "Check deals before you buy",
+    body: "Browse live deals, run the AI conscience check, and decide with numbers — not FOMO.",
   },
   {
-    n: "04",
-    icon: "🛍️",
-    title: "Shop smart & export",
-    body: "Search live Amazon India deals with AI budget-safety checks, consult your Gemini copilot, and export PDF statements anytime.",
+    step: "04",
+    title: "Settle & stay on track",
+    body: "Use reminders for bills, nudge friends on group balances, and review trends at month end.",
   },
-];
+] as const;
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-20 py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="text-[11.5px] font-bold uppercase tracking-wider text-primary">How it works</span>
-          <h2 className="mt-3 text-[clamp(24px,3.5vw,34px)] font-extrabold tracking-tight text-foreground">
-            From a single tap to the full picture
-          </h2>
-        </div>
+    <section id="how-it-works" className="scroll-mt-24 py-20 md:py-24">
+      <div className="mx-auto max-w-6xl px-5 md:px-8">
+        <SectionHeading
+          eyebrow="How it works"
+          title="From install to insight in four steps"
+          description="No setup marathon — start logging on day one and refine as you go."
+        />
 
-        <div className="relative mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="pointer-events-none absolute left-0 right-0 top-6 hidden h-px bg-border lg:block" />
-          {STEPS.map((s) => (
-            <div key={s.n} className="relative">
-              <div className="flex items-center gap-3">
-                <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-lg text-white shadow-sm">
-                  {s.icon}
-                </span>
-                <span className="text-[13px] font-extrabold text-foreground-muted">{s.n}</span>
-              </div>
-              <h3 className="mt-4 text-[15px] font-extrabold text-foreground">{s.title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground-sub">{s.body}</p>
-            </div>
+        <ol className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((item, index) => (
+            <li
+              key={item.step}
+              className="relative flex flex-col rounded-2xl border border-border bg-surface p-6"
+            >
+              <span className="text-[11px] font-bold tabular-nums tracking-widest text-primary">
+                {item.step}
+              </span>
+              <h3 className="mt-3 text-base font-bold leading-snug text-foreground">{item.title}</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-foreground-sub">{item.body}</p>
+              {index < STEPS.length - 1 ? (
+                <span
+                  className="pointer-events-none absolute -right-2 top-1/2 hidden h-px w-4 bg-border lg:block"
+                  aria-hidden
+                />
+              ) : null}
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

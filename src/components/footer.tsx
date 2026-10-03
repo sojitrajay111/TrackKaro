@@ -5,7 +5,7 @@ import { SITE } from "@/lib/site";
 const PRODUCT_LINKS = [
   { href: "/#features", label: "Features" },
   { href: "/#how-it-works", label: "How it Works" },
-  { href: "/#download", label: "Download" },
+  { href: "/#download", label: "Launch" },
 ];
 
 const LEGAL_LINKS = [

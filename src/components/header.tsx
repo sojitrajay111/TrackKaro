@@ -10,8 +10,8 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
+      <div className="mx-auto flex h-[4.25rem] max-w-6xl items-center justify-between px-5 md:px-8">
         <Logo />
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -45,7 +45,7 @@ export function Header() {
             href="/#download"
             className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[13.5px] font-bold text-white shadow-sm transition hover:bg-primary-strong"
           >
-            Get the App
+            Coming soon
           </Link>
         </div>
 
@@ -99,7 +99,7 @@ export function Header() {
               onClick={() => setOpen(false)}
               className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white"
             >
-              Get the App
+              Coming soon
             </Link>
           </nav>
         </div>
