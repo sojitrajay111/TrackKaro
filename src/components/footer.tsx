@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "./logo";
 import { SITE } from "@/lib/site";
 
@@ -14,6 +17,12 @@ const LEGAL_LINKS = [
 ];
 
 export function Footer() {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">

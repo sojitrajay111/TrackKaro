@@ -5,9 +5,20 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { NAV_LINKS, SITE } from "@/lib/site";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { logOut } from "@/store/slices/authSlice";
+
+import { usePathname } from "next/navigation";
 
 export function Header() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
@@ -41,12 +52,47 @@ export function Header() {
             </svg>
           </a>
           <ThemeToggle />
-          <Link
-            href="/#download"
-            className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-[13.5px] font-bold text-white shadow-sm transition hover:bg-primary-strong"
-          >
-            Coming soon
-          </Link>
+
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-2.5 pl-1">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground transition hover:border-primary/50 hover:bg-surface-muted"
+                title="Open Dashboard"
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="max-w-[120px] truncate">{user.name}</span>
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-bold text-white shadow-sm transition hover:bg-primary-strong"
+              >
+                Dashboard →
+              </Link>
+              <button
+                type="button"
+                onClick={() => dispatch(logOut())}
+                className="text-xs font-semibold text-foreground-sub hover:text-red-500 transition px-2 py-1"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 pl-1">
+              <Link
+                href="/auth/login"
+                className="text-[13.5px] font-semibold text-foreground-sub transition hover:text-primary px-3 py-2"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[13px] font-bold text-white shadow-sm transition hover:bg-primary-strong"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -94,13 +140,43 @@ export function Header() {
               </svg>
               <span>Follow on Instagram ({SITE.instagramHandle})</span>
             </a>
-            <Link
-              href="/#download"
-              onClick={() => setOpen(false)}
-              className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-primary text-sm font-bold text-white"
-            >
-              Coming soon
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-sm font-semibold text-foreground">{user.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(logOut());
+                      setOpen(false);
+                    }}
+                    className="text-xs font-semibold text-red-500 hover:underline"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+                <Link
+                  href="/auth/login"
+                  onClick={() => setOpen(false)}
+                  className="flex h-10 items-center justify-center rounded-xl border border-border text-sm font-semibold text-foreground"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  onClick={() => setOpen(false)}
+                  className="flex h-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-sm"
+                >
+                  Create account
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
       )}

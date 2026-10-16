@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { StoreProvider } from "@/store/provider";
+import { I18nProvider } from "@/i18n";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { SITE } from "@/lib/site";
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -35,12 +38,29 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${jakarta.variable} h-full`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col antialiased">
-        <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+    <html lang="en" className={`${outfit.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',d);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className={`${outfit.className} flex min-h-full flex-col antialiased`}>
+        <ThemeProvider>
+          <StoreProvider>
+            <I18nProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </I18nProvider>
+          </StoreProvider>
         </ThemeProvider>
       </body>
     </html>

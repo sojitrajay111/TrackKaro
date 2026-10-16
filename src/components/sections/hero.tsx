@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { useAppSelector } from "@/store";
 
 const STATS = [
   { value: "1 app", label: "Expenses, khata, deals & bills" },
@@ -8,6 +11,8 @@ const STATS = [
 ] as const;
 
 export function Hero() {
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
   return (
     <section className="relative overflow-hidden border-b border-border">
       <div className="page-grid-bg pointer-events-none absolute inset-0 opacity-70" aria-hidden />
@@ -25,9 +30,15 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/#download" className="btn-primary">
-              Coming soon
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="btn-primary">
+                Open Dashboard →
+              </Link>
+            ) : (
+              <Link href="/auth/signup" className="btn-primary">
+                Get Started Free →
+              </Link>
+            )}
             <Link href="/#how-it-works" className="btn-secondary">
               See how it works
             </Link>

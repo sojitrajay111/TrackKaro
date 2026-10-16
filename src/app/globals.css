@@ -1,27 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #F4FBF7;
-  --surface: #FFFFFF;
-  --surface-muted: #EEFBF5;
-  --border: #E2ECE6;
-  --foreground: #0B1E14;
-  --foreground-sub: #475569;
-  --foreground-muted: #94A3B8;
+  --background: #EDF7F2;
+  --surface: #E2EFE7; /* Soft sage-mint frosted card surface - NOT BEIGE, NOT WHITE */
+  --surface-muted: #D3E8DC; /* Recessed well / pill surface */
+  --border: #C6DFD0;
+  --foreground: #102117;
+  --foreground-sub: #3E5A4A;
+  --foreground-muted: #6B8B79;
   --primary: #059669;
   --primary-strong: #047857;
-  --primary-soft: #E8F7F0;
+  --primary-soft: #D1EEDE;
   --accent: #00DF81;
   --amber: #D97706;
   --amber-soft: #FEF3C7;
+  --night: #0E1F16;
+  --night-ink: #F1FBF6;
   --shadow-color: 6 78 59;
 }
 
 :root[data-theme="dark"] {
   --background: #06130B;
-  --surface: #0A1A12;
-  --surface-muted: #0D271B;
-  --border: #163826;
+  --surface: #0E1F16; /* Deep forest emerald card surface */
+  --surface-muted: #142B1F;
+  --border: #1B3829;
   --foreground: #F1FBF6;
   --foreground-sub: #A9C4B6;
   --foreground-muted: #6B8C7C;
@@ -31,6 +34,8 @@
   --accent: #00DF81;
   --amber: #FBBF24;
   --amber-soft: rgba(251, 191, 36, 0.14);
+  --night: #18261E;
+  --night-ink: #F1FBF6;
   --shadow-color: 0 0 0;
 }
 
@@ -48,7 +53,10 @@
   --color-accent: var(--accent);
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
-  --font-sans: var(--font-jakarta);
+  --color-night: var(--night);
+  --color-night-ink: var(--night-ink);
+  --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
 }
 
 * {
@@ -60,13 +68,64 @@ html {
 }
 
 body {
-  background: var(--color-background);
+  background:
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.22), transparent 70%),
+    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.18), transparent 70%),
+    radial-gradient(50% 40% at 0% 15%, rgba(167, 243, 208, 0.35), transparent 60%),
+    linear-gradient(160deg, #EDF7F2, #E4F3EA 55%, #D7EFE1);
   color: var(--color-foreground);
-  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.015em;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.12), transparent 70%),
+    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.14), transparent 70%),
+    linear-gradient(160deg, #06130B, #091A10 55%, #0B2014);
+}
+
+.coterie-bg {
+  background:
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.22), transparent 70%),
+    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.18), transparent 70%),
+    linear-gradient(160deg, #EDF7F2, #E4F3EA 55%, #D7EFE1);
+}
+
+:root[data-theme="dark"] .coterie-bg {
+  background:
+    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.08), transparent 70%),
+    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.12), transparent 70%),
+    linear-gradient(160deg, #0e1210, #141916 55%, #18201a);
+}
+
+.seg__stripes {
+  background: repeating-linear-gradient(-55deg, rgba(29, 29, 27, 0.16) 0 1.5px, transparent 1.5px 9px);
+  animation: 3.2s linear infinite stripes;
+}
+
+:root[data-theme="dark"] .seg__stripes {
+  background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.18) 0 1.5px, transparent 1.5px 9px);
+}
+
+@keyframes stripes {
+  to {
+    transform: translateX(22px);
+  }
+}
+
+.font-display {
+  font-family: "Outfit", system-ui, sans-serif !important;
 }
 
 .card-shadow {
-  box-shadow: 0 8px 28px -8px rgba(var(--shadow-color) / 0.12);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 18px 40px -24px rgba(10, 48, 28, 0.16);
+}
+
+:root[data-theme="dark"] .card-shadow {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 20px 45px -20px rgba(0, 0, 0, 0.7);
 }
 
 .brand-glow {
@@ -145,3 +204,13 @@ body {
   background: var(--color-primary-soft);
   color: var(--color-primary-strong);
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
