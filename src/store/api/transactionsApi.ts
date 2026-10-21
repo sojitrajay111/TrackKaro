@@ -34,6 +34,15 @@ export const transactionsApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: "Transactions", id: "LIST" }, "Budgets"],
     }),
 
+    updateTransaction: builder.mutation<Transaction, { id: string; data: Partial<Omit<Transaction, "id">> }>({
+      query: ({ id, data }) => ({
+        url: `/transactions/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: [{ type: "Transactions", id: "LIST" }, "Budgets"],
+    }),
+
     deleteTransaction: builder.mutation<void, string>({
       query: (id) => ({
         url: `/transactions/${id}`,
@@ -47,5 +56,7 @@ export const transactionsApi = apiSlice.injectEndpoints({
 export const {
   useGetTransactionsQuery,
   useAddTransactionMutation,
+  useUpdateTransactionMutation,
   useDeleteTransactionMutation,
 } = transactionsApi;
+

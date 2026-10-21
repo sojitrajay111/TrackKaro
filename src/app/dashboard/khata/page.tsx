@@ -4,6 +4,7 @@ import { useState, useMemo, type FormEvent } from "react";
 import Link from "next/link";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer";
 import { useI18n } from "@/i18n";
 import {
   useGetKhataEntriesQuery,
@@ -930,31 +931,31 @@ export default function KhataPage() {
             <button
               type="button"
               onClick={() => setKhataType("gave")}
-              className={`h-9 rounded-[10px] text-xs sm:text-[13px] font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
+              className={`h-9.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 select-none ${
                 khataType === "gave"
-                  ? "bg-[#EF4444] text-white font-bold shadow-sm shadow-red-500/25"
-                  : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] shadow-[inset_0_0_0_1px_rgba(18,60,38,0.1)] hover:text-[#EF4444] hover:bg-red-50 dark:hover:bg-red-950/20"
+                  ? "bg-rose-500 text-white shadow-xs"
+                  : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
               }`}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m18 15-6-6-6 6" />
               </svg>
-              <span>You Gave (Udhar Diya)</span>
+              <span>↑ You Gave (Udhar Diya)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setKhataType("took")}
-              className={`h-9 rounded-[10px] text-xs sm:text-[13px] font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
+              className={`h-9.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 select-none ${
                 khataType === "took"
-                  ? "bg-[#059669] text-white font-bold shadow-sm shadow-emerald-500/25"
-                  : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] shadow-[inset_0_0_0_1px_rgba(18,60,38,0.1)] hover:text-[#059669] hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
               }`}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m6 9 6 6 6-6" />
               </svg>
-              <span>You Got (Udhar Liya)</span>
+              <span>↓ You Got (Udhar Liya)</span>
             </button>
           </div>
 
@@ -971,10 +972,10 @@ export default function KhataPage() {
                       setKhataPersonName(c.personName);
                       if (c.phone) setKhataPhone(c.phone);
                     }}
-                    className={`h-7 px-2.5 rounded-full text-[11px] font-semibold transition shrink-0 ${
+                    className={`h-7 px-3 rounded-full text-[11px] font-semibold transition shrink-0 ${
                       khataPersonName.toLowerCase() === c.personName.toLowerCase()
-                        ? "bg-primary text-white font-bold"
-                        : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#4B6858] hover:text-[#102117]"
+                        ? "bg-foreground text-background dark:bg-emerald-400 dark:text-emerald-950 font-bold shadow-xs"
+                        : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
                     }`}
                   >
                     {c.personName}
@@ -993,7 +994,7 @@ export default function KhataPage() {
                 placeholder="e.g. Rahul Sharma"
                 value={khataPersonName}
                 onChange={(e) => setKhataPersonName(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
 
@@ -1003,7 +1004,7 @@ export default function KhataPage() {
                 placeholder="e.g. +91 9876543210"
                 value={khataPhone}
                 onChange={(e) => setKhataPhone(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
           </div>
@@ -1018,7 +1019,7 @@ export default function KhataPage() {
                 placeholder="e.g. 1200"
                 value={khataAmount}
                 onChange={(e) => setKhataAmount(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-bold border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
 
@@ -1028,7 +1029,7 @@ export default function KhataPage() {
                 required
                 value={khataDate}
                 onChange={(e) => setKhataDate(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
           </div>
@@ -1040,7 +1041,7 @@ export default function KhataPage() {
                 type="date"
                 value={khataDueDate}
                 onChange={(e) => setKhataDueDate(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
 
@@ -1050,7 +1051,7 @@ export default function KhataPage() {
                 placeholder="e.g. Dinner bill, Grocery advance"
                 value={khataNotes}
                 onChange={(e) => setKhataNotes(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
+                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
               />
             </ModalField>
           </div>
@@ -1065,147 +1066,15 @@ export default function KhataPage() {
       </Modal>
 
       {/* ============================================================== */}
-      {/* MODAL 2: CUSTOMER LEDGER STATEMENT MODAL */}
+      {/* DRAWER: LIQUID GLASS CUSTOMER LEDGER (PANE SPEC) */}
       {/* ============================================================== */}
-      <Modal
+      <CustomerLedgerDrawer
         isOpen={Boolean(selectedCustomer)}
         onClose={() => setSelectedCustomer(null)}
-        title={selectedCustomer ? `${selectedCustomer}'s Ledger` : "Customer Ledger"}
-        description={
-          activeCustomerSummary?.phone
-            ? `Phone: ${activeCustomerSummary.phone} • ${activeCustomerEntries.length} total entries recorded`
-            : `${activeCustomerEntries.length} total entries recorded in cloud ledger`
-        }
-        maxWidth="xl"
-      >
-        <div className="space-y-4">
-          {/* Summary Strip */}
-          {activeCustomerSummary && (
-            <div className="p-4 rounded-2xl bg-surface-muted flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-border">
-              <div>
-                <span className="text-[11px] font-bold text-foreground-muted uppercase">
-                  Net Account Balance
-                </span>
-                <div
-                  className={`font-display font-medium text-2xl mt-0.5 ${
-                    activeCustomerSummary.netBalance > 0
-                      ? "text-[#059669] dark:text-emerald-400"
-                      : activeCustomerSummary.netBalance < 0
-                      ? "text-[#EF4444]"
-                      : "text-foreground"
-                  }`}
-                >
-                  {activeCustomerSummary.netBalance > 0
-                    ? `You Will Get ${fmt(activeCustomerSummary.netBalance)}`
-                    : activeCustomerSummary.netBalance < 0
-                    ? `You Will Give ${fmt(activeCustomerSummary.netBalance)}`
-                    : "Account Settled (₹0)"}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleSendWhatsApp(activeCustomerSummary)}
-                  className="rounded-full px-4 py-2 text-xs font-bold bg-[#059669] text-white hover:bg-emerald-700 transition flex items-center gap-1.5 shadow-xs"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                  <span>WhatsApp Reminder</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleOpenAdd("gave", selectedCustomer || "");
-                  }}
-                  className="rounded-full px-4 py-2 text-xs font-bold bg-[#0E1F16] text-white hover:bg-black transition shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-                >
-                  + Add Entry
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* List of Entries */}
-          <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1 scrollbar-none divide-y divide-border/50">
-            {activeCustomerEntries.length === 0 ? (
-              <p className="text-xs text-foreground-muted text-center py-6">No entries recorded.</p>
-            ) : (
-              activeCustomerEntries.map((entry) => {
-                const isGave = entry.type === "gave";
-                const isSettled = entry.status === "settled";
-
-                return (
-                  <div
-                    key={entry.id}
-                    className="pt-2.5 first:pt-0 flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`font-semibold ${
-                            isGave ? "text-[#EF4444]" : "text-[#059669] dark:text-emerald-400"
-                          }`}
-                        >
-                          {isGave ? "You Gave" : "You Got"}
-                        </span>
-                        <span className="text-foreground-muted font-mono">{entry.date}</span>
-                        {entry.dueDate && (
-                          <span className="text-[10px] text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded font-medium">
-                            Due: {entry.dueDate}
-                          </span>
-                        )}
-                      </div>
-                      {entry.notes && (
-                        <p className="text-foreground-sub truncate mt-0.5 italic">{entry.notes}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className={`font-display font-medium text-sm sm:text-base tabular-nums ${
-                          isGave ? "text-[#EF4444]" : "text-[#059669] dark:text-emerald-400"
-                        }`}
-                      >
-                        {isGave ? `-${fmt(entry.amount)}` : `+${fmt(entry.amount)}`}
-                      </span>
-
-                      {/* Status Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(entry.id)}
-                        disabled={isToggling}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition ${
-                          isSettled
-                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
-                            : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25"
-                        }`}
-                        title="Click to toggle Pending / Settled status"
-                      >
-                        {isSettled ? "✓ Settled" : "⏳ Pending"}
-                      </button>
-
-                      {/* Delete Entry */}
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTargetId(entry.id)}
-                        className="p-1 rounded-full text-foreground-muted hover:text-red-500 transition"
-                        title="Delete entry"
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </Modal>
+        customerName={selectedCustomer}
+        entries={khataEntries}
+        onAddNewEntry={(type, name) => handleOpenAdd(type, name)}
+      />
 
       {/* ============================================================== */}
       {/* MODAL 3: CREATE GROUP */}

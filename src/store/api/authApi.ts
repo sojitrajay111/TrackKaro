@@ -1,5 +1,7 @@
 import { apiSlice } from "./apiSlice";
-import { setCredentials, logOut, type User } from "../slices/authSlice";
+import { useCallback } from "react";
+import { setCredentials, logOut, updateUser, type User } from "../slices/authSlice";
+import { useAppDispatch, useAppSelector } from "@/store";
 
 export interface AuthTokens {
   accessToken: string;
@@ -28,6 +30,12 @@ export interface ResetPasswordRequest {
   email: string;
   otp: string;
   newPassword: string;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  phone?: string;
+  gender?: "male" | "female" | "other" | "unspecified";
 }
 
 export const authApi = apiSlice.injectEndpoints({
@@ -72,14 +80,29 @@ export const authApi = apiSlice.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Auth", "User"],
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          dispatch(logOut());
         } catch {
-          // Still logout locally on failure
-          dispatch(logOut());
+          // Server revoke failed (offline, already expired) — still log out locally.
+        }
+        dispatch(logOut());
+        dispatch(apiSlice.util.resetApiState());
+      },
+    }),
+
+    updateProfile: builder.mutation<User, UpdateProfileRequest>({
+      query: (body) => ({
+        url: "/users/me",
+        method: "PATCH",
+        body,
+      }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(updateUser(data));
+        } catch {
+          // handled in component
         }
       },
     }),
@@ -108,4 +131,24 @@ export const {
   useLogoutMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useUpdateProfileMutation,
 } = authApi;
+
+/** Revoke this session on the server, then clear local auth state and cached data. */
+export function useSignOut() {
+  const dispatch = useAppDispatch();
+  const refreshToken = useAppSelector((state) => state.auth.refreshToken);
+  const [logout, { isLoading }] = useLogoutMutation();
+
+  const signOut = useCallback(async () => {
+    if (refreshToken) {
+      // onQueryStarted clears local state whether or not the server call succeeds.
+      await logout({ refreshToken }).unwrap().catch(() => {});
+    } else {
+      dispatch(logOut());
+      dispatch(apiSlice.util.resetApiState());
+    }
+  }, [dispatch, logout, refreshToken]);
+
+  return { signOut, isSigningOut: isLoading };
+}

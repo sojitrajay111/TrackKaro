@@ -214,3 +214,262 @@ body {
   scrollbar-width: none;
 }
 
+/* ==========================================================================
+   Liquid Glass Design System (Pane UI for TrackKaro)
+   ========================================================================== */
+
+:root {
+  --glass-fill: rgba(226, 239, 231, 0.65);
+  --glass-fill-chrome: rgba(226, 239, 231, 0.82);
+  --glass-fill-card: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(198, 223, 208, 0.7);
+  --glass-border-highlight: rgba(255, 255, 255, 0.85);
+  --glass-shadow: 0 20px 48px -16px rgba(10, 48, 28, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --glass-shadow-sm: 0 8px 24px -8px rgba(10, 48, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  --glass-blur: 24px;
+}
+
+:root[data-theme="dark"] {
+  --glass-fill: rgba(14, 31, 22, 0.65);
+  --glass-fill-chrome: rgba(14, 31, 22, 0.82);
+  --glass-fill-card: rgba(18, 38, 28, 0.55);
+  --glass-border: rgba(35, 70, 52, 0.6);
+  --glass-border-highlight: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 24px 64px -20px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  --glass-shadow-sm: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  --glass-blur: 28px;
+}
+
+.glass {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass--chrome {
+  background: var(--glass-fill-chrome);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass--card {
+  background: var(--glass-fill-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.glass--card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--glass-border));
+}
+
+.glass-specular {
+  position: relative;
+}
+
+.glass-specular::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--glass-border-highlight) 0%, transparent 45%, rgba(0, 223, 129, 0.15) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Ambient Liquid Glass Wallpaper behind dashboard */
+.glass-wall {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.glass-wall::before,
+.glass-wall::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  animation: floatWall 18s ease-in-out infinite alternate;
+}
+
+.glass-wall::before {
+  width: 55vw;
+  height: 55vw;
+  top: -15vw;
+  right: -10vw;
+  background: radial-gradient(circle, rgba(0, 223, 129, 0.25) 0%, rgba(5, 150, 105, 0.08) 60%, transparent 75%);
+}
+
+.glass-wall::after {
+  width: 45vw;
+  height: 45vw;
+  bottom: -10vw;
+  left: 10vw;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(52, 211, 153, 0.05) 60%, transparent 75%);
+  animation-delay: -9s;
+}
+
+:root[data-theme="dark"] .glass-wall::before {
+  opacity: 0.35;
+  background: radial-gradient(circle, rgba(0, 223, 129, 0.18) 0%, rgba(4, 120, 87, 0.05) 65%, transparent 80%);
+}
+
+:root[data-theme="dark"] .glass-wall::after {
+  opacity: 0.25;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.04) 65%, transparent 80%);
+}
+
+@keyframes floatWall {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(3vw, 2vh) scale(1.05); }
+  100% { transform: translate(-2vw, -3vh) scale(0.98); }
+}
+
+/* ==========================================================================
+   Settings (Pane-style grouped glass cells)
+   ========================================================================== */
+
+/* Tinted rounded-square icon tile */
+.picon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 0.7rem;
+  color: #fff;
+  background: var(--hue);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 14px -6px var(--hue);
+}
+
+.hue--emerald { --hue: #10B981; }
+.hue--blue { --hue: #3B82F6; }
+.hue--indigo { --hue: #6366F1; }
+.hue--purple { --hue: #A855F7; }
+.hue--pink { --hue: #EC4899; }
+.hue--orange { --hue: #F59E0B; }
+.hue--teal { --hue: #14B8A6; }
+.hue--danger { --hue: #EF4444; }
+
+/* Grouped list of rows inside a settings card */
+.cells > li + li {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+/* iOS-style switch on a native checkbox */
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.625rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.switch:checked {
+  background: var(--color-primary);
+}
+
+.switch:checked::after {
+  transform: translateX(1.125rem);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Segmented control with a sliding glass pill */
+.seg {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 3px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-surface-muted) 75%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.seg__pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  border-radius: 9999px;
+  background: var(--glass-fill-card);
+  box-shadow: 0 4px 12px -4px rgba(10, 48, 28, 0.25), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  transition: transform 0.35s cubic-bezier(0.3, 1.3, 0.5, 1);
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .seg__pill {
+  background: rgba(0, 223, 129, 0.16);
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+.seg__btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.125rem;
+  padding-inline: 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-foreground-muted);
+  transition: color 0.2s ease;
+}
+
+.seg__btn[aria-pressed="true"] {
+  color: var(--color-foreground);
+}
+
+.seg__btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::after,
+  .seg__pill {
+    transition: none;
+  }
+}
+
+

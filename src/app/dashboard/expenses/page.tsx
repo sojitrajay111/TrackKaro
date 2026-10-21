@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n";
 import {
   useGetTransactionsQuery,
   useAddTransactionMutation,
+  useUpdateTransactionMutation,
   useDeleteTransactionMutation,
 } from "@/store/api/transactionsApi";
 import {
@@ -59,6 +60,7 @@ export default function ExpensesPage() {
   const { data: transactions = [], isLoading: loadingTx } = useGetTransactionsQuery();
   const { data: budgets = [], isLoading: loadingBudgets } = useGetBudgetsQuery();
   const [addTransaction, { isLoading: isAddingTx }] = useAddTransactionMutation();
+  const [updateTransaction, { isLoading: isUpdatingTx }] = useUpdateTransactionMutation();
   const [deleteTransaction, { isLoading: isDeletingTx }] = useDeleteTransactionMutation();
   const [setBudget, { isLoading: isUpdatingBudget }] = useSetBudgetMutation();
 
@@ -81,6 +83,18 @@ export default function ExpensesPage() {
   const [newBudgetLimit, setNewBudgetLimit] = useState<string>("");
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
+
+  // Edit Transaction State
+  const [isEditingTx, setIsEditingTx] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editMerchant, setEditMerchant] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editType, setEditType] = useState<"expense" | "income">("expense");
+  const [editCategory, setEditCategory] = useState<CategoryName>("Food");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<PaymentMethod>("UPI");
+  const [editScope, setEditScope] = useState<TransactionScope>("Personal");
+  const [editDate, setEditDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [editNotes, setEditNotes] = useState("");
 
   // New Transaction Form State
   const [txTitle, setTxTitle] = useState("");
@@ -234,6 +248,52 @@ export default function ExpensesPage() {
     } catch {
       // Error handled
     }
+  };
+
+  // Transaction Edit Handlers
+  const handleStartEdit = (tx: Transaction) => {
+    setEditTitle(tx.title);
+    setEditMerchant(tx.merchant || tx.title);
+    setEditAmount(String(tx.amount));
+    setEditType(tx.type);
+    setEditCategory(tx.category);
+    setEditPaymentMethod(tx.paymentMethod || "UPI");
+    setEditScope(tx.scope || "Personal");
+    setEditDate(tx.date);
+    setEditNotes(tx.notes || "");
+    setIsEditingTx(true);
+  };
+
+  const handleEditSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!viewingTx || !editTitle.trim() || !editAmount) return;
+
+    try {
+      const updated = await updateTransaction({
+        id: viewingTx.id,
+        data: {
+          title: editTitle.trim(),
+          merchant: editMerchant.trim() || editTitle.trim(),
+          amount: parseFloat(editAmount),
+          type: editType,
+          category: editCategory,
+          paymentMethod: editPaymentMethod,
+          scope: editScope,
+          date: editDate,
+          notes: editNotes.trim() || undefined,
+        },
+      }).unwrap();
+
+      setViewingTx(updated);
+      setIsEditingTx(false);
+    } catch {
+      // Error handled
+    }
+  };
+
+  const handleCloseViewingTx = () => {
+    setViewingTx(null);
+    setIsEditingTx(false);
   };
 
   return (
@@ -993,106 +1053,286 @@ export default function ExpensesPage() {
           </div>
         </div>
       </Modal>
-      {/* MODAL: VIEW TRANSACTION DETAILS */}
+      {/* MODAL: VIEW / EDIT TRANSACTION DETAILS */}
       <Modal
         isOpen={Boolean(viewingTx)}
-        onClose={() => setViewingTx(null)}
-        title={viewingTx?.title || "Transaction Details"}
-        description={viewingTx?.merchant ? `Merchant: ${viewingTx.merchant}` : "Recorded transaction details"}
+        onClose={handleCloseViewingTx}
+        title={isEditingTx ? "Edit Transaction" : (viewingTx?.title || "Transaction Details")}
+        description={
+          isEditingTx
+            ? "Update transaction details and save to ledger."
+            : (viewingTx?.merchant ? `Merchant: ${viewingTx.merchant}` : "Recorded transaction details")
+        }
         maxWidth="md"
+        position="right"
       >
-        {viewingTx && (
-          <div className="space-y-4">
-            {/* Amount Banner */}
-            <div
-              className={`p-4 rounded-2xl flex items-center justify-between ${
-                viewingTx.type === "expense"
-                  ? "bg-rose-500/10 border border-rose-500/25"
-                  : "bg-emerald-500/10 border border-emerald-500/25"
-              }`}
-            >
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-foreground-muted">
-                  {viewingTx.type === "expense" ? "Expense Amount" : "Income Amount"}
-                </span>
-                <div
-                  className={`font-display font-medium text-2xl sm:text-3xl mt-0.5 ${
-                    viewingTx.type === "expense" ? "text-[#EF4444]" : "text-[#059669] dark:text-emerald-400"
-                  }`}
-                >
-                  {viewingTx.type === "expense" ? `-${fmt(viewingTx.amount)}` : `+${fmt(viewingTx.amount)}`}
-                </div>
-              </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  viewingTx.type === "expense" ? "bg-[#EF4444] text-white" : "bg-[#059669] text-white"
+        {viewingTx && !isEditingTx && (
+          <div className="flex-1 min-h-0 flex flex-col justify-between">
+            {/* Scrollable details if needed */}
+            <div className="space-y-3.5 overflow-y-auto no-scrollbar pr-0.5">
+              {/* Amount Liquid Glass Hero Banner */}
+              <div
+                className={`p-4 rounded-[22px] flex items-center justify-between border transition-all ${
+                  viewingTx.type === "expense"
+                    ? "bg-rose-500/[0.08] dark:bg-rose-500/[0.12] border-rose-500/20"
+                    : "bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12] border-emerald-500/20"
                 }`}
               >
-                {viewingTx.type === "expense" ? "↑ Expense" : "↓ Income"}
-              </span>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted">
+                    {viewingTx.type === "expense" ? "Expense Amount" : "Income Amount"}
+                  </span>
+                  <div
+                    className={`font-display font-bold text-2xl sm:text-3xl mt-0.5 tracking-tight ${
+                      viewingTx.type === "expense" ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {viewingTx.type === "expense" ? `-${fmt(viewingTx.amount)}` : `+${fmt(viewingTx.amount)}`}
+                  </div>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                    viewingTx.type === "expense" ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"
+                  }`}
+                >
+                  {viewingTx.type === "expense" ? "↑ Expense" : "↓ Income"}
+                </span>
+              </div>
+
+              {/* Details Grid (Pane frosted tile style) */}
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-[18px] bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/10">
+                  <span className="text-foreground-muted block text-[10px] uppercase font-bold tracking-wider">Category</span>
+                  <span className="font-semibold text-foreground text-sm flex items-center gap-1.5 mt-0.5">
+                    <span>{CATEGORY_COLORS[viewingTx.category]?.icon}</span>
+                    <span className="truncate">{viewingTx.category}</span>
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-[18px] bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/10">
+                  <span className="text-foreground-muted block text-[10px] uppercase font-bold tracking-wider">Date</span>
+                  <span className="font-semibold text-foreground text-sm font-mono mt-0.5 block truncate">
+                    {viewingTx.date}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-[18px] bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/10">
+                  <span className="text-foreground-muted block text-[10px] uppercase font-bold tracking-wider">Payment Method</span>
+                  <span className="font-semibold text-foreground text-sm mt-0.5 block truncate">
+                    {viewingTx.paymentMethod || "UPI"}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-[18px] bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/10">
+                  <span className="text-foreground-muted block text-[10px] uppercase font-bold tracking-wider">Scope</span>
+                  <span className="font-semibold text-foreground text-sm mt-0.5 block truncate">
+                    {viewingTx.scope || "Personal"}
+                  </span>
+                </div>
+              </div>
+
+              {viewingTx.notes && (
+                <div className="p-3 rounded-[18px] bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/10 text-xs">
+                  <span className="text-foreground-muted block text-[10px] uppercase font-bold tracking-wider">Notes</span>
+                  <p className="text-foreground font-medium mt-0.5 italic">{viewingTx.notes}</p>
+                </div>
+              )}
             </div>
 
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-surface-muted border border-border">
-                <span className="text-foreground-muted block text-[10px] uppercase font-bold">Category</span>
-                <span className="font-semibold text-foreground text-sm flex items-center gap-1.5 mt-0.5">
-                  <span>{CATEGORY_COLORS[viewingTx.category]?.icon}</span>
-                  <span>{viewingTx.category}</span>
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface-muted border border-border">
-                <span className="text-foreground-muted block text-[10px] uppercase font-bold">Date</span>
-                <span className="font-semibold text-foreground text-sm font-mono mt-0.5 block">
-                  {viewingTx.date}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface-muted border border-border">
-                <span className="text-foreground-muted block text-[10px] uppercase font-bold">Payment Method</span>
-                <span className="font-semibold text-foreground text-sm mt-0.5 block">
-                  {viewingTx.paymentMethod || "UPI"}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-surface-muted border border-border">
-                <span className="text-foreground-muted block text-[10px] uppercase font-bold">Scope</span>
-                <span className="font-semibold text-foreground text-sm mt-0.5 block">
-                  {viewingTx.scope || "Personal"}
-                </span>
-              </div>
-            </div>
-
-            {viewingTx.notes && (
-              <div className="p-3 rounded-xl bg-surface-muted border border-border text-xs">
-                <span className="text-foreground-muted block text-[10px] uppercase font-bold">Notes</span>
-                <p className="text-foreground font-medium mt-0.5 italic">{viewingTx.notes}</p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-border">
+            {/* Actions (Always pinned at bottom, NO scroll needed!) */}
+            <div className="flex items-center justify-between pt-3 border-t border-black/[0.06] dark:border-white/10 mt-auto shrink-0">
               <button
                 type="button"
                 onClick={() => {
                   const id = viewingTx.id;
-                  setViewingTx(null);
+                  handleCloseViewingTx();
                   setDeleteTargetId(id);
                 }}
-                className="rounded-full px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/10 transition"
+                className="rounded-full px-3.5 py-2 text-xs font-bold text-red-500 hover:bg-red-500/10 active:scale-95 transition"
               >
                 Delete Transaction
               </button>
-              <button
-                type="button"
-                onClick={() => setViewingTx(null)}
-                className="rounded-full px-5 py-2 text-xs font-bold bg-[#0E1F16] text-white hover:bg-black transition shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-              >
-                Done
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleStartEdit(viewingTx)}
+                  className="rounded-full px-3.5 py-2 text-xs font-bold bg-black/5 dark:bg-white/10 text-foreground hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition flex items-center gap-1.5 border border-black/5 dark:border-white/10"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseViewingTx}
+                  className="rounded-full px-5 py-2 text-xs font-bold bg-[#0E1F16] text-white hover:bg-black active:scale-95 transition shadow-sm dark:bg-white dark:text-[#0E1F16]"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {viewingTx && isEditingTx && (
+          <form onSubmit={handleEditSubmit} className="flex-1 min-h-0 flex flex-col justify-between">
+            <div className="space-y-3 overflow-y-auto no-scrollbar pr-0.5">
+              {/* Type Switcher: Expense vs Income */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditType("expense")}
+                  className={`h-8 rounded-[10px] text-xs font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
+                    editType === "expense"
+                      ? "bg-[#EF4444] text-white font-bold shadow-sm shadow-red-500/25"
+                      : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] hover:text-[#EF4444]"
+                  }`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="m18 15-6-6-6 6" />
+                  </svg>
+                  <span>Expense</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditType("income")}
+                  className={`h-8 rounded-[10px] text-xs font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
+                    editType === "income"
+                      ? "bg-[#059669] text-white font-bold shadow-sm shadow-emerald-500/25"
+                      : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] hover:text-[#059669]"
+                  }`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                  <span>Income</span>
+                </button>
+              </div>
+
+              {/* Title / Description */}
+              <div>
+                <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Title / Description</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                />
+              </div>
+
+              {/* Amount & Date */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Category</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value as CategoryName)}
+                  className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Payment Method & Scope */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Payment Method</label>
+                  <select
+                    value={editPaymentMethod}
+                    onChange={(e) => setEditPaymentMethod(e.target.value as PaymentMethod)}
+                    className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                  >
+                    {PAYMENT_METHODS.map((pm) => (
+                      <option key={pm} value={pm}>
+                        {pm}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Scope</label>
+                  <select
+                    value={editScope}
+                    onChange={(e) => setEditScope(e.target.value as TransactionScope)}
+                    className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                  >
+                    <option value="Personal">Personal</option>
+                    <option value="Business">Business</option>
+                    <option value="Shared">Shared</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-[11px] font-semibold text-foreground-muted mb-1">Notes (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Dinner with team"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669]"
+                />
+              </div>
+            </div>
+
+            {/* Edit Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-black/[0.06] dark:border-white/10 mt-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditingTx(false)}
+                className="rounded-full px-4 py-2 text-xs font-bold text-foreground-muted hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdatingTx}
+                className="rounded-full px-5 py-2 text-xs font-bold bg-[#059669] text-white hover:bg-[#047857] active:scale-95 transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {isUpdatingTx ? (
+                  <>
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <span>Save Changes</span>
+                )}
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
     </div>

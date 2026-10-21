@@ -5,15 +5,15 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { NAV_LINKS, SITE } from "@/lib/site";
-import { useAppDispatch, useAppSelector } from "@/store";
-import { logOut } from "@/store/slices/authSlice";
+import { useAppSelector } from "@/store";
+import { useSignOut } from "@/store/api/authApi";
 
 import { usePathname } from "next/navigation";
 
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const dispatch = useAppDispatch();
+  const { signOut } = useSignOut();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   if (pathname?.startsWith("/dashboard")) {
@@ -71,7 +71,7 @@ export function Header() {
               </Link>
               <button
                 type="button"
-                onClick={() => dispatch(logOut())}
+                onClick={() => void signOut()}
                 className="text-xs font-semibold text-foreground-sub hover:text-red-500 transition px-2 py-1"
               >
                 Sign out
@@ -150,7 +150,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={() => {
-                      dispatch(logOut());
+                      void signOut();
                       setOpen(false);
                     }}
                     className="text-xs font-semibold text-red-500 hover:underline"

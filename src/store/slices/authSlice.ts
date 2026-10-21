@@ -16,16 +16,6 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-export const PRIMARY_USER: User = {
-  id: "6aa28875556751206aca9a26",
-  name: "Jay Sojitra",
-  email: "jsojitra111@gmail.com",
-  phone: "7861819040",
-};
-
-export const PRIMARY_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YWEyODg3NTU1Njc1MTIwNmFjYTlhMjYiLCJlbWFpbCI6Impzb2ppdHJhMTExQGdtYWlsLmNvbSIsImlhdCI6MTc5MjE0NTM4NywiZXhwIjoxNzk0NzM3Mzg3fQ.QZXmqfeY9joj2-kVvbctFVJJObhcZxGnwXCd1YOR8ww";
-
 const getStoredItem = (key: string): string | null => {
   if (typeof window === "undefined") return null;
   try {
@@ -35,40 +25,26 @@ const getStoredItem = (key: string): string | null => {
   }
 };
 
-const getStoredUser = (): User => {
+const getStoredUser = (): User | null => {
   const data = getStoredItem("trackkaro_user");
-  if (!data) return PRIMARY_USER;
+  if (!data) return null;
   try {
-    const parsed = JSON.parse(data) as User;
-    if (parsed.email === "test@trackkaro.com" || parsed.email === "test@example.com") {
-      return PRIMARY_USER;
-    }
-    return parsed;
+    return JSON.parse(data) as User;
   } catch {
-    return PRIMARY_USER;
+    return null;
   }
 };
 
-const getStoredToken = (): string => {
-  const token = getStoredItem("trackkaro_access_token");
-  const user = getStoredUser();
-  if (!token || user.email === PRIMARY_USER.email) {
-    return PRIMARY_TOKEN;
-  }
-  return token;
-};
-
+// Restore a previous session from localStorage; with nothing stored, start logged out.
 const initialUser = getStoredUser();
-const initialToken = getStoredToken();
+const initialToken = getStoredItem("trackkaro_access_token");
 
 const initialState: AuthState = {
   user: initialUser,
   accessToken: initialToken,
-  refreshToken: getStoredItem("trackkaro_refresh_token") || "mock-refresh",
-  accessTokenExpiresAt:
-    getStoredItem("trackkaro_token_expires") ||
-    new Date(Date.now() + 30 * 86400000).toISOString(),
-  isAuthenticated: true,
+  refreshToken: getStoredItem("trackkaro_refresh_token"),
+  accessTokenExpiresAt: getStoredItem("trackkaro_token_expires"),
+  isAuthenticated: Boolean(initialUser && initialToken),
 };
 
 export const authSlice = createSlice({

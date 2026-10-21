@@ -3,11 +3,18 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { BentoCard } from "@/components/ui/bento-card";
-import { ProgressBar } from "@/components/ui/progress-bar";
-import { StatCounter } from "@/components/ui/stat-counter";
-import { CircularGauge } from "@/components/ui/circular-gauge";
 import { SparkBars } from "@/components/ui/spark-bars";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CategoryDonut,
+  CategoryLegend,
+  DailyChart,
+  Delta,
+  buildCategorySplit,
+  buildPeriod,
+  fmt as fmtInsight,
+  pctChange,
+} from "@/components/insights/spending-charts";
 import { useAppSelector } from "@/store";
 import { useI18n } from "@/i18n";
 
@@ -17,6 +24,7 @@ import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 import { useGetRemindersQuery, useUpdateReminderMutation } from "@/store/api/remindersApi";
 import { useGetGroupsQuery } from "@/store/api/groupsApi";
 import { useGetDealsQuery } from "@/store/api/dealsApi";
+import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer";
 
 interface CustomerSummary {
   id: string;
@@ -25,6 +33,14 @@ interface CustomerSummary {
   net: number;
   note?: string;
 }
+
+const getCategoryIcon = (category?: string) => {
+  if (category === "Travel") return "✈️";
+  if (category === "Home & Utilities") return "🏠";
+  if (category === "Event & Party") return "🎉";
+  if (category === "Office & Work") return "💼";
+  return "👥";
+};
 
 export default function DashboardOverviewPage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -46,7 +62,6 @@ export default function DashboardOverviewPage() {
       if (hour >= 12 && hour < 17) return "goodAfternoon";
       return "goodEvening";
     };
-    setGreetingKey(computeGreeting());
     const interval = setInterval(() => {
       setGreetingKey(computeGreeting());
     }, 60000);
@@ -58,10 +73,13 @@ export default function DashboardOverviewPage() {
   // Real backend queries via RTK Query with loading states
   const { data: transactions = [], isLoading: loadingTx } = useGetTransactionsQuery();
   const { data: khataEntries = [], isLoading: loadingKhata } = useGetKhataEntriesQuery();
-  const { data: budgets = [], isLoading: loadingBudgets } = useGetBudgetsQuery();
+  const { data: budgets = [] } = useGetBudgetsQuery();
   const { data: reminders = [], isLoading: loadingReminders } = useGetRemindersQuery();
   const { data: groups = [], isLoading: loadingGroups } = useGetGroupsQuery();
   const { data: deals = [], isLoading: loadingDeals } = useGetDealsQuery();
+
+  const [ledgerTab, setLedgerTab] = useState<"all" | "khata" | "groups">("all");
+  const [selectedKhataCustomer, setSelectedKhataCustomer] = useState<string | null>(null);
 
   const [updateReminder] = useUpdateReminderMutation();
 
@@ -101,12 +119,11 @@ export default function DashboardOverviewPage() {
     };
   }, [transactions]);
 
-  // 2. Calculate Real Khata Totals & Top Pending Contact
-  const { willGet, willGive, topCustomer, totalPersons } = useMemo<{
+  // 2. Calculate Real Khata Totals & Top Pending Contacts
+  const { willGet, willGive, pendingCustomers } = useMemo<{
     willGet: number;
     willGive: number;
-    topCustomer: CustomerSummary | null;
-    totalPersons: number;
+    pendingCustomers: CustomerSummary[];
   }>(() => {
     let getSum = 0;
     let giveSum = 0;
@@ -133,19 +150,14 @@ export default function DashboardOverviewPage() {
       }
     });
 
-    let top: CustomerSummary | null = null;
-    personMap.forEach((person) => {
-      const topNet = top ? top.net : 0;
-      if (!top || Math.abs(person.net) > Math.abs(topNet)) {
-        top = person;
-      }
-    });
+    const customers = Array.from(personMap.values()).sort(
+      (a, b) => Math.abs(b.net) - Math.abs(a.net)
+    );
 
     return {
       willGet: getSum,
       willGive: giveSum,
-      topCustomer: top,
-      totalPersons: personMap.size,
+      pendingCustomers: customers,
     };
   }, [khataEntries]);
 
@@ -176,22 +188,21 @@ export default function DashboardOverviewPage() {
   }, [transactions]);
 
   // 4. Calculate Real Budget Utilization
-  const { totalBudgetLimit, budgetPercent, daysLeft } = useMemo(() => {
+  const { budgetPercent } = useMemo(() => {
     const sumLimits = budgets.reduce((acc, b) => acc + (b.limit || 0), 0) || 30000;
     const pct = sumLimits > 0 ? Math.min(Math.round((monthlySpent / sumLimits) * 100), 100) : 0;
-
-    const now = new Date();
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysRemaining = Math.max(lastDayOfMonth - now.getDate(), 0);
-
-    return {
-      totalBudgetLimit: sumLimits,
-      budgetPercent: pct,
-      daysLeft: daysRemaining,
-    };
+    return { budgetPercent: pct };
   }, [budgets, monthlySpent]);
 
-  // 5. Featured Live Deal
+  // 5. Last-30-day spending insights (shared with the Spending page)
+  const insights = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const period = buildPeriod(transactions, 30, today);
+    return { period, categories: buildCategorySplit(period.inRange) };
+  }, [transactions]);
+
+  // 6. Featured Live Deal
   const featuredDeal = deals.length > 0 ? deals[0] : null;
 
   // Format currency helper
@@ -299,86 +310,353 @@ export default function DashboardOverviewPage() {
 
       {/* 2. Main Bento Grid (Row 1) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 sm:gap-6">
-        {/* Card 1: Khata Snapshot (Real Top Pending Ledger) - 3 cols */}
+        {/* Card 1: Khata & Groups (Real Personal Ledger & Split Groups) - 4 cols */}
         <BentoCard
-          title={t.khataSnapshotTitle}
-          subtitle={topCustomer ? "Top pending contact" : "Zero pending debts"}
-          actionHref="/dashboard/khata"
-          actionLabel={t.viewLedger}
-          className="lg:col-span-3 flex flex-col justify-between"
+          title="Khata & Groups"
+          subtitle={
+            ledgerTab === "khata"
+              ? pendingCustomers.length > 0
+                ? `${pendingCustomers.length} pending contact${pendingCustomers.length > 1 ? "s" : ""}`
+                : "Zero pending debts"
+              : ledgerTab === "groups"
+              ? groups.length > 0
+                ? `${groups.length} active split group${groups.length > 1 ? "s" : ""}`
+                : "No split groups yet"
+              : `${pendingCustomers.length} khata • ${groups.length} group${groups.length !== 1 ? "s" : ""}`
+          }
+          actionHref={ledgerTab === "groups" ? "/dashboard/groups" : "/dashboard/khata"}
+          actionLabel={ledgerTab === "groups" ? "Manage Groups" : "Full Ledger"}
+          className="lg:col-span-4 flex flex-col justify-between lg:h-[370px]"
         >
-          {loadingKhata ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl bg-surface-muted border border-border p-4 flex flex-col items-center text-center space-y-3">
-                <Skeleton className="h-16 w-16 rounded-full" />
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-6 w-32 rounded-full" />
-              </div>
-              <Skeleton className="h-9 w-full rounded-xl" />
-              <Skeleton className="h-10 w-full rounded-xl" />
-            </div>
-          ) : topCustomer ? (
-            <div className="space-y-4">
-              <div className="relative overflow-hidden rounded-2xl bg-surface-muted border border-border p-4 flex flex-col items-center text-center">
-                <div className="relative mb-3">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 text-xl font-extrabold text-primary shadow-inner">
-                    {topCustomer.name[0]?.toUpperCase() || "C"}
+          {/* Liquid Glass View Segmented Switcher */}
+          <div className="flex items-center p-1 rounded-xl bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 mb-2.5 backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setLedgerTab("all")}
+              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-semibold transition-all text-center ${
+                ledgerTab === "all"
+                  ? "bg-white dark:bg-white/15 text-foreground shadow-xs font-bold"
+                  : "text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              onClick={() => setLedgerTab("khata")}
+              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-semibold transition-all text-center flex items-center justify-center gap-1 ${
+                ledgerTab === "khata"
+                  ? "bg-white dark:bg-white/15 text-foreground shadow-xs font-bold"
+                  : "text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              <span>Khata</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                {pendingCustomers.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLedgerTab("groups")}
+              className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-semibold transition-all text-center flex items-center justify-center gap-1 ${
+                ledgerTab === "groups"
+                  ? "bg-white dark:bg-white/15 text-foreground shadow-xs font-bold"
+                  : "text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              <span>Groups</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-primary/15 text-primary">
+                {groups.length}
+              </span>
+            </button>
+          </div>
+
+          {/* VIEW 1: Dual Overview (Compact Top Items) */}
+          {ledgerTab === "all" && (
+            <div className="space-y-2 flex-1 flex flex-col justify-between min-h-0">
+              {/* Khata Compact Tile */}
+              <div className="rounded-2xl bg-white/40 dark:bg-white/5 border border-white/25 dark:border-white/10 p-2.5 shadow-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Personal Khata
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLedgerTab("khata")}
+                    className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <span>{pendingCustomers.length} pending</span>
+                    <span>→</span>
+                  </button>
+                </div>
+
+                {loadingKhata ? (
+                  <Skeleton className="h-8 w-full rounded-xl" />
+                ) : pendingCustomers.length > 0 ? (
+                  <div
+                    onClick={() => setSelectedKhataCustomer(pendingCustomers[0].name)}
+                    className="flex items-center justify-between gap-2 cursor-pointer hover:bg-white/40 dark:hover:bg-white/10 p-1 -m-1 rounded-xl transition group"
+                    title={`Click to view ${pendingCustomers[0].name}'s Ledger`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-xs font-bold text-white shadow-xs group-hover:scale-105 transition-transform">
+                        {pendingCustomers[0].name[0]?.toUpperCase() || "C"}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-display font-bold text-xs text-foreground truncate leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                          {pendingCustomers[0].name}
+                        </h4>
+                        <p className="text-[10px] text-foreground-muted truncate">
+                          {pendingCustomers[0].phone || (pendingCustomers[0].note ? `Note: ${pendingCustomers[0].note}` : "Top contact")}
+                          {pendingCustomers.length > 1 && ` • +${pendingCustomers.length - 1} more`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold border shadow-xs ${
+                        pendingCustomers[0].net >= 0
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                          : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/25"
+                      }`}
+                    >
+                      {pendingCustomers[0].net >= 0 ? `+${fmt(pendingCustomers[0].net)} Get` : `-${fmt(Math.abs(pendingCustomers[0].net))} Give`}
+                    </div>
                   </div>
-                  <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-surface bg-emerald-500" />
-                </div>
-                <h4 className="font-bold text-sm text-foreground truncate max-w-full">
-                  {topCustomer.name}
-                </h4>
-                {topCustomer.phone && (
-                  <p className="text-xs text-foreground-muted">{topCustomer.phone}</p>
+                ) : (
+                  <div className="flex items-center justify-between py-1 text-xs text-foreground-muted">
+                    <span>🤝 Zero pending debts</span>
+                    <Link href="/dashboard/khata" className="text-emerald-500 font-semibold text-[11px]">+ Record</Link>
+                  </div>
                 )}
-                <div
-                  className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
-                    topCustomer.net >= 0
-                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                      : "bg-red-500/15 text-red-600 dark:text-red-400"
-                  }`}
-                >
-                  {topCustomer.net >= 0 ? `+${fmt(topCustomer.net)} ${t.willGet}` : `-${fmt(topCustomer.net)} ${t.willGive}`}
-                </div>
               </div>
 
-              {topCustomer.note && (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-surface-muted/60 border border-border/60 text-xs">
-                  <span className="font-semibold text-foreground-sub">Recent Note</span>
-                  <span className="font-bold text-foreground truncate max-w-[120px]">{topCustomer.note}</span>
+              {/* Split Groups Compact Tile */}
+              <div className="rounded-2xl bg-white/40 dark:bg-white/5 border border-white/25 dark:border-white/10 p-2.5 shadow-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Split Groups
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLedgerTab("groups")}
+                    className="text-[10.5px] font-semibold text-primary hover:underline flex items-center gap-0.5"
+                  >
+                    <span>{groups.length} active</span>
+                    <span>→</span>
+                  </button>
                 </div>
-              )}
 
-              <Link
-                href="/dashboard/khata"
-                className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary text-xs font-bold text-white transition hover:bg-primary-strong shadow-xs"
-              >
-                {t.viewLedger}
-              </Link>
+                {loadingGroups ? (
+                  <Skeleton className="h-8 w-full rounded-xl" />
+                ) : groups.length > 0 ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary text-sm font-bold">
+                        {getCategoryIcon(groups[0]?.category)}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-display font-bold text-xs text-foreground truncate leading-tight">
+                          {groups[0]?.name}
+                        </h4>
+                        <p className="text-[10px] text-foreground-muted truncate">
+                          {groups[0]?.members?.length || 0} members
+                          {groups.length > 1 && ` • +${groups.length - 1} more`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {groups[0]?.inviteCode ? (
+                      <span className="shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 dark:bg-white/10 text-foreground border border-white/20">
+                        {groups[0]?.inviteCode}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[10px] text-foreground-sub font-medium">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between py-1 text-xs text-foreground-muted">
+                    <span>👥 No split groups yet</span>
+                    <Link href="/dashboard/groups" className="text-primary font-semibold text-[11px]">+ Create</Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick links */}
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <Link
+                  href="/dashboard/khata"
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-white/50 dark:bg-white/5 border border-white/25 dark:border-white/10 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                >
+                  <span>Khata Ledger</span>
+                  <span className="text-xs">→</span>
+                </Link>
+                <Link
+                  href="/dashboard/groups"
+                  className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-white/50 dark:bg-white/5 border border-white/25 dark:border-white/10 text-[11px] font-bold text-primary hover:bg-primary/10 transition-all"
+                >
+                  <span>Split Groups</span>
+                  <span className="text-xs">→</span>
+                </Link>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center text-center py-8 text-foreground-muted space-y-2">
-              <span className="text-3xl">🤝</span>
-              <p className="text-xs font-medium">No pending khata entries found.</p>
-              <Link
-                href="/dashboard/khata"
-                className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-primary text-xs font-bold text-white transition hover:bg-primary-strong shadow-xs"
-              >
-                {t.viewLedger}
-              </Link>
-            </div>
+          )}
+
+          {/* VIEW 2: Detailed Khata View */}
+          {ledgerTab === "khata" && (
+            loadingKhata ? (
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full rounded-2xl" />
+                <Skeleton className="h-12 w-full rounded-2xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+              </div>
+            ) : pendingCustomers.length > 0 ? (
+              <div className="space-y-2 flex-1 flex flex-col justify-between min-h-0">
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto no-scrollbar pr-0.5">
+                  {pendingCustomers.map((cust) => (
+                    <div
+                      key={cust.id}
+                      onClick={() => setSelectedKhataCustomer(cust.name)}
+                      className="rounded-2xl bg-white/40 dark:bg-white/5 border border-white/25 dark:border-white/10 p-2.5 flex items-center justify-between gap-2 shadow-xs hover:border-emerald-500/40 hover:bg-white/60 dark:hover:bg-white/10 transition cursor-pointer group"
+                      title={`Click to view ${cust.name}'s Ledger`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="relative shrink-0">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-xs font-bold text-white shadow-xs group-hover:scale-105 transition-transform">
+                            {cust.name[0]?.toUpperCase() || "C"}
+                          </div>
+                          <span
+                            className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-background ${
+                              cust.net >= 0 ? "bg-emerald-500" : "bg-rose-500"
+                            }`}
+                          />
+                        </div>
+
+                        <div className="min-w-0">
+                          <h4 className="font-display font-bold text-xs text-foreground truncate leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                            {cust.name}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-foreground-muted truncate">
+                            {cust.phone && <span className="font-mono">{cust.phone}</span>}
+                            {cust.phone && cust.note && <span>•</span>}
+                            {cust.note && <span className="truncate">Note: {cust.note}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold border shadow-xs ${
+                          cust.net >= 0
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                            : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/25"
+                        }`}
+                      >
+                        {cust.net >= 0 ? `+${fmt(cust.net)} Get` : `-${fmt(Math.abs(cust.net))} Give`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/dashboard/khata"
+                  className="mt-1 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 hover:shadow-emerald-500/30 transition-all shrink-0"
+                >
+                  <span>Full Ledger ({khataEntries.length} entries)</span>
+                  <span className="text-sm">→</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-6 text-foreground-muted space-y-2 flex-1">
+                <span className="text-3xl">🤝</span>
+                <p className="text-xs font-medium">No pending khata entries found.</p>
+                <Link
+                  href="/dashboard/khata"
+                  className="mt-2 inline-flex h-8 w-full items-center justify-center rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition-all"
+                >
+                  Full Ledger →
+                </Link>
+              </div>
+            )
+          )}
+
+          {/* VIEW 3: Detailed Split Groups View */}
+          {ledgerTab === "groups" && (
+            loadingGroups ? (
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full rounded-2xl" />
+                <Skeleton className="h-12 w-full rounded-2xl" />
+                <Skeleton className="h-8 w-full rounded-xl" />
+              </div>
+            ) : groups.length > 0 ? (
+              <div className="space-y-2 flex-1 flex flex-col justify-between min-h-0">
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto no-scrollbar pr-0.5">
+                  {groups.map((grp) => (
+                    <div
+                      key={grp.id}
+                      className="rounded-2xl bg-white/40 dark:bg-white/5 border border-white/25 dark:border-white/10 p-2.5 flex items-center justify-between gap-2 shadow-xs hover:border-primary/30 transition"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-sm shrink-0">
+                          {getCategoryIcon(grp.category)}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-display font-bold text-xs text-foreground truncate">
+                            {grp.name}
+                          </h4>
+                          <p className="text-[10px] text-foreground-muted flex items-center gap-1.5 mt-0.5">
+                            <span>{grp.category || "General"}</span>
+                            <span>•</span>
+                            <span>{grp.members?.length || 0} members</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {grp.inviteCode && (
+                        <span className="px-1.5 py-0.5 rounded-md font-mono text-[10px] font-bold bg-white/60 dark:bg-white/10 text-foreground border border-white/20 shrink-0">
+                          {grp.inviteCode}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href="/dashboard/groups"
+                  className="mt-1 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-xl bg-primary text-xs font-bold text-white shadow-md shadow-primary/20 hover:bg-primary-strong transition-all shrink-0"
+                >
+                  <span>Manage Groups ({groups.length})</span>
+                  <span className="text-sm">→</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-6 text-foreground-muted space-y-2 flex-1">
+                <span className="text-3xl">👥</span>
+                <p className="text-xs font-bold text-foreground">No Split Groups Yet</p>
+                <p className="text-[11px] text-foreground-muted max-w-[220px]">
+                  Create a group to split trip expenses, apartment rent, or office dinners with friends.
+                </p>
+                <Link
+                  href="/dashboard/groups"
+                  className="mt-2 inline-flex h-8 w-full items-center justify-center rounded-xl bg-primary text-xs font-bold text-white shadow-md hover:bg-primary-strong transition-all"
+                >
+                  + Create or Join Group
+                </Link>
+              </div>
+            )
           )}
         </BentoCard>
 
-        {/* Card 2: 7-Day Spending Progress (Real Trend) - 3 cols */}
+        {/* Card 2: 7-Day Spending Progress (Real Trend) - 4 cols */}
         <BentoCard
-          title={t.spendingTrendTitle}
-          subtitle={t.spendingTrendSubtitle}
+          title={t.spendingTrendTitle || "7-Day Spending"}
+          subtitle={t.spendingTrendSubtitle || "Daily expense trend"}
           actionHref="/dashboard/expenses"
           actionLabel={t.viewAll}
-          className="lg:col-span-3 flex flex-col justify-between"
+          className="lg:col-span-4 flex flex-col justify-between lg:h-[370px]"
         >
           {loadingTx ? (
             <div className="space-y-3">
@@ -400,20 +678,23 @@ export default function DashboardOverviewPage() {
               </div>
             </div>
           ) : (
-            <div>
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-[34px] sm:text-[40px] font-normal tracking-tight text-foreground font-display leading-none">
-                  {fmt(Math.round(monthlySpent / Math.max(new Date().getDate(), 1)))}
-                </span>
-                <div className="text-[11px] sm:text-xs text-foreground-muted font-medium leading-tight">
-                  <div>Daily avg</div>
-                  <div>last 7 days</div>
+            <div className="flex-1 flex flex-col justify-between min-h-0">
+              <div>
+                <div className="flex items-baseline gap-2.5 mb-3">
+                  <span className="text-[34px] sm:text-[38px] font-normal tracking-tight text-foreground font-display tabular-nums leading-none">
+                    {fmt(Math.round(monthlySpent / Math.max(new Date().getDate(), 1)))}
+                  </span>
+                  <div className="text-[11px] text-foreground-muted font-medium leading-tight">
+                    <div>Daily avg</div>
+                    <span className="text-emerald-500 font-semibold">last 7 days</span>
+                  </div>
                 </div>
-              </div>
-              {/* Sparkbars from real transaction data */}
-              <SparkBars data={sparkData} highlightIndex={sparkData.length - 1} height={120} />
 
-              <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs font-semibold">
+                {/* Sparkbars from real transaction data */}
+                <SparkBars data={sparkData} highlightIndex={sparkData.length - 1} height={115} />
+              </div>
+
+              <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between text-xs font-semibold">
                 <span className="text-foreground-muted">Month to Date:</span>
                 <span className="font-mono text-foreground font-bold">{fmt(monthlySpent)}</span>
               </div>
@@ -421,57 +702,13 @@ export default function DashboardOverviewPage() {
           )}
         </BentoCard>
 
-        {/* Card 3: Monthly Budget Tracker (Real Utilized) - 3 cols */}
+        {/* Card 3: Upcoming Reminders & Dues (Real Pending Bills) - 4 cols */}
         <BentoCard
-          title={t.budgetGaugeTitle}
-          subtitle={t.budgetGaugeSubtitle}
+          title={t.upcomingRemindersTitle || "Impending Dues & Tasks"}
+          subtitle="Real pending bill dues"
           actionHref="/dashboard/expenses"
           actionLabel={t.viewAll}
-          className="lg:col-span-3 flex flex-col justify-between items-center text-center"
-        >
-          {loadingBudgets || loadingTx ? (
-            <div className="py-2 w-full flex flex-col items-center space-y-3">
-              <Skeleton className="h-[140px] w-[140px] rounded-full" />
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-10 w-32 rounded-full mt-2" />
-            </div>
-          ) : (
-            <>
-              <div className="py-2 w-full flex flex-col items-center">
-                <CircularGauge
-                  percent={budgetPercent}
-                  size={150}
-                  centerText={`${budgetPercent}%`}
-                  subText={`${fmt(monthlySpent)} / ${fmt(totalBudgetLimit)}`}
-                />
-                <p className="mt-3 text-xs font-medium text-foreground-muted">
-                  {daysLeft} {t.daysRemaining}
-                </p>
-              </div>
-
-              <div className="w-full mt-2 flex items-center justify-center gap-2">
-                <Link
-                  href="/dashboard/expenses"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border bg-surface px-4 text-xs font-bold text-foreground hover:border-primary transition"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  {t.addExpense}
-                </Link>
-              </div>
-            </>
-          )}
-        </BentoCard>
-
-        {/* Card 4: Upcoming Reminders & Dues (Real Pending Bills) - 3 cols */}
-        <BentoCard
-          title={t.upcomingRemindersTitle}
-          subtitle="Real pending bill dues"
-          actionHref="/dashboard/reminders"
-          actionLabel={t.viewAll}
-          className="lg:col-span-3 flex flex-col justify-between"
+          className="lg:col-span-4 flex flex-col justify-between lg:h-[370px]"
         >
           {loadingReminders ? (
             <div className="space-y-3">
@@ -479,77 +716,75 @@ export default function DashboardOverviewPage() {
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-3 w-16" />
               </div>
-              <div className="rounded-2xl bg-[#09150E] p-4 border border-emerald-950/60 space-y-3">
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-24 bg-emerald-950/80" />
-                  <Skeleton className="h-3 w-16 bg-emerald-950/80" />
-                </div>
+              <div className="rounded-2xl bg-white/40 dark:bg-white/5 p-4 border border-white/20 space-y-3">
+                <Skeleton className="h-3 w-24" />
                 <div className="space-y-2">
-                  {[1, 2, 3].map((n) => (
-                    <div key={n} className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-950/40">
-                      <Skeleton className="h-4 w-4 rounded-md bg-emerald-900/50" />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton className="h-3 w-24 bg-emerald-900/50" />
-                        <Skeleton className="h-2 w-16 bg-emerald-900/40" />
-                      </div>
-                    </div>
-                  ))}
+                  <Skeleton className="h-10 w-full rounded-xl" />
+                  <Skeleton className="h-10 w-full rounded-xl" />
                 </div>
               </div>
-              <Skeleton className="h-3 w-20 mx-auto" />
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-foreground-sub">Pending Bills</span>
-                <span className="text-primary font-mono">
-                  {reminders.filter((r) => r.status === "paid").length}/{reminders.length} {t.tasksCompleted}
+            <div className="space-y-2 flex-1 flex flex-col justify-between min-h-0">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-foreground-muted">Pending Bills</span>
+                <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-primary/15 text-primary border border-primary/20">
+                  {reminders.filter((r) => r.status === "paid").length}/{reminders.length} completed
                 </span>
               </div>
 
-              {/* Inset Dark Card for Impending Reminders */}
-              <div className="rounded-2xl bg-[#09150E] p-4 text-white shadow-inner space-y-3 border border-emerald-950/60 min-h-[160px]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-extrabold text-emerald-400">Due Reminders</span>
-                  <span className="text-[11px] font-mono text-emerald-500/80">
+              {/* Inset Liquid Glass Card for Due Reminders */}
+              <div className="rounded-2xl bg-white/40 dark:bg-white/5 p-3 shadow-xs space-y-2 border border-white/25 dark:border-white/10 flex-1 flex flex-col justify-between min-h-0">
+                <div className="flex items-center justify-between text-xs pb-1 border-b border-border/30">
+                  <span className="font-bold text-foreground">Due Reminders</span>
+                  <span className="text-[11px] font-mono text-foreground-muted">
                     {new Date().toLocaleString("default", { month: "short", year: "numeric" })}
                   </span>
                 </div>
 
                 {reminders.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-emerald-500/60">
+                  <div className="text-center py-4 text-xs text-foreground-muted">
                     No pending bill reminders.
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {reminders.slice(0, 3).map((bill) => {
+                  <div className="space-y-1.5 max-h-[110px] overflow-y-auto no-scrollbar pr-0.5">
+                    {reminders.slice(0, 4).map((bill) => {
                       const isPaid = bill.status === "paid";
                       return (
                         <button
                           key={bill.id}
                           type="button"
                           onClick={() => updateReminder({ id: bill.id, patch: { status: isPaid ? "pending" : "paid" } })}
-                          className="w-full flex items-center justify-between gap-2 text-left rounded-xl p-2 transition hover:bg-emerald-950/60 group"
+                          className="w-full flex items-center justify-between gap-2 text-left rounded-xl p-1.5 transition hover:bg-white/40 dark:hover:bg-white/10 group border border-transparent hover:border-white/20"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border text-[10px] transition ${
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border text-[10px] transition font-bold ${
                                 isPaid
-                                  ? "border-amber-400 bg-amber-400 text-black font-black"
-                                  : "border-emerald-800 text-transparent"
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : "border-border text-transparent group-hover:border-primary"
                               }`}
                             >
                               ✓
                             </span>
                             <div className="min-w-0">
-                              <p className={`text-xs font-bold truncate ${isPaid ? "line-through text-emerald-600" : "text-white"}`}>
+                              <p className={`text-xs font-semibold truncate ${isPaid ? "line-through text-foreground-muted" : "text-foreground"}`}>
                                 {bill.title}
                               </p>
-                              <p className="text-[10px] text-emerald-400/60 font-mono">
+                              <p className="text-[10px] text-foreground-muted font-mono">
                                 {fmt(bill.amount)} • {bill.dueDate}
                               </p>
                             </div>
                           </div>
+                          <span
+                            className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              isPaid
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            }`}
+                          >
+                            {isPaid ? "Paid" : "Due"}
+                          </span>
                         </button>
                       );
                     })}
@@ -558,17 +793,83 @@ export default function DashboardOverviewPage() {
               </div>
 
               <Link
-                href="/dashboard/reminders"
-                className="mt-3 text-center text-xs font-semibold text-primary hover:underline block"
+                href="/dashboard/expenses"
+                className="mt-1 text-center text-xs font-semibold text-primary hover:underline block"
               >
-                {t.viewAll} →
+                View all →
               </Link>
             </div>
           )}
         </BentoCard>
       </div>
 
-      {/* 3. Second Bento Row (Recent Transactions & Real Deals) */}
+      {/* 3. Spending Insights Row (last 30 days, same charts as the Spending page) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        <BentoCard
+          title="Daily spending"
+          subtitle="Last 30 days against the 30 before"
+          actionHref="/dashboard/spending"
+          actionLabel="Open spending insights"
+          className="lg:col-span-8"
+        >
+          {loadingTx ? (
+            <Skeleton className="h-[260px] w-full rounded-2xl" />
+          ) : (
+            <>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="flex flex-wrap items-baseline gap-2">
+                  <b className="font-display font-medium text-2xl text-foreground tabular-nums">
+                    {fmtInsight(insights.period.spent)}
+                  </b>
+                  <span className="text-xs text-foreground-muted">spent</span>
+                  <Delta
+                    value={pctChange(insights.period.spent, insights.period.prevSpent)}
+                    goodWhenUp={false}
+                    suffix=" vs previous 30 days"
+                  />
+                </p>
+                <ul className="flex items-center gap-4 text-[11px] text-foreground-muted" aria-label="Legend">
+                  <li className="flex items-center gap-1.5">
+                    <i className="h-0.5 w-4 rounded-full bg-primary" />
+                    Last 30 days
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <i className="w-4 border-t-2 border-dashed border-foreground-muted/60" />
+                    Previous 30 days
+                  </li>
+                </ul>
+              </div>
+              <DailyChart days={insights.period.days} />
+            </>
+          )}
+        </BentoCard>
+
+        <BentoCard
+          title="By category"
+          subtitle="Where the money went, last 30 days"
+          actionHref="/dashboard/spending"
+          actionLabel="Open spending insights"
+          className="lg:col-span-4"
+        >
+          {loadingTx ? (
+            <div className="flex flex-col items-center gap-4">
+              <Skeleton className="h-[140px] w-[140px] rounded-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          ) : insights.categories.length === 0 ? (
+            <p className="rounded-[18px] bg-surface-muted/40 px-4 py-8 text-center text-xs text-foreground-muted">
+              No expenses in the last 30 days.
+            </p>
+          ) : (
+            <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-5">
+              <CategoryDonut slices={insights.categories} size={140} />
+              <CategoryLegend slices={insights.categories} />
+            </div>
+          )}
+        </BentoCard>
+      </div>
+
+      {/* 4. Second Bento Row (Recent Transactions & Real Deals) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Real Transactions Activity Feed - 7 cols */}
         <BentoCard
@@ -737,6 +1038,17 @@ export default function DashboardOverviewPage() {
           )}
         </BentoCard>
       </div>
+
+      {/* Liquid Glass Customer Ledger Drawer (Pane style) */}
+      <CustomerLedgerDrawer
+        isOpen={Boolean(selectedKhataCustomer)}
+        onClose={() => setSelectedKhataCustomer(null)}
+        customerName={selectedKhataCustomer}
+        entries={khataEntries}
+        onAddNewEntry={(_type, _name) => {
+          window.location.href = "/dashboard/khata";
+        }}
+      />
     </div>
   );
 }

@@ -23,8 +23,8 @@ export function BentoCard({
   dark = false,
 }: BentoCardProps) {
   const cardStyle = dark
-    ? "bg-[#091811]/95 text-emerald-50 border border-emerald-900/40 shadow-xl backdrop-blur-md"
-    : "bg-surface/90 text-foreground border border-border/80 card-shadow backdrop-blur-md";
+    ? "glass glass--card glass-specular bg-[#091811]/85 text-emerald-50 border-emerald-500/20 shadow-xl"
+    : "glass glass--card glass-specular text-foreground shadow-sm hover:shadow-md";
 
   const renderAction = () => {
     if (!actionHref && !onAction) return null;

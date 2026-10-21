@@ -122,15 +122,9 @@ export default function LoginPage() {
             >
               Password
             </label>
-            <button
-              type="button"
-              onClick={() => {
-                alert("Password reset OTP will be sent to your registered email when initiated from the mobile app or web portal.");
-              }}
-              className="text-xs font-medium text-primary hover:underline"
-            >
+            <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative mt-1.5">
             <input
