@@ -304,7 +304,7 @@ function JoinForm({ onClose }: { onClose: () => void }) {
               <label
                 key={m.id}
                 className={`flex items-center gap-2.5 rounded-[12px] border border-border px-3 py-2.5 text-[15px] ${
-                  m.isClaimed ? "opacity-45" : "cursor-pointer bg-black/[0.03] dark:bg-white/[0.04]"
+                  m.isClaimed ? "opacity-45" : "cursor-pointer bg-surface transition hover:border-[var(--line-2)] has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--primary-soft)]"
                 }`}
               >
                 <input type="radio" name="who" disabled={m.isClaimed} checked={pick === m.id} onChange={() => setPick(m.id)} />

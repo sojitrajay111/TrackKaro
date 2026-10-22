@@ -1,71 +1,47 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+/** Sign-in / sign-up / reset shell: Kesta card on the mint backdrop, app logo on top. */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-[calc(100vh-4.25rem)] w-full overflow-hidden bg-background py-10 px-4 flex flex-col justify-center items-center">
-      {/* Background radial glow & grid */}
-      <div className="pointer-events-none absolute inset-0 brand-glow opacity-60" />
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(5,150,105,0.15),rgba(255,255,255,0))]"
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center">
-        {/* Navigation row above card */}
-        <div className="w-full mb-6 flex items-center justify-between px-2">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-foreground-sub hover:text-primary transition-colors"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+    <div className="relative flex min-h-[calc(100vh-4.25rem)] w-full flex-col items-center justify-center overflow-hidden px-4 py-10">
+      <div className="relative z-10 mx-auto flex w-full max-w-[440px] flex-col items-center">
+        <div className="mb-5 flex w-full items-center justify-between px-1">
+          <Link href="/" className="inline-flex h-9 items-center gap-1.5 rounded-[10px] px-2 text-[14px] font-bold text-foreground-muted transition hover:bg-surface hover:text-foreground">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="m15 18-6-6 6-6" />
             </svg>
-            Back to Home
+            Back to home
           </Link>
-
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
         </div>
 
-        {/* Auth card container */}
-        <div className="w-full rounded-2xl border border-border/80 bg-surface/90 p-7 sm:p-9 shadow-xl backdrop-blur-xl card-shadow">
-          <div className="mb-6 flex justify-center">
-            <Logo />
-          </div>
+        <div className="tk-pop w-full rounded-[24px] border border-border bg-[var(--raised)] p-7 shadow-[var(--shadow-pop)] sm:p-9">
+          <Link href="/" className="mb-6 flex items-center justify-center gap-2.5" aria-label="TrackKaro home">
+            <span className="h-11 w-11 overflow-hidden rounded-[13px] shadow-[0_4px_14px_-4px_#04785766]">
+              <Image src="/logo.png" alt="" width={44} height={44} priority className="h-full w-full scale-[1.16] object-contain" />
+            </span>
+            <span className="text-[22px] font-extrabold tracking-[-0.03em] text-foreground">TrackKaro</span>
+          </Link>
           {children}
         </div>
 
-        {/* Security / trust reassurance */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-center text-xs text-foreground-muted">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-[13px] font-semibold text-foreground-muted">
           <span className="inline-flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect width="16" height="10" x="4" y="11" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             </svg>
-            256-Bit SSL Encryption
+            Secure HTTPS sign-in
           </span>
-          <span>•</span>
           <span className="inline-flex items-center gap-1.5">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 21s8-4 8-10V5l-8-3-8 3v6c0 6 8 10 8 10" />
             </svg>
-            Privacy First
+            We never sell your data
           </span>
-          <span>•</span>
-          <span>Zero Data Selling</span>
         </div>
       </div>
     </div>

@@ -3,7 +3,9 @@
 import { Suspense, useEffect, useRef, useState, useMemo, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
+import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
+import { GroupFormModal, JoinGroupModal } from "@/components/groups/group-modals";
+import { inputCls } from "@/lib/form";
 import { OnQueryParam } from "@/components/ui/query-param";
 import { ContactPickerButton } from "@/components/ui/contact-picker-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,9 +22,7 @@ import {
 } from "@/store/api/khataApi";
 import {
   useGetGroupsQuery,
-  useCreateGroupMutation,
   useDeleteGroupMutation,
-  useJoinGroupMutation,
 } from "@/store/api/groupsApi";
 import type { ExpenseGroup, KhataEntry, KhataType } from "@/store/types";
 
@@ -81,9 +81,7 @@ export default function KhataPage() {
   const [toggleKhataStatus, { isLoading: isToggling }] = useToggleKhataStatusMutation();
   const [deleteKhataEntry, { isLoading: isDeletingKhata }] = useDeleteKhataEntryMutation();
 
-  const [createGroup, { isLoading: isCreatingGroup }] = useCreateGroupMutation();
   const [deleteGroup, { isLoading: isDeletingGroup }] = useDeleteGroupMutation();
-  const [joinGroup, { isLoading: isJoiningGroup }] = useJoinGroupMutation();
 
   // Sub-Tab Switcher: Personal vs Shared Groups
   const [subTab, setSubTab] = useState<KhataSubTab>("personal");
@@ -113,11 +111,8 @@ export default function KhataPage() {
   const [khataNotes, setKhataNotes] = useState("");
 
   // Form State for Create Group
-  const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupCategory, setNewGroupCategory] = useState<ExpenseGroup["category"]>("Home & Utilities");
 
   // Form State for Join Group
-  const [inviteCodeInput, setInviteCodeInput] = useState("");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Currency Formatter
@@ -298,34 +293,6 @@ export default function KhataPage() {
       setDeleteTargetId(null);
     } catch (err) {
       console.error("Failed to delete khata entry:", err);
-    }
-  };
-
-  const handleCreateGroupSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newGroupName.trim()) return;
-    try {
-      await createGroup({
-        name: newGroupName.trim(),
-        category: newGroupCategory,
-        members: [],
-      }).unwrap();
-      setShowCreateGroupModal(false);
-      setNewGroupName("");
-    } catch (err) {
-      console.error("Failed to create group:", err);
-    }
-  };
-
-  const handleJoinGroupSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!inviteCodeInput.trim()) return;
-    try {
-      await joinGroup({ inviteCode: inviteCodeInput.trim().toUpperCase() }).unwrap();
-      setShowJoinGroupModal(false);
-      setInviteCodeInput("");
-    } catch (err) {
-      console.error("Failed to join group:", err);
     }
   };
 
@@ -831,153 +798,109 @@ export default function KhataPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Record Khata Entry"
-        description="Track money given (udhar) or money received in your digital ledger."
-        maxWidth="lg"
+        title="Record khata entry"
+        description="Money you lent (udhar diya) or got back / borrowed (udhar liya)."
+        maxWidth="xl"
       >
-        <form onSubmit={handleAddSubmit} className="space-y-3">
-          {/* Switcher: You Gave vs You Got with App Semantic Colors */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setKhataType("gave")}
-              className={`h-9.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 select-none ${
-                khataType === "gave"
-                  ? "bg-rose-500 text-white shadow-xs"
-                  : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m18 15-6-6-6 6" />
-              </svg>
-              <span>↑ You Gave (Udhar Diya)</span>
-            </button>
+        <form onSubmit={handleAddSubmit} className="space-y-4">
+          <ModalSegmentedPicker
+            options={[
+              { value: "gave" as const, label: "You gave · udhar diya" },
+              { value: "took" as const, label: "You got · udhar liya" },
+            ]}
+            selected={khataType}
+            onChange={setKhataType}
+          />
 
-            <button
-              type="button"
-              onClick={() => setKhataType("took")}
-              className={`h-9.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 select-none ${
-                khataType === "took"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-              <span>↓ You Got (Udhar Liya)</span>
-            </button>
+          {/* Amount: tinted red for money out, green for money in */}
+          <div
+            className="rounded-[18px] border px-4 py-3.5 transition-colors"
+            style={{
+              borderColor: `color-mix(in srgb, ${khataType === "gave" ? "var(--bad)" : "var(--good)"} 28%, var(--line))`,
+              background: `color-mix(in srgb, ${khataType === "gave" ? "var(--bad)" : "var(--good)"} 6%, var(--surface))`,
+            }}
+          >
+            <label htmlFor="kx-amount" className="block text-[14px] font-bold text-foreground-muted">
+              {khataType === "gave" ? "Amount you gave" : "Amount you got"}
+            </label>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="shrink-0 whitespace-nowrap text-[30px] font-extrabold leading-none" style={{ color: khataType === "gave" ? "var(--bad)" : "var(--good)" }} aria-hidden="true">
+                ₹
+              </span>
+              <input
+                id="kx-amount"
+                type="number"
+                step="any"
+                min="0"
+                inputMode="decimal"
+                required
+                placeholder="0"
+                value={khataAmount}
+                onChange={(e) => setKhataAmount(e.target.value)}
+                className="tk-compact tk-bare w-full min-w-0 border-0 bg-transparent p-0 text-[34px] font-extrabold leading-none tracking-[-0.03em] text-foreground num outline-none"
+              />
+            </div>
           </div>
 
-          {/* Quick Customers Suggestions */}
+          {/* Recent people: one tap fills name + phone */}
           {customerSummaries.length > 0 && (
-            <div className="space-y-1">
-              <span className="block text-[11px] font-medium text-foreground-muted">Recent People</span>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {customerSummaries.slice(0, 6).map((c) => (
-                  <button
-                    key={c.personName}
-                    type="button"
-                    onClick={() => {
-                      setKhataPersonName(c.personName);
-                      if (c.phone) setKhataPhone(c.phone);
-                    }}
-                    className={`h-7 px-3 rounded-full text-[11px] font-semibold transition shrink-0 ${
-                      khataPersonName.toLowerCase() === c.personName.toLowerCase()
-                        ? "bg-foreground text-background dark:bg-emerald-400 dark:text-emerald-950 font-bold shadow-xs"
-                        : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
-                    }`}
-                  >
-                    {c.personName}
-                  </button>
-                ))}
+            <ModalField label="Recent people">
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {customerSummaries.slice(0, 8).map((c) => {
+                  const on = khataPersonName.toLowerCase() === c.personName.toLowerCase();
+                  return (
+                    <button
+                      key={c.personName}
+                      type="button"
+                      onClick={() => {
+                        setKhataPersonName(c.personName);
+                        if (c.phone) setKhataPhone(c.phone);
+                      }}
+                      aria-pressed={on}
+                      className={`inline-flex h-[38px] shrink-0 items-center gap-2 rounded-full border pl-1 pr-3 text-[14px] font-bold transition ${
+                        on ? "border-[var(--primary)] bg-[var(--primary-soft)] text-foreground" : "border-border bg-surface text-foreground-muted hover:text-foreground"
+                      }`}
+                    >
+                      <span className="grid h-7 w-7 place-items-center rounded-full text-[12px] font-extrabold text-[#1e1724]" style={{ background: avatarTint(c.personName) }} aria-hidden="true">
+                        {initialsOf(c.personName)}
+                      </span>
+                      {c.personName}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </ModalField>
           )}
 
-          {/* Person Name & Phone */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <ModalField label="Person">
+              <input type="text" required placeholder="e.g. Rahul Sharma" value={khataPersonName} onChange={(e) => setKhataPersonName(e.target.value)} className={inputCls} />
+            </ModalField>
+            <ModalField label="Phone (optional)">
+              <input type="tel" placeholder="e.g. +91 98765 43210" value={khataPhone} onChange={(e) => setKhataPhone(e.target.value)} className={inputCls} />
+            </ModalField>
+          </div>
           <ContactPickerButton
             onPick={(n, ph) => {
               setKhataPersonName(n);
               if (ph) setKhataPhone(ph);
             }}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ModalField label="Person / Customer Name">
-              <input
-                type="text"
-                required
-                placeholder="e.g. Rahul Sharma"
-                value={khataPersonName}
-                onChange={(e) => setKhataPersonName(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
-            </ModalField>
 
-            <ModalField label="Phone Number (Optional)">
-              <input
-                type="tel"
-                placeholder="e.g. +91 9876543210"
-                value={khataPhone}
-                onChange={(e) => setKhataPhone(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
-            </ModalField>
-          </div>
-
-          {/* Amount & Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ModalField label="Amount (₹)">
-              <input
-                type="number"
-                step="any"
-                required
-                placeholder="e.g. 1200"
-                value={khataAmount}
-                onChange={(e) => setKhataAmount(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-bold border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
-            </ModalField>
-
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <ModalField label="Date">
-              <input
-                type="date"
-                required
-                value={khataDate}
-                onChange={(e) => setKhataDate(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
+              <input type="date" required value={khataDate} onChange={(e) => setKhataDate(e.target.value)} className={`${inputCls} num`} />
+            </ModalField>
+            <ModalField label="Due date (optional)">
+              <input type="date" value={khataDueDate} onChange={(e) => setKhataDueDate(e.target.value)} className={`${inputCls} num`} />
             </ModalField>
           </div>
 
-          {/* Due Date & Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ModalField label="Repayment Due Date (Optional)">
-              <input
-                type="date"
-                value={khataDueDate}
-                onChange={(e) => setKhataDueDate(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
-            </ModalField>
+          <ModalField label="Note">
+            <input type="text" placeholder="e.g. Dinner bill, grocery advance" value={khataNotes} onChange={(e) => setKhataNotes(e.target.value)} className={inputCls} />
+          </ModalField>
 
-            <ModalField label="Notes / Item Details">
-              <input
-                type="text"
-                placeholder="e.g. Dinner bill, Grocery advance"
-                value={khataNotes}
-                onChange={(e) => setKhataNotes(e.target.value)}
-                className="h-9.5 w-full rounded-xl bg-black/[0.03] dark:bg-white/[0.04] text-foreground placeholder:text-foreground-muted/50 px-3 text-xs sm:text-[13px] font-medium border border-black/[0.06] dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
-              />
-            </ModalField>
-          </div>
-
-          {/* Modal Footer */}
-          <ModalFooter
-            onCancel={() => setShowAddModal(false)}
-            confirmLabel={khataType === "gave" ? "Save Udhar (Gave)" : "Save Payment (Got)"}
-            isSubmitting={isAddingKhata}
-          />
+          <ModalFooter onCancel={() => setShowAddModal(false)} confirmLabel={khataType === "gave" ? "Save · you gave" : "Save · you got"} isSubmitting={isAddingKhata} />
         </form>
       </Modal>
 
@@ -995,77 +918,12 @@ export default function KhataPage() {
       {/* ============================================================== */}
       {/* MODAL 3: CREATE GROUP */}
       {/* ============================================================== */}
-      <Modal
-        isOpen={showCreateGroupModal}
-        onClose={() => setShowCreateGroupModal(false)}
-        title="Create Shared Group"
-        description="Share & split expenses with roommates, trip buddies, or colleagues."
-        maxWidth="md"
-      >
-        <form onSubmit={handleCreateGroupSubmit} className="space-y-3">
-          <ModalField label="Group Name">
-            <input
-              type="text"
-              required
-              placeholder="e.g. Goa Trip 2026, Flat 402, Office Lunch"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-            />
-          </ModalField>
-
-          <ModalField label="Category">
-            <select
-              value={newGroupCategory}
-              onChange={(e) => setNewGroupCategory(e.target.value as ExpenseGroup["category"])}
-              className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-            >
-              <option value="Home & Utilities">🏠 Home & Utilities</option>
-              <option value="Travel">✈️ Travel</option>
-              <option value="Event & Party">🎉 Event & Party</option>
-              <option value="Office & Work">💼 Office & Work</option>
-              <option value="Other">📦 Other</option>
-            </select>
-          </ModalField>
-
-          <ModalFooter
-            onCancel={() => setShowCreateGroupModal(false)}
-            confirmLabel="Create Group"
-            isSubmitting={isCreatingGroup}
-          />
-        </form>
-      </Modal>
+      <GroupFormModal isOpen={showCreateGroupModal} onClose={() => setShowCreateGroupModal(false)} />
 
       {/* ============================================================== */}
       {/* MODAL 4: JOIN GROUP WITH CODE */}
       {/* ============================================================== */}
-      <Modal
-        isOpen={showJoinGroupModal}
-        onClose={() => setShowJoinGroupModal(false)}
-        title="Join Group with Code"
-        description="Enter the 6-character invite code shared by your friend."
-        maxWidth="sm"
-      >
-        <form onSubmit={handleJoinGroupSubmit} className="space-y-3">
-          <ModalField label="6-Digit Invite Code">
-            <input
-              type="text"
-              required
-              maxLength={8}
-              placeholder="e.g. TK-GOA1"
-              value={inviteCodeInput}
-              onChange={(e) => setInviteCodeInput(e.target.value.toUpperCase())}
-              className="h-10 w-full text-center uppercase tracking-widest font-mono font-bold text-base rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-            />
-          </ModalField>
-
-          <ModalFooter
-            onCancel={() => setShowJoinGroupModal(false)}
-            confirmLabel="Join Group"
-            isSubmitting={isJoiningGroup}
-          />
-        </form>
-      </Modal>
+      <JoinGroupModal isOpen={showJoinGroupModal} onClose={() => setShowJoinGroupModal(false)} />
 
       {/* ============================================================== */}
       {/* MODAL 5: DELETE ENTRY CONFIRMATION */}

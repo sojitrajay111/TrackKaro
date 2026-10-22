@@ -88,13 +88,13 @@ export function TaskForm({
       <ModalField label="Notes (optional)">
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={textareaCls} />
       </ModalField>
-      {error && <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] px-3 py-2.5 text-[14px] font-semibold text-[var(--bad)]">{error}</p>}
       {task && (
-        <div className="flex justify-between text-xs font-semibold">
-          <button type="button" onClick={toggleDone} disabled={updating} className="text-primary hover:underline">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+          <button type="button" onClick={toggleDone} disabled={updating} className="inline-flex h-9 items-center rounded-[10px] border border-border bg-surface px-3 text-[14px] font-bold text-foreground transition hover:bg-surface-muted disabled:opacity-50">
             {task.status === "done" ? "Mark to do" : "Mark done"}
           </button>
-          <button type="button" onClick={remove} disabled={deleting} className="text-red-500 hover:underline">
+          <button type="button" onClick={remove} disabled={deleting} className="inline-flex h-9 items-center rounded-[10px] px-3 text-[14px] font-bold text-[var(--bad)] transition hover:bg-[color-mix(in_srgb,var(--rose)_12%,transparent)] disabled:opacity-50">
             Delete task
           </button>
         </div>

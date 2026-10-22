@@ -989,6 +989,12 @@ body {
 .tk-cal-agenda { animation: tkRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes tkCalNext { from { opacity: 0; transform: translateX(28px); } }
 @keyframes tkCalPrev { from { opacity: 0; transform: translateX(-28px); } }
+/* Notifications popover: drops from the bell; rows rise in. */
+.tk-notif { transform-origin: top right; animation: tkNotifIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tk-notif__row { animation: tkNewItem 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes tkNotifIn { from { opacity: 0; transform: translateY(-6px) scale(0.97); } }
+@media (prefers-reduced-motion: reduce) { .tk-notif, .tk-notif__row { animation: none; } }
+
 /* Confirm group expenses: added → green ring + light sweep + check draws, then the card
    fades, lifts and shrinks away (the rest glide into place via FLIP in the page). */
 .tk-cf {

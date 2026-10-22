@@ -202,7 +202,7 @@ export function DailyChart({ days }: { days: DayPoint[] }) {
       {h && hover !== null && (
         <div
           role="status"
-          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl glass glass--chrome px-3 py-2 text-[14px] whitespace-nowrap"
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-[12px] border border-border bg-[var(--raised)] px-3 py-2 text-[14px] shadow-[var(--shadow-pop)]"
           style={{ left: `clamp(70px, ${(x(hover) / W) * 100}%, calc(100% - 70px))` }}
         >
           <b className="block text-foreground">{dayLabel(h.date)}</b>
@@ -320,7 +320,7 @@ export function CategoryDonut({ slices, size = 150 }: { slices: CategorySlice[];
         ))}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <b className="font-display font-medium text-xl text-foreground tabular-nums">{fmtShort(total)}</b>
+        <b className="text-[20px] font-extrabold tracking-[-0.03em] text-foreground tabular-nums">{fmtShort(total)}</b>
         <span className="text-[13px] text-foreground-muted">spent</span>
       </div>
     </div>

@@ -62,19 +62,19 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
           Welcome back
         </h1>
-        <p className="mt-1.5 text-xs text-foreground-sub">
+        <p className="mt-1.5 text-[15px] text-foreground-muted">
           Enter your credentials to access your TrackKaro account
         </p>
       </div>
 
       {formError && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-xs font-medium text-red-600 dark:text-red-400">
+        <div className="tk-pop rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] p-3 text-[14px] font-semibold text-[var(--bad)]">
           <div className="flex items-start gap-2.5">
             <svg
-              className="h-4 w-4 shrink-0 text-red-500"
+              className="h-4 w-4 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -94,7 +94,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+            className="block text-[14px] font-bold text-foreground-muted"
           >
             Email Address
           </label>
@@ -108,7 +108,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
           </div>
         </div>
@@ -118,11 +118,11 @@ export default function LoginPage() {
           <div className="flex items-center justify-between">
             <label
               htmlFor="password"
-              className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+              className="block text-[14px] font-bold text-foreground-muted"
             >
               Password
             </label>
-            <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:underline">
+            <Link href="/auth/forgot-password" className="text-[14px] font-bold text-[var(--primary)] hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -136,7 +136,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 pr-11 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] pr-11 text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
             <button
               type="button"
@@ -168,9 +168,9 @@ export default function LoginPage() {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+            className="h-4 w-4 accent-[var(--primary)]"
           />
-          <label htmlFor="remember" className="text-xs text-foreground-sub select-none">
+          <label htmlFor="remember" className="text-[14px] text-foreground-muted select-none">
             Keep me signed in on this device
           </label>
         </div>
@@ -179,11 +179,11 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[var(--primary)] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? (
             <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
@@ -196,11 +196,11 @@ export default function LoginPage() {
       </form>
 
       {/* Switch to Signup */}
-      <div className="text-center text-xs text-foreground-sub">
+      <div className="text-center text-[15px] text-foreground-muted">
         Don&apos;t have an account yet?{" "}
         <Link
           href="/auth/signup"
-          className="font-semibold text-primary transition hover:underline"
+          className="font-bold text-[var(--primary)] transition hover:underline"
         >
           Create one now
         </Link>

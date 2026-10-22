@@ -10,9 +10,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
       <div className="relative h-screen text-foreground flex antialiased bg-background overflow-hidden">
-        {/* Ambient Liquid Glass Wallpaper */}
-        <div className="glass-wall" aria-hidden="true" />
-
         {/* Liquid Glass Sidebar (desktop) - 100% static in place */}
         <DashboardSidebar />
 

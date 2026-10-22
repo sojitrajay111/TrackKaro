@@ -87,7 +87,7 @@ export default function AssistantPage() {
                   }`}
                 >
                   {m.text}
-                  {m.timestamp && <span className="mt-1 block text-right text-[11px] opacity-70">{m.timestamp}</span>}
+                  {m.timestamp && <span className="mt-1 block text-right text-[12px] font-semibold opacity-70">{m.timestamp}</span>}
                 </div>
               </div>
             ))}

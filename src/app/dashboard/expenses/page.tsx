@@ -2,12 +2,13 @@
 
 import { Fragment, useState, useMemo, type FormEvent } from "react";
 import { OnQueryParam } from "@/components/ui/query-param";
-import { CategoryIcon, CategoryTile, CATEGORY_TINT } from "@/components/ui/category-icon";
+import { CategoryTile, CATEGORY_TINT } from "@/components/ui/category-icon";
 import { Drawer } from "@/components/ui/drawer";
 import { TransactionDetail } from "@/components/expenses/transaction-detail";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
+import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { inputCls } from "@/lib/form";
 import {
   useGetTransactionsQuery,
   useAddTransactionMutation,
@@ -37,22 +38,6 @@ const CATEGORIES: CategoryName[] = [
 ];
 
 const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Credit Card", "Debit Card", "Cash", "Net Banking"];
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
-  Food: { bg: "bg-amber-500/15", text: "text-amber-700 dark:text-amber-300", bar: "bg-amber-500" },
-  Shopping: { bg: "bg-pink-500/15", text: "text-pink-700 dark:text-pink-300", bar: "bg-pink-500" },
-  Groceries: { bg: "bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", bar: "bg-emerald-600" },
-  Bills: { bg: "bg-purple-500/15", text: "text-purple-700 dark:text-purple-300", bar: "bg-purple-600" },
-  Travel: { bg: "bg-blue-500/15", text: "text-blue-700 dark:text-blue-300", bar: "bg-blue-600" },
-  Fuel: { bg: "bg-rose-500/15", text: "text-rose-700 dark:text-rose-300", bar: "bg-rose-600" },
-  Entertainment: { bg: "bg-indigo-500/15", text: "text-indigo-700 dark:text-indigo-300", bar: "bg-indigo-600" },
-  Health: { bg: "bg-teal-500/15", text: "text-teal-700 dark:text-teal-300", bar: "bg-teal-600" },
-  Subscriptions: { bg: "bg-purple-500/15", text: "text-purple-700 dark:text-purple-300", bar: "bg-purple-600" },
-  Rent: { bg: "bg-rose-500/15", text: "text-rose-700 dark:text-rose-300", bar: "bg-rose-600" },
-  EMI: { bg: "bg-amber-500/15", text: "text-amber-700 dark:text-amber-300", bar: "bg-amber-600" },
-  Education: { bg: "bg-cyan-500/15", text: "text-cyan-700 dark:text-cyan-300", bar: "bg-cyan-600" },
-  Other: { bg: "bg-slate-500/15", text: "text-slate-700 dark:text-slate-300", bar: "bg-slate-600" },
-};
 
 export default function ExpensesPage() {
   // Queries & Mutations
@@ -804,152 +789,111 @@ export default function ExpensesPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Add Transaction"
-        description="Record a new expense or income to your live cloud ledger."
-        maxWidth="lg"
+        title={txType === "expense" ? "Record an expense" : "Record income"}
+        description={txType === "expense" ? "A payment out of your accounts. Counts toward your budget." : "Money coming into your balance."}
+        maxWidth="xl"
       >
-        <form onSubmit={handleAddSubmit} className="space-y-3">
-          {/* Type Switcher: Expense vs Income (with App Green & Red semantics) */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setTxType("expense")}
-              className={`h-9 rounded-[10px] text-xs sm:text-[13px] font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
-                txType === "expense"
-                  ? "bg-[#EF4444] text-white font-bold shadow-sm shadow-red-500/25"
-                  : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] shadow-[inset_0_0_0_1px_rgba(18,60,38,0.1)] hover:text-[#EF4444] hover:bg-red-50 dark:hover:bg-red-950/20"
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m18 15-6-6-6 6" />
-              </svg>
-              <span>Expense</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTxType("income")}
-              className={`h-9 rounded-[10px] text-xs sm:text-[13px] font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
-                txType === "income"
-                  ? "bg-[#059669] text-white font-bold shadow-sm shadow-emerald-500/25"
-                  : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] shadow-[inset_0_0_0_1px_rgba(18,60,38,0.1)] hover:text-[#059669] hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-              }`}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-              <span>Income</span>
-            </button>
+        <form onSubmit={handleAddSubmit} className="space-y-4">
+          <ModalSegmentedPicker
+            options={[
+              { value: "expense" as const, label: "Expense · money out" },
+              { value: "income" as const, label: "Income · money in" },
+            ]}
+            selected={txType}
+            onChange={setTxType}
+          />
+
+          {/* Amount: the main figure, tinted by direction */}
+          <div
+            className="rounded-[18px] border px-4 py-3.5 transition-colors"
+            style={{
+              borderColor: `color-mix(in srgb, ${txType === "expense" ? "var(--coral)" : "var(--pine)"} 28%, var(--line))`,
+              background: `color-mix(in srgb, ${txType === "expense" ? "var(--coral)" : "var(--pine)"} 7%, var(--surface))`,
+            }}
+          >
+            <label htmlFor="ax-amount" className="block text-[14px] font-bold text-foreground-muted">
+              Amount
+            </label>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="shrink-0 whitespace-nowrap text-[30px] font-extrabold leading-none" style={{ color: txType === "expense" ? "var(--coral)" : "var(--pine)" }} aria-hidden="true">
+                {txType === "expense" ? "−₹" : "+₹"}
+              </span>
+              <input
+                id="ax-amount"
+                type="number"
+                step="any"
+                min="0"
+                inputMode="decimal"
+                required
+                placeholder="0"
+                value={txAmount}
+                onChange={(e) => setTxAmount(e.target.value)}
+                className="tk-compact tk-bare w-full min-w-0 border-0 bg-transparent p-0 text-[34px] font-extrabold leading-none tracking-[-0.03em] text-foreground num outline-none"
+              />
+            </div>
           </div>
 
-          {/* Quick Category Chips */}
-          <div className="space-y-1">
-            <span className="block text-[11px] font-medium text-foreground-muted">Top Categories</span>
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {(["Food", "Shopping", "Groceries", "Bills", "Fuel", "Travel"] as CategoryName[]).map((cat) => {
-                const active = txCategory === cat;
-                const catInfo = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Other;
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <ModalField label="Description">
+              <input type="text" required placeholder="e.g. Swiggy, DMart, Rent" value={txTitle} onChange={(e) => setTxTitle(e.target.value)} className={inputCls} />
+            </ModalField>
+            <ModalField label="Date">
+              <input type="date" required value={txDate} onChange={(e) => setTxDate(e.target.value)} className={`${inputCls} num`} />
+            </ModalField>
+          </div>
+
+          <ModalField label="Category">
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Category">
+              {CATEGORIES.map((cat) => {
+                const on = txCategory === cat;
                 return (
                   <button
                     key={cat}
                     type="button"
+                    role="radio"
+                    aria-checked={on}
                     onClick={() => setTxCategory(cat)}
-                    className={`h-7 px-2.5 rounded-full text-[11px] font-semibold transition shrink-0 flex items-center gap-1 ${
-                      active
-                        ? `${catInfo.bg} ${catInfo.text} ring-1.5 ring-current font-bold`
-                        : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#4B6858] hover:text-[#102117]"
+                    className={`inline-flex h-[38px] shrink-0 items-center gap-2 rounded-[12px] border px-2.5 text-[14px] font-bold transition ${
+                      on
+                        ? "border-[var(--primary)] bg-[var(--primary-soft)] text-foreground shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_14%,transparent)]"
+                        : "border-border bg-surface text-foreground-muted hover:border-[var(--line-2)] hover:text-foreground"
                     }`}
                   >
-                    <CategoryIcon name={cat} size={13} />
-                    <span>{cat}</span>
+                    <CategoryTile name={cat} size={24} />
+                    {cat}
                   </button>
                 );
               })}
             </div>
-          </div>
-
-          {/* Title / Description */}
-          <ModalField label="Title / Description" description="Used in recent activity and category insights.">
-            <input
-              type="text"
-              required
-              placeholder="e.g. Swiggy, DMart, Rent"
-              value={txTitle}
-              onChange={(e) => setTxTitle(e.target.value)}
-              className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-            />
           </ModalField>
 
-          {/* Amount & Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ModalField label="Amount (₹)">
-              <input
-                type="number"
-                step="any"
-                required
-                placeholder="e.g. 450"
-                value={txAmount}
-                onChange={(e) => setTxAmount(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-              />
-            </ModalField>
-            <ModalField label="Date">
-              <input
-                type="date"
-                required
-                value={txDate}
-                onChange={(e) => setTxDate(e.target.value)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-              />
-            </ModalField>
-          </div>
-
-          {/* Category & Payment Method */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ModalField label="Category">
-              <select
-                value={txCategory}
-                onChange={(e) => setTxCategory(e.target.value as CategoryName)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </ModalField>
-            <ModalField label="Payment Method">
-              <select
-                value={txPaymentMethod}
-                onChange={(e) => setTxPaymentMethod(e.target.value as PaymentMethod)}
-                className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-              >
-                {PAYMENT_METHODS.map((pm) => (
-                  <option key={pm} value={pm}>
+          <ModalField label={txType === "expense" ? "Paid with" : "Received via"}>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Payment method">
+              {PAYMENT_METHODS.map((pm) => {
+                const on = txPaymentMethod === pm;
+                return (
+                  <button
+                    key={pm}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => setTxPaymentMethod(pm)}
+                    className={`inline-flex h-[38px] shrink-0 items-center rounded-[12px] border px-3 text-[14px] font-bold transition ${
+                      on ? "border-[var(--primary)] bg-[var(--primary-soft)] text-foreground" : "border-border bg-surface text-foreground-muted hover:text-foreground"
+                    }`}
+                  >
                     {pm}
-                  </option>
-                ))}
-              </select>
-            </ModalField>
-          </div>
-
-          {/* Notes */}
-          <ModalField label="Notes (Optional)">
-            <input
-              type="text"
-              placeholder="e.g. Dinner with team"
-              value={txNotes}
-              onChange={(e) => setTxNotes(e.target.value)}
-              className="h-9 w-full rounded-[10px] bg-[#EAF3EE] dark:bg-[#14291F] text-[#14231A] dark:text-[#F1FBF6] placeholder:text-[#6B8B79]/60 px-3 text-xs sm:text-[13px] font-medium border-0 shadow-[inset_0_0_0_1px_rgba(18,60,38,0.12)] focus:outline-none focus:shadow-[inset_0_0_0_2px_#059669] transition"
-            />
+                  </button>
+                );
+              })}
+            </div>
           </ModalField>
 
-          {/* Submit Footer */}
-          <ModalFooter
-            onCancel={() => setShowAddModal(false)}
-            confirmLabel={txType === "expense" ? "Save Expense" : "Save Income"}
-            isSubmitting={isAddingTx}
-          />
+          <ModalField label="Notes (optional)">
+            <input type="text" placeholder="e.g. Dinner with team" value={txNotes} onChange={(e) => setTxNotes(e.target.value)} className={inputCls} />
+          </ModalField>
+
+          <ModalFooter onCancel={() => setShowAddModal(false)} confirmLabel={txType === "expense" ? "Save expense" : "Save income"} isSubmitting={isAddingTx} />
         </form>
       </Modal>
 
@@ -1054,37 +998,14 @@ export default function ExpensesPage() {
               <h2 className="text-[24px] font-extrabold tracking-[-0.03em] leading-tight text-foreground">{viewingTx.title}</h2>
             </div>
             <form id="tx-edit-form" onSubmit={handleEditSubmit} className="space-y-3">
-              {/* Type Switcher: Expense vs Income */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditType("expense")}
-                  className={`h-8 rounded-[10px] text-xs font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
-                    editType === "expense"
-                      ? "bg-[#EF4444] text-white font-bold shadow-sm shadow-red-500/25"
-                      : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] hover:text-[#EF4444]"
-                  }`}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="m18 15-6-6-6 6" />
-                  </svg>
-                  <span>Expense</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditType("income")}
-                  className={`h-8 rounded-[10px] text-xs font-medium transition-all flex items-center justify-center gap-1.5 select-none ${
-                    editType === "income"
-                      ? "bg-[#059669] text-white font-bold shadow-sm shadow-emerald-500/25"
-                      : "bg-[#EAF3EE] dark:bg-[#14291F] text-[#3E5A4A] dark:text-[#A9C4B6] hover:text-[#059669]"
-                  }`}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                  <span>Income</span>
-                </button>
-              </div>
+              <ModalSegmentedPicker
+                options={[
+                  { value: "expense" as const, label: "Expense" },
+                  { value: "income" as const, label: "Income" },
+                ]}
+                selected={editType}
+                onChange={setEditType}
+              />
 
               {/* Title / Description */}
               <div>

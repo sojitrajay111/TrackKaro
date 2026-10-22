@@ -77,19 +77,19 @@ export default function SignupPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
           Create your account
         </h1>
-        <p className="mt-1.5 text-xs text-foreground-sub">
+        <p className="mt-1.5 text-[15px] text-foreground-muted">
           Start organizing finances, bahi khata, and group bills with TrackKaro
         </p>
       </div>
 
       {formError && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-xs font-medium text-red-600 dark:text-red-400">
+        <div className="tk-pop rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] p-3 text-[14px] font-semibold text-[var(--bad)]">
           <div className="flex items-start gap-2.5">
             <svg
-              className="h-4 w-4 shrink-0 text-red-500"
+              className="h-4 w-4 shrink-0"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -109,7 +109,7 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="name"
-            className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+            className="block text-[14px] font-bold text-foreground-muted"
           >
             Full Name
           </label>
@@ -123,7 +123,7 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Rahul Sharma"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+            className="block text-[14px] font-bold text-foreground-muted"
           >
             Email Address
           </label>
@@ -146,7 +146,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
           </div>
         </div>
@@ -156,11 +156,11 @@ export default function SignupPage() {
           <div className="flex items-center justify-between">
             <label
               htmlFor="phone"
-              className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+              className="block text-[14px] font-bold text-foreground-muted"
             >
               Phone Number
             </label>
-            <span className="text-[11px] text-foreground-muted">Optional for UPI &amp; Khata</span>
+            <span className="text-[13px] text-foreground-muted">Optional for UPI &amp; Khata</span>
           </div>
           <div className="relative mt-1.5">
             <input
@@ -171,7 +171,7 @@ export default function SignupPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 98765 43210"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="password"
-            className="block text-xs font-semibold uppercase tracking-wider text-foreground-sub"
+            className="block text-[14px] font-bold text-foreground-muted"
           >
             Password
           </label>
@@ -195,7 +195,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 pr-11 text-sm text-foreground outline-none transition placeholder:text-foreground-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-11 w-full rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] pr-11 text-[15px] font-medium text-foreground outline-none transition placeholder:text-foreground-muted focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)]"
             />
             <button
               type="button"
@@ -227,15 +227,15 @@ export default function SignupPage() {
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+            className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
           />
-          <label htmlFor="terms" className="text-xs text-foreground-sub select-none leading-relaxed">
+          <label htmlFor="terms" className="text-[14px] leading-relaxed text-foreground-muted select-none">
             I agree to TrackKaro&apos;s{" "}
-            <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">
+            <Link href="/terms" target="_blank" className="font-bold text-[var(--primary)] hover:underline">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" target="_blank" className="font-semibold text-primary hover:underline">
+            <Link href="/privacy" target="_blank" className="font-bold text-[var(--primary)] hover:underline">
               Privacy Policy
             </Link>
             .
@@ -246,11 +246,11 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-md shadow-primary/20 transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[var(--primary)] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? (
             <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
@@ -263,11 +263,11 @@ export default function SignupPage() {
       </form>
 
       {/* Switch to Login */}
-      <div className="text-center text-xs text-foreground-sub">
+      <div className="text-center text-[15px] text-foreground-muted">
         Already have an account?{" "}
         <Link
           href="/auth/login"
-          className="font-semibold text-primary transition hover:underline"
+          className="font-bold text-[var(--primary)] transition hover:underline"
         >
           Sign in here
         </Link>

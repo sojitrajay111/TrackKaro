@@ -47,14 +47,14 @@ export function SubscriptionForm({
   return (
     <form onSubmit={submit} className="space-y-3">
       <ModalField label="Icon">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {ICONS.map((i) => (
             <button
               key={i}
               type="button"
               onClick={() => setIcon(i)}
               aria-pressed={icon === i}
-              className={`h-9 w-9 rounded-xl text-lg ${icon === i ? "bg-primary/20 ring-2 ring-primary" : "bg-black/[0.03] dark:bg-white/[0.05]"}`}
+              className={`h-10 w-10 rounded-[12px] border text-[18px] transition ${icon === i ? "border-[var(--primary)] bg-[var(--primary-soft)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_14%,transparent)]" : "border-border bg-surface hover:border-[var(--line-2)]"}`}
             >
               {i}
             </button>
@@ -85,7 +85,7 @@ export function SubscriptionForm({
           </select>
         </ModalField>
       </div>
-      {error && <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] px-3 py-2.5 text-[14px] font-semibold text-[var(--bad)]">{error}</p>}
       <ModalFooter onCancel={onClose} confirmLabel={sub ? "Save changes" : "Add subscription"} isSubmitting={adding || updating} />
     </form>
   );

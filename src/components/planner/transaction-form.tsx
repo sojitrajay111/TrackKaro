@@ -101,7 +101,7 @@ export function TransactionForm({ draft, onClose }: { draft?: TransactionDraft; 
       <ModalField label="Notes (optional)">
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className={textareaCls} />
       </ModalField>
-      {error && <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] px-3 py-2.5 text-[14px] font-semibold text-[var(--bad)]">{error}</p>}
       <ModalFooter onCancel={onClose} confirmLabel="Save" isSubmitting={isLoading} />
     </form>
   );
