@@ -2,17 +2,29 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OnQueryParam } from "@/components/ui/query-param";
 import { DealDetailDrawer } from "@/components/deals/deal-detail";
 import { resolveDealProductImage } from "@/lib/deal-images";
 import {
   CATEGORY_DEAL_SEARCH,
   DEAL_CATEGORIES,
-  DEAL_SUGGESTIONS,
-  DEFAULT_DEAL_QUERY,
+  dealSuggestions,
+  defaultDealQuery,
   mapSearchResponseToDeals,
   type DealCategory,
 } from "@/lib/deal-search";
 import { useRecordDealClickMutation, useSearchDealsQuery } from "@/store/api/dealsApi";
+import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
+import { useAppSelector } from "@/store";
+import { useWishlist } from "@/lib/use-wishlist";
+
+type SortBy = "best" | "price_low" | "discount_high" | "newest";
+const SORTS: { value: SortBy; label: string }[] = [
+  { value: "best", label: "Best match" },
+  { value: "price_low", label: "Lowest price" },
+  { value: "discount_high", label: "Highest discount" },
+  { value: "newest", label: "Newest first" },
+];
 import type { Deal } from "@/store/types";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -26,8 +38,25 @@ const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1695048133142-1a20484d
  * which returns the working affiliate link.
  */
 export default function DealsPage() {
-  const [input, setInput] = useState(DEFAULT_DEAL_QUERY);
-  const [query, setQuery] = useState(DEFAULT_DEAL_QUERY);
+  const gender = useAppSelector((s) => s.auth.user?.gender);
+  const [input, setInput] = useState(() => defaultDealQuery(gender));
+  const [query, setQuery] = useState(() => defaultDealQuery(gender));
+  const [sortBy, setSortBy] = useState<SortBy>("best");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [store, setStore] = useState("All");
+  const [showSaved, setShowSaved] = useState(false);
+  const wishlist = useWishlist();
+
+  // Suggestions like the app's: gender/style picks, then this month's top spending categories.
+  const { data: txs = [] } = useGetTransactionsQuery();
+  const suggestions = useMemo(() => {
+    const ym = new Date().toISOString().slice(0, 7);
+    const byCat = new Map<string, number>();
+    for (const t of txs) if (t.type === "expense" && t.date?.startsWith(ym)) byCat.set(t.category, (byCat.get(t.category) ?? 0) + t.amount);
+    const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c);
+    return dealSuggestions(gender, top);
+  }, [txs, gender]);
   const [category, setCategory] = useState<DealCategory | null>(null);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [selected, setSelected] = useState<Deal | null>(null);
@@ -42,6 +71,8 @@ export default function DealsPage() {
     setInput(cat ? "" : trimmed);
     setCategory(cat);
     setQuery(trimmed);
+    setShowSaved(false);
+    setStore("All");
   };
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -66,11 +97,28 @@ export default function DealsPage() {
   };
 
   const platforms = [...new Set(deals.map((d) => d.platform))].slice(0, 3);
+  const source = showSaved ? wishlist.list : deals;
+  const stores = ["All", ...new Set(source.map((d) => d.platform))];
+  const visible = useMemo(() => {
+    const lo = Number(minPrice) || 0;
+    const hi = Number(maxPrice) || Infinity;
+    const list = source.filter((d) => {
+      const price = d.finalPrice || d.currentPrice;
+      return price >= lo && price <= hi && (store === "All" || d.platform === store);
+    });
+    if (sortBy === "price_low") return [...list].sort((a, b) => (a.finalPrice || a.currentPrice) - (b.finalPrice || b.currentPrice));
+    if (sortBy === "discount_high") return [...list].sort((a, b) => b.discountPercent - a.discountPercent);
+    if (sortBy === "newest") return [...list].sort((a, b) => (b.verifiedAt || "").localeCompare(a.verifiedAt || ""));
+    return list;
+  }, [source, minPrice, maxPrice, store, sortBy]);
+  const filtered = visible.length !== source.length;
   const unavailable = data && data.status !== "success";
   const label = category ?? `“${query}”`;
 
   return (
     <div className="space-y-6 pb-16">
+      {/* From the search palette: /dashboard/deals?q=… */}
+      <OnQueryParam name="q" onValue={search} />
       {/* Header */}
       <header className="flex flex-col gap-4">
         <div>
@@ -123,7 +171,7 @@ export default function DealsPage() {
             );
           })}
           <span className="mx-1 h-5 w-px shrink-0 bg-[var(--line-2)]" aria-hidden="true" />
-          {DEAL_SUGGESTIONS.map((s) => (
+          {suggestions.map((s) => (
             <button
               key={s}
               type="button"
@@ -140,16 +188,65 @@ export default function DealsPage() {
       </header>
 
       {/* Results */}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[15px] font-semibold text-foreground-muted">
-          {isFetching ? (
-            <>Finding live deals for {label}…</>
-          ) : (
-            <>
-              <strong className="font-extrabold text-foreground">{deals.length}</strong> live deal{deals.length === 1 ? "" : "s"} for {label}
-            </>
-          )}
-        </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="mr-auto inline-flex rounded-[12px] bg-[var(--well)] p-[3px]" role="group" aria-label="Show">
+          {[
+            [false, "Results"],
+            [true, `Saved · ${wishlist.list.length}`],
+          ].map(([v, l]) => (
+            <button
+              key={String(v)}
+              type="button"
+              onClick={() => setShowSaved(v as boolean)}
+              aria-pressed={showSaved === v}
+              className={`rounded-[9px] px-3 py-1.5 text-[14px] font-bold transition ${showSaved === v ? "bg-[var(--raised)] text-foreground shadow-xs" : "text-foreground-muted hover:text-foreground"}`}
+            >
+              {l as string}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-1.5 text-[14px] font-semibold text-foreground-muted">
+          <span className="sr-only sm:not-sr-only">Sort</span>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="h-9 rounded-[10px] border border-border bg-surface px-2.5 text-[14px] font-bold text-foreground">
+            {SORTS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {stores.length > 2 && (
+          <select value={store} onChange={(e) => setStore(e.target.value)} aria-label="Store" className="h-9 rounded-[10px] border border-border bg-surface px-2.5 text-[14px] font-bold text-foreground">
+            {stores.map((s) => (
+              <option key={s} value={s}>
+                {s === "All" ? "All stores" : s}
+              </option>
+            ))}
+          </select>
+        )}
+        <span className="flex items-center gap-1">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            placeholder="Min ₹"
+            aria-label="Minimum price"
+            className="h-9 w-[84px] rounded-[10px] border border-border bg-surface px-2.5 text-[14px] font-semibold text-foreground num"
+          />
+          <span className="text-foreground-muted">–</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            placeholder="Max ₹"
+            aria-label="Maximum price"
+            className="h-9 w-[84px] rounded-[10px] border border-border bg-surface px-2.5 text-[14px] font-semibold text-foreground num"
+          />
+        </span>
         <button
           type="button"
           onClick={() => refetch()}
@@ -163,7 +260,28 @@ export default function DealsPage() {
         </button>
       </div>
 
-      {isFetching && deals.length === 0 ? (
+      <p className="-mt-3 text-[15px] font-semibold text-foreground-muted">
+        {showSaved ? (
+          <>
+            <strong className="font-extrabold text-foreground">{visible.length}</strong> saved deal{visible.length === 1 ? "" : "s"}
+            {filtered ? " matching your filters" : ""}
+          </>
+        ) : isFetching ? (
+          <>Finding live deals for {label}…</>
+        ) : (
+          <>
+            <strong className="font-extrabold text-foreground">{visible.length}</strong> live deal{visible.length === 1 ? "" : "s"} for {label}
+            {filtered ? ` (of ${deals.length})` : ""}
+          </>
+        )}
+      </p>
+
+      {showSaved && visible.length === 0 ? (
+        <div className="rounded-[22px] border border-border bg-surface p-12 text-center">
+          <p className="text-[17px] font-extrabold text-foreground">{wishlist.list.length ? "No saved deals match these filters" : "Nothing saved yet"}</p>
+          <p className="mt-1 text-[15px] text-foreground-muted">Tap the heart on any deal to keep it here.</p>
+        </div>
+      ) : !showSaved && isFetching && deals.length === 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="overflow-hidden rounded-[22px] border border-border bg-surface">
@@ -176,7 +294,7 @@ export default function DealsPage() {
             </div>
           ))}
         </div>
-      ) : isError || unavailable || deals.length === 0 ? (
+      ) : !showSaved && (isError || unavailable || deals.length === 0) ? (
         <div className="space-y-3 rounded-[22px] border border-border bg-surface p-12 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-[var(--primary-soft)] text-2xl">🏷️</div>
           <h3 className="text-[17px] font-extrabold text-foreground">{isError ? "Couldn’t reach the deal service" : "No live deals found"}</h3>
@@ -195,9 +313,22 @@ export default function DealsPage() {
         </div>
       ) : (
         <div className={`grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-3 ${isFetching ? "opacity-60" : ""}`}>
-          {deals.map((deal, i) => (
-            <DealCard key={deal.id} deal={deal} index={i} copied={copiedCoupon === deal.couponCode} onCopy={handleCopyCoupon} onOpen={openDeal} onSelect={setSelected} />
+          {visible.map((deal, i) => (
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              index={i}
+              copied={copiedCoupon === deal.couponCode}
+              saved={wishlist.has(deal.id)}
+              onSave={wishlist.toggle}
+              onCopy={handleCopyCoupon}
+              onOpen={openDeal}
+              onSelect={setSelected}
+            />
           ))}
+          {visible.length === 0 && (
+            <p className="col-span-full rounded-[22px] border border-border bg-surface p-10 text-center text-[15px] text-foreground-muted">No deals match these filters.</p>
+          )}
         </div>
       )}
 
@@ -210,6 +341,8 @@ function DealCard({
   deal,
   index,
   copied,
+  saved,
+  onSave,
   onCopy,
   onOpen,
   onSelect,
@@ -217,6 +350,8 @@ function DealCard({
   deal: Deal;
   index: number;
   copied: boolean;
+  saved: boolean;
+  onSave: (deal: Deal) => void;
   onCopy: (code: string) => void;
   onOpen: (deal: Deal) => void;
   onSelect: (deal: Deal) => void;
@@ -229,9 +364,24 @@ function DealCard({
 
   return (
     <article
-      className="tk-pop group flex flex-col overflow-hidden rounded-[22px] border border-border bg-surface shadow-xs transition hover:-translate-y-0.5 hover:border-[var(--line-2)] hover:shadow-[var(--shadow-pop)]"
+      className="tk-pop group relative flex flex-col overflow-hidden rounded-[22px] border border-border bg-surface shadow-xs transition hover:-translate-y-0.5 hover:border-[var(--line-2)] hover:shadow-[var(--shadow-pop)]"
       style={{ animationDelay: `${Math.min(index, 8) * 0.04}s` }}
     >
+      {/* Save to wishlist (sits over the image, outside its button) */}
+      <button
+        type="button"
+        onClick={() => onSave(deal)}
+        aria-pressed={saved}
+        aria-label={saved ? "Remove from saved" : "Save deal"}
+        title={saved ? "Remove from saved" : "Save deal"}
+        className={`absolute right-3 top-3 z-10 inline-grid h-9 w-9 place-items-center rounded-full border shadow-xs backdrop-blur transition active:scale-90 ${
+          saved ? "border-transparent bg-[var(--rose)] text-white" : "border-border bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] text-foreground hover:text-[var(--rose)]"
+        }`}
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+        </svg>
+      </button>
       {/* Product image: white stage so store photos (white backgrounds) sit cleanly */}
       <button type="button" onClick={() => onSelect(deal)} className="relative block aspect-[4/3] cursor-pointer overflow-hidden bg-white" aria-label={`Details: ${deal.title}`}>
         {!loaded && <Skeleton className="absolute inset-0 rounded-none" />}
@@ -254,7 +404,7 @@ function DealCard({
             {deal.discountPercent}% OFF
           </span>
         )}
-        <span className="absolute right-3 top-3 rounded-full border border-border bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] px-2.5 py-1 text-[13px] font-bold text-foreground shadow-xs backdrop-blur">
+        <span className="absolute bottom-3 left-3 rounded-full border border-border bg-[color-mix(in_srgb,var(--surface)_92%,transparent)] px-2.5 py-1 text-[13px] font-bold text-foreground shadow-xs backdrop-blur">
           {deal.platform}
         </span>
       </button>

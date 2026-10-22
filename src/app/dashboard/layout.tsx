@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { AuthGuard } from "@/components/dashboard/auth-guard";
+import { WelcomeTour } from "@/components/dashboard/welcome-tour";
+import { OfflineSync } from "@/components/dashboard/offline-sync";
+import { DesktopNotifications } from "@/components/dashboard/desktop-notifications";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,6 +23,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
+        <WelcomeTour />
+        <OfflineSync />
+        <DesktopNotifications />
       </div>
     </AuthGuard>
   );

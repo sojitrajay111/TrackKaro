@@ -50,6 +50,25 @@ export const khataApi = apiSlice.injectEndpoints({
       },
     }),
 
+    // Edit an entry (PATCH /khata/:id). Optimistic so the ledger updates at once.
+    updateKhataEntry: builder.mutation<KhataEntry, { id: string; patch: Partial<Omit<KhataEntry, 'id'>> }>({
+      query: ({ id, patch }) => ({ url: `/khata/${id}`, method: 'PATCH', body: patch }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Khata', id }, { type: 'Khata', id: 'LIST' }],
+      async onQueryStarted({ id, patch }, { dispatch, queryFulfilled }) {
+        const undo = dispatch(
+          khataApi.util.updateQueryData('getKhataEntries', undefined, (draft) => {
+            const item = draft.find((k) => k.id === id);
+            if (item) Object.assign(item, patch);
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          undo.undo();
+        }
+      },
+    }),
+
     toggleKhataStatus: builder.mutation<KhataEntry, string>({
       query: (id) => ({ url: `/khata/${id}/toggle`, method: 'PATCH' }),
       invalidatesTags: (_result, _error, id) => [{ type: 'Khata', id }, { type: 'Khata', id: 'LIST' }],
@@ -101,6 +120,7 @@ export const {
   useGetKhataEntriesQuery,
   useAddKhataEntryMutation,
   useToggleKhataStatusMutation,
+  useUpdateKhataEntryMutation,
   useDeleteKhataEntryMutation,
   useSettleAllKhataForPersonMutation,
 } = khataApi;

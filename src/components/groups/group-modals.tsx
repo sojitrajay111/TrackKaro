@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { imageFileToBase64 } from "@/lib/image";
+import { useScanBillMutation } from "@/store/api/assistantApi";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
 import { Segmented } from "@/components/ui/segmented";
 import { apiErrorMessage, fmtINR, inputCls, textareaCls, todayKey } from "@/lib/form";
@@ -16,7 +18,10 @@ import {
 } from "@/store/api/groupsApi";
 import type { ExpenseGroup, GroupExpense, GroupInvitePreview, SplitType } from "@/store/types";
 
-export const GROUP_CATEGORIES: { value: ExpenseGroup["category"]; label: string }[] = [
+export const GROUP_CATEGORIES: {
+  value: ExpenseGroup["category"];
+  label: string;
+}[] = [
   { value: "Home & Utilities", label: "🏠 Home & Utilities" },
   { value: "Travel", label: "✈️ Travel" },
   { value: "Event & Party", label: "🎉 Event & Party" },
@@ -69,15 +74,7 @@ export function GroupFormModal({
   );
 }
 
-function GroupForm({
-  group,
-  onClose,
-  onSaved,
-}: {
-  group?: ExpenseGroup;
-  onClose: () => void;
-  onSaved?: (g: ExpenseGroup) => void;
-}) {
+function GroupForm({ group, onClose, onSaved }: { group?: ExpenseGroup; onClose: () => void; onSaved?: (g: ExpenseGroup) => void }) {
   const [createGroup, { isLoading: creating }] = useCreateGroupMutation();
   const [updateGroup, { isLoading: updating }] = useUpdateGroupMutation();
   const [name, setName] = useState(group?.name ?? "");
@@ -90,7 +87,7 @@ function GroupForm({
           phone: m.phone ?? "",
           locked: Boolean(m.linkedUserId) || m.status === "registered" || m.name.toLowerCase() === "you",
         }))
-      : []
+      : [],
   );
   const [draftName, setDraftName] = useState("");
   const [draftPhone, setDraftPhone] = useState("");
@@ -104,7 +101,15 @@ function GroupForm({
       return;
     }
     setError(null);
-    setMembers((list) => [...list, { key: `new-${Date.now()}`, name: n, phone: draftPhone.trim(), locked: false }]);
+    setMembers((list) => [
+      ...list,
+      {
+        key: `new-${Date.now()}`,
+        name: n,
+        phone: draftPhone.trim(),
+        locked: false,
+      },
+    ]);
     setDraftName("");
     setDraftPhone("");
   };
@@ -113,11 +118,23 @@ function GroupForm({
     e.preventDefault();
     if (!name.trim()) return;
     setError(null);
-    const payload = members.map((m) => ({ name: m.name, phone: m.phone || undefined }));
+    const payload = members.map((m) => ({
+      name: m.name,
+      phone: m.phone || undefined,
+    }));
     try {
       const saved = group
-        ? await updateGroup({ groupId: group.id, name: name.trim(), category, members: payload }).unwrap()
-        : await createGroup({ name: name.trim(), category, members: payload }).unwrap();
+        ? await updateGroup({
+            groupId: group.id,
+            name: name.trim(),
+            category,
+            members: payload,
+          }).unwrap()
+        : await createGroup({
+            name: name.trim(),
+            category,
+            members: payload,
+          }).unwrap();
       onSaved?.(saved);
       onClose();
     } catch (err) {
@@ -128,13 +145,7 @@ function GroupForm({
   return (
     <form onSubmit={submit} className="space-y-3">
       <ModalField label="Group name">
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Goa Trip 2026, Flat 402, Office Lunch"
-          className={inputCls}
-        />
+        <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Goa Trip 2026, Flat 402, Office Lunch" className={inputCls} />
       </ModalField>
       <ModalField label="Category">
         <select value={category} onChange={(e) => setCategory(e.target.value as ExpenseGroup["category"])} className={inputCls}>
@@ -153,7 +164,10 @@ function GroupForm({
               <span className="flex-1 font-bold text-foreground truncate">{m.name}</span>
               {m.phone && <span className="font-mono text-foreground-muted">{m.phone}</span>}
               {m.locked ? (
-                <span className="pill pill--faint !text-[13px]"><i />{m.name.toLowerCase() === "you" ? "You" : "Joined"}</span>
+                <span className="pill pill--faint !text-[13px]">
+                  <i />
+                  {m.name.toLowerCase() === "you" ? "You" : "Joined"}
+                </span>
               ) : (
                 <button
                   type="button"
@@ -295,16 +309,19 @@ function JoinForm({ onClose }: { onClose: () => void }) {
               >
                 <input type="radio" name="who" disabled={m.isClaimed} checked={pick === m.id} onChange={() => setPick(m.id)} />
                 <span className="flex-1 font-bold text-foreground">{m.name}</span>
-                {m.isClaimed && <span className="pill pill--faint !text-[13px]"><i />Taken</span>}
+                {m.isClaimed && (
+                  <span className="pill pill--faint !text-[13px]">
+                    <i />
+                    Taken
+                  </span>
+                )}
               </label>
             ))}
           <label className="flex cursor-pointer items-center gap-2.5 rounded-[12px] border border-border bg-[var(--surface-2)] px-3 py-2.5 text-[15px]">
             <input type="radio" name="who" checked={pick === "__new"} onChange={() => setPick("__new")} />
             <span className="font-bold text-foreground">I&apos;m not listed, join as new</span>
           </label>
-          {pick === "__new" && (
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Your name" className={inputCls} />
-          )}
+          {pick === "__new" && <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Your name" className={inputCls} />}
         </div>
       </ModalField>
       <FormError message={error} />
@@ -324,25 +341,9 @@ const SPLIT_MODES: { value: SplitType; label: string }[] = [
   { value: "percentage", label: "%" },
 ];
 
-export function GroupExpenseModal({
-  isOpen,
-  onClose,
-  group,
-  expense,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  group: ExpenseGroup;
-  expense?: GroupExpense;
-}) {
+export function GroupExpenseModal({ isOpen, onClose, group, expense }: { isOpen: boolean; onClose: () => void; group: ExpenseGroup; expense?: GroupExpense }) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={expense ? "Edit expense" : "Add group expense"}
-      description={group.name}
-      maxWidth="xl"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={expense ? "Edit expense" : "Add group expense"} description={group.name} maxWidth="xl">
       {isOpen && <ExpenseForm key={expense?.id ?? "new"} group={group} expense={expense} onClose={onClose} />}
     </Modal>
   );
@@ -377,7 +378,15 @@ function ExpenseForm({ group, expense, onClose }: { group: ExpenseGroup; expense
   const [updateExpense, { isLoading: updating }] = useUpdateGroupExpenseMutation();
 
   const total = parseFloat(amount) || 0;
-  const input: SplitInput = { mode, total, members: memberNames, included, shares, exact, percent };
+  const input: SplitInput = {
+    mode,
+    total,
+    members: memberNames,
+    included,
+    shares,
+    exact,
+    percent,
+  };
   const problem = splitProblem(input);
   const preview = problem ? [] : buildSplits(input);
 
@@ -396,7 +405,12 @@ function ExpenseForm({ group, expense, onClose }: { group: ExpenseGroup; expense
       notes: notes.trim() || undefined,
     };
     try {
-      if (expense) await updateExpense({ groupId: group.id, expenseId: expense.id, patch: body }).unwrap();
+      if (expense)
+        await updateExpense({
+          groupId: group.id,
+          expenseId: expense.id,
+          patch: body,
+        }).unwrap();
       else await addExpense({ groupId: group.id, ...body }).unwrap();
       onClose();
     } catch (err) {
@@ -406,6 +420,15 @@ function ExpenseForm({ group, expense, onClose }: { group: ExpenseGroup; expense
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      {!expense && (
+        <ScanIntoExpense
+          onRead={(t, a, d) => {
+            if (t) setTitle(t);
+            if (a > 0) setAmount(String(a));
+            if (d) setDate(d);
+          }}
+        />
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ModalField label="What was it for?">
           <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Dinner at Toit" className={inputCls} />
@@ -460,7 +483,12 @@ function ExpenseForm({ group, expense, onClose }: { group: ExpenseGroup; expense
                   <button
                     type="button"
                     aria-label={`Fewer shares for ${m}`}
-                    onClick={() => setShares((s) => ({ ...s, [m]: clampShares((s[m] ?? 1) - 1) }))}
+                    onClick={() =>
+                      setShares((s) => ({
+                        ...s,
+                        [m]: clampShares((s[m] ?? 1) - 1),
+                      }))
+                    }
                     className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-surface font-bold hover:bg-surface-muted"
                   >
                     −
@@ -469,7 +497,12 @@ function ExpenseForm({ group, expense, onClose }: { group: ExpenseGroup; expense
                   <button
                     type="button"
                     aria-label={`More shares for ${m}`}
-                    onClick={() => setShares((s) => ({ ...s, [m]: clampShares((s[m] ?? 1) + 1) }))}
+                    onClick={() =>
+                      setShares((s) => ({
+                        ...s,
+                        [m]: clampShares((s[m] ?? 1) + 1),
+                      }))
+                    }
                     className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-surface font-bold hover:bg-surface-muted"
                   >
                     +
@@ -540,15 +573,7 @@ export function SettleModal({
   );
 }
 
-function SettleForm({
-  group,
-  initial,
-  onClose,
-}: {
-  group: ExpenseGroup;
-  initial?: { from: string; to: string; amount: number };
-  onClose: () => void;
-}) {
+function SettleForm({ group, initial, onClose }: { group: ExpenseGroup; initial?: { from: string; to: string; amount: number }; onClose: () => void }) {
   const names = group.members.map((m) => m.name);
   const [from, setFrom] = useState(initial?.from ?? names[0]);
   const [to, setTo] = useState(initial?.to ?? names[1] ?? names[0]);
@@ -564,7 +589,13 @@ function SettleForm({
     if (from === to) return setError("Pick two different people.");
     if (!(value > 0)) return setError("Enter the amount paid.");
     try {
-      await record({ groupId: group.id, fromMember: from, toMember: to, amount: value, notes: notes.trim() || undefined }).unwrap();
+      await record({
+        groupId: group.id,
+        fromMember: from,
+        toMember: to,
+        amount: value,
+        notes: notes.trim() || undefined,
+      }).unwrap();
       onClose();
     } catch (err) {
       setError(apiErrorMessage(err, "Couldn't record the payment."));
@@ -598,5 +629,62 @@ function SettleForm({
       <FormError message={error} />
       <ModalFooter onCancel={onClose} confirmLabel="Record payment" isSubmitting={isLoading} />
     </form>
+  );
+}
+
+/** "Scan a bill" for a new group expense: reads merchant, total and date from a photo. */
+function ScanIntoExpense({ onRead }: { onRead: (title: string, amount: number, date: string | null) => void }) {
+  const [scanBill, { isLoading }] = useScanBillMutation();
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onFile = async (file?: File) => {
+    if (!file) return;
+    setNote(null);
+    try {
+      const img = await imageFileToBase64(file);
+      const r = await scanBill({
+        imageBase64: img.base64,
+        mimeType: img.mimeType,
+      }).unwrap();
+      onRead(r.merchant, r.amount, /^\d{4}-\d{2}-\d{2}/.test(r.date || "") ? r.date.slice(0, 10) : null);
+      setNote({
+        ok: true,
+        text: "Read from the bill. Check the total, then choose how to split.",
+      });
+    } catch (err) {
+      setNote({
+        ok: false,
+        text: err instanceof Error && err.message ? err.message : "Couldn't read that bill. Try a clearer photo.",
+      });
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={isLoading}
+        className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-dashed border-[var(--line-2)] bg-[var(--surface-2)] px-3 text-[14px] font-bold text-[var(--primary)] transition hover:border-[var(--primary)] disabled:opacity-50"
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M8 12h8" />
+        </svg>
+        {isLoading ? "Reading bill…" : "Scan a bill to split"}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+      {note && <span className={`text-[13px] font-semibold ${note.ok ? "text-[var(--good)]" : "text-[var(--bad)]"}`}>{note.text}</span>}
+    </div>
   );
 }

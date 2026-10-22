@@ -4,6 +4,8 @@ import { Suspense, useEffect, useRef, useState, useMemo, type FormEvent } from "
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
+import { OnQueryParam } from "@/components/ui/query-param";
+import { ContactPickerButton } from "@/components/ui/contact-picker-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer";
 import { GroupDrawer } from "@/components/groups/group-drawer";
@@ -394,6 +396,8 @@ export default function KhataPage() {
 
   return (
     <div className="space-y-6 pb-16">
+      {/* From the search palette: /dashboard/khata?person=… opens that ledger */}
+      <OnQueryParam name="person" onValue={setSelectedCustomer} />
       <Suspense fallback={null}>
         <OpenNewFromQuery onOpen={handleOpenAdd} />
       </Suspense>
@@ -892,6 +896,12 @@ export default function KhataPage() {
           )}
 
           {/* Person Name & Phone */}
+          <ContactPickerButton
+            onPick={(n, ph) => {
+              setKhataPersonName(n);
+              if (ph) setKhataPhone(ph);
+            }}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <ModalField label="Person / Customer Name">
               <input

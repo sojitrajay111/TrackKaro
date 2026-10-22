@@ -6,7 +6,11 @@ import {
   useToggleKhataStatusMutation,
   useDeleteKhataEntryMutation,
   useAddKhataEntryMutation,
+  useSettleAllKhataForPersonMutation,
+  useUpdateKhataEntryMutation,
 } from "@/store/api/khataApi";
+import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Drawer, useCountUp } from "@/components/ui/drawer";
 import { avatarTint, initialsOf } from "@/lib/avatar";
 
@@ -37,10 +41,15 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
   const [toggleKhataStatus, { isLoading: isToggling }] = useToggleKhataStatusMutation();
   const [deleteKhataEntry] = useDeleteKhataEntryMutation();
   const [addKhataEntry, { isLoading: isAdding }] = useAddKhataEntryMutation();
+  const [settleAll, { isLoading: isSettling }] = useSettleAllKhataForPersonMutation();
+  const [confirmSettle, setConfirmSettle] = useState(false);
+  const [settleError, setSettleError] = useState<string | null>(null);
+  const [statementMsg, setStatementMsg] = useState<string | null>(null);
 
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "settled">("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<KhataEntry | null>(null);
 
   // Inline Quick-Add form state
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -126,6 +135,77 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
       : `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
+  };
+
+  // Plain-text statement (same content the app shares): balance, then every entry, newest first.
+  const statementText = () => {
+    const lines = [...customerEntries]
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+      .map((e) => `${shortDate(e.date)}  ${e.type === "gave" ? "You gave" : "You got"}  ${fmt(e.amount)}${e.status === "settled" ? "  (settled)" : ""}${e.notes ? `  · ${e.notes}` : ""}`);
+    const head =
+      summary.netBalance > 0
+        ? `${name} owes ${fmt(summary.netBalance)}`
+        : summary.netBalance < 0
+          ? `I owe ${name} ${fmt(summary.netBalance)}`
+          : `All settled with ${name}`;
+    return [`TrackKaro Khata statement — ${name}`, `As of ${shortDate(new Date().toISOString())}`, head, "", ...lines].join("\n");
+  };
+
+  const flash = (m: string) => {
+    setStatementMsg(m);
+    setTimeout(() => setStatementMsg(null), 2200);
+  };
+
+  const handleCopyStatement = async () => {
+    try {
+      await navigator.clipboard.writeText(statementText());
+      flash("Statement copied");
+    } catch {
+      flash("Couldn't copy. Try again.");
+    }
+  };
+
+  const handleWhatsAppStatement = () => {
+    const cleanPhone = summary.phone ? summary.phone.replace(/[^\d]/g, "") : "";
+    const text = encodeURIComponent(statementText());
+    window.open(cleanPhone ? `https://wa.me/${cleanPhone}?text=${text}` : `https://wa.me/?text=${text}`, "_blank", "noopener");
+  };
+
+  // PDF: a clean printable statement in a new window; the browser's print dialog saves it as PDF.
+  const handlePdfStatement = () => {
+    const esc = (v: string) => v.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
+    const rows = [...customerEntries]
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""))
+      .map(
+        (e) =>
+          `<tr><td>${esc(shortDate(e.date))}</td><td>${e.type === "gave" ? "You gave" : "You got"}</td><td>${esc(e.notes || "")}</td><td>${e.status}</td><td class="r">${esc(fmt(e.amount))}</td></tr>`
+      )
+      .join("");
+    const w = window.open("", "_blank");
+    if (!w) {
+      flash("Allow pop-ups to save the PDF");
+      return;
+    }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Khata statement - ${esc(name)}</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;color:#0c1f17;margin:32px}h1{margin:0 0 4px;font-size:22px}p{margin:0 0 16px;color:#45594f}
+.bal{font-size:20px;font-weight:800;margin:8px 0 20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #dbe7df;text-align:left}
+th{font-size:12px;text-transform:uppercase;color:#62766c}.r{text-align:right}footer{margin-top:24px;font-size:12px;color:#62766c}</style></head>
+<body><h1>Khata statement · ${esc(name)}</h1><p>${summary.phone ? esc(summary.phone) + " · " : ""}As of ${esc(shortDate(new Date().toISOString()))}</p>
+<div class="bal">${summary.netBalance > 0 ? `${esc(name)} owes you ${esc(fmt(summary.netBalance))}` : summary.netBalance < 0 ? `You owe ${esc(name)} ${esc(fmt(summary.netBalance))}` : "All settled"}</div>
+<table><thead><tr><th>Date</th><th>Type</th><th>Note</th><th>Status</th><th class="r">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+<footer>Generated by TrackKaro</footer><script>window.onload=function(){window.print()}</script></body></html>`);
+    w.document.close();
+  };
+
+  const handleSettleAll = async () => {
+    setSettleError(null);
+    try {
+      await settleAll(name).unwrap();
+      setConfirmSettle(false);
+      flash(`Everything with ${name} is settled`);
+    } catch {
+      setSettleError("Couldn't settle. Check your connection and try again.");
+    }
   };
 
   const handleCopyPhone = () => {
@@ -242,6 +322,65 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
           {summary.totalCount} {summary.totalCount === 1 ? "entry" : "entries"} · {summary.settledCount} settled
         </small>
       </div>
+
+      {/* Actions: call, statement (copy / WhatsApp / PDF), settle all */}
+      <div className="grid gap-2">
+        <div className="flex flex-wrap gap-2">
+          {summary.phone && (
+            <a href={`tel:${summary.phone.replace(/[^\d+]/g, "")}`} className={`${btnSm} border border-border bg-surface text-foreground hover:bg-surface-muted`}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2 2A16 16 0 0 1 4.5 5.5a2 2 0 0 1 2-2z" />
+              </svg>
+              Call
+            </a>
+          )}
+          <button type="button" onClick={handleCopyStatement} className={`${btnSm} border border-border bg-surface text-foreground hover:bg-surface-muted`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 9h10v10H9zM5 15V5h10" />
+            </svg>
+            Copy statement
+          </button>
+          <button type="button" onClick={handleWhatsAppStatement} className={`${btnSm} border border-border bg-surface text-foreground hover:bg-surface-muted`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6z" />
+            </svg>
+            Send statement
+          </button>
+          <button type="button" onClick={handlePdfStatement} className={`${btnSm} border border-border bg-surface text-foreground hover:bg-surface-muted`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M7 3.5h7l4.5 4.5v12.5h-11.5zM12 11v6M9.5 14.5 12 17l2.5-2.5" />
+            </svg>
+            PDF
+          </button>
+          {summary.pendingCount > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setSettleError(null);
+                setConfirmSettle(true);
+              }}
+              className={`${btnSm} border border-[color-mix(in_srgb,var(--good)_35%,transparent)] bg-[color-mix(in_srgb,var(--good)_10%,transparent)] text-[var(--good)] hover:brightness-95`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+              Settle all
+            </button>
+          )}
+        </div>
+        {statementMsg && <p className="text-[14px] font-bold text-[var(--good)]" aria-live="polite">{statementMsg}</p>}
+      </div>
+
+      <ConfirmDialog
+        isOpen={confirmSettle}
+        onCancel={() => setConfirmSettle(false)}
+        onConfirm={handleSettleAll}
+        title={`Settle everything with ${name}?`}
+        description={`Marks all ${summary.pendingCount} pending ${summary.pendingCount === 1 ? "entry" : "entries"} as settled. You can still re-open any entry later.`}
+        confirmLabel="Settle all"
+        isWorking={isSettling}
+        error={settleError}
+      />
 
       {/* 3. Last 12 months, bars grow up one after another */}
       <div className="flex h-24 items-end gap-1.5" role="img" aria-label="Amounts recorded each month, last 12 months">
@@ -423,6 +562,17 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
                       {isEntrySettled ? "Settled" : "Pending"}
                     </button>
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(entry)}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-foreground-muted opacity-60 transition hover:bg-[var(--surface-2)] hover:text-foreground group-hover:opacity-100 sm:opacity-0 focus:opacity-100"
+                    title="Edit entry"
+                    aria-label="Edit entry"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />
+                    </svg>
+                  </button>
                   {deletingId === entry.id ? (
                     <span className="flex shrink-0 items-center gap-1">
                       <button type="button" onClick={() => handleDelete(entry.id)} className="rounded-[8px] px-2 py-1 text-[13px] font-bold text-[var(--bad)] hover:bg-[color-mix(in_srgb,var(--rose)_14%,transparent)]">
@@ -451,6 +601,66 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
           </div>
         )}
       </div>
+
+      <Modal isOpen={Boolean(editing)} onClose={() => setEditing(null)} title="Edit entry" description={name} maxWidth="md">
+        {editing && <EditEntryForm key={editing.id} entry={editing} onClose={() => setEditing(null)} />}
+      </Modal>
     </Drawer>
+  );
+}
+
+/** Edit one khata entry: direction, amount, dates and note (PATCH /khata/:id). */
+function EditEntryForm({ entry, onClose }: { entry: KhataEntry; onClose: () => void }) {
+  const [update, { isLoading }] = useUpdateKhataEntryMutation();
+  const [type, setType] = useState<KhataType>(entry.type);
+  const [amount, setAmount] = useState(String(entry.amount));
+  const [date, setDate] = useState((entry.date || "").slice(0, 10));
+  const [dueDate, setDueDate] = useState((entry.dueDate || "").slice(0, 10));
+  const [notes, setNotes] = useState(entry.notes || "");
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = parseFloat(amount);
+    if (!(value > 0)) {
+      setError("Enter an amount above ₹0.");
+      return;
+    }
+    setError(null);
+    try {
+      await update({ id: entry.id, patch: { type, amount: value, date, dueDate: dueDate || undefined, notes: notes.trim() || undefined } }).unwrap();
+      onClose();
+    } catch {
+      setError("Couldn't save. Check your connection and try again.");
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <ModalSegmentedPicker
+        options={[
+          { value: "gave" as const, label: "You gave" },
+          { value: "took" as const, label: "You got" },
+        ]}
+        selected={type}
+        onChange={setType}
+      />
+      <ModalField label="Amount (₹)">
+        <input type="number" min="0.01" step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className={fieldCls} />
+      </ModalField>
+      <div className="grid grid-cols-2 gap-3">
+        <ModalField label="Date">
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+        </ModalField>
+        <ModalField label="Due date (optional)">
+          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldCls} />
+        </ModalField>
+      </div>
+      <ModalField label="Note">
+        <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. Dinner split" className={fieldCls} />
+      </ModalField>
+      {error && <p role="alert" className="text-[14px] font-semibold text-[var(--bad)]">{error}</p>}
+      <ModalFooter onCancel={onClose} isSubmitting={isLoading} confirmLabel="Save changes" />
+    </form>
   );
 }

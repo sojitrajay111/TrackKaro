@@ -9,7 +9,12 @@ import { useI18n } from "@/i18n";
 import type { Lang } from "@/i18n/translations";
 import type { Theme } from "@/components/theme-provider";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { useSignOut, useUpdateProfileMutation } from "@/store/api/authApi";
+import { useDeleteAllDataMutation, useLogoutAllMutation, useSignOut, useUpdateProfileMutation } from "@/store/api/authApi";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { openPdfReport } from "@/lib/report";
+import { DESKTOP_ALERTS_KEY, desktopAlertsOn } from "@/components/dashboard/desktop-notifications";
+import { tasksApi } from "@/store/api/tasksApi";
+import { subscriptionsApi } from "@/store/api/subscriptionsApi";
 import { transactionsApi } from "@/store/api/transactionsApi";
 import { khataApi } from "@/store/api/khataApi";
 import { budgetsApi } from "@/store/api/budgetsApi";
@@ -17,6 +22,7 @@ import { remindersApi } from "@/store/api/remindersApi";
 import { groupsApi } from "@/store/api/groupsApi";
 
 type SectionId = "profile" | "appearance" | "notifications" | "data";
+type Gender = "male" | "female" | "other" | "unspecified";
 type Hue = "emerald" | "blue" | "indigo" | "purple" | "pink" | "orange" | "teal" | "danger";
 
 /* -------------------------------------------------------------------------- */
@@ -116,6 +122,10 @@ const ICONS = {
     </Icon>
   ),
   logout: <Icon d="M14.5 4.5h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-3M10 16.5 5.5 12 10 7.5M5.5 12h10" />,
+  devices: <Icon d="M4 5.5h12v9H4zM8 18.5h4M10 14.5v4M17.5 9.5H20v9h-4.5v-2" />,
+  trash: <Icon d="M5 7h14M10 11v6M14 11v6M6.5 7l1 12.5h9l1-12.5M9.5 7V4.5h5V7" />,
+  person: <Icon d="M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM5 20a7 7 0 0 1 14 0" />,
+  replay: <Icon d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4" />,
   chevron: <Icon d="m9.5 6 6 6-6 6" size={16} />,
 };
 
@@ -288,9 +298,13 @@ export default function SettingsPage() {
   // Profile (saved to the server with PATCH /users/me)
   const [profileName, setProfileName] = useState(user?.name ?? "");
   const [profilePhone, setProfilePhone] = useState(user?.phone ?? "");
+  // Gender tunes deal suggestions (same as the app); "unspecified" = prefer not to say.
+  const [profileGender, setProfileGender] = useState<Gender>(user?.gender ?? "unspecified");
   const [profileStatus, setProfileStatus] = useState<"idle" | "saved" | "error">("idle");
   const profileDirty =
-    profileName.trim() !== (user?.name ?? "") || profilePhone.trim() !== (user?.phone ?? "");
+    profileName.trim() !== (user?.name ?? "") ||
+    profilePhone.trim() !== (user?.phone ?? "") ||
+    profileGender !== (user?.gender ?? "unspecified");
 
   // Notification toggles, remembered on this browser
   const [prefs, setPrefs] = useState<NotifPrefs>(loadNotifPrefs);
@@ -304,6 +318,66 @@ export default function SettingsPage() {
       }
       return next;
     });
+  };
+
+  // Desktop alerts (browser notifications while TrackKaro is open)
+  const [desktopOn, setDesktopOn] = useState(() => (typeof window === "undefined" ? false : desktopAlertsOn()));
+  const [desktopMsg, setDesktopMsg] = useState<string | null>(null);
+  const toggleDesktop = async (on: boolean) => {
+    setDesktopMsg(null);
+    if (on) {
+      if (typeof Notification === "undefined") {
+        setDesktopMsg("This browser doesn't support notifications.");
+        return;
+      }
+      const perm = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+      if (perm !== "granted") {
+        setDesktopMsg("Notifications are blocked for this site in your browser settings.");
+        return;
+      }
+    }
+    try {
+      localStorage.setItem(DESKTOP_ALERTS_KEY, on ? "1" : "0");
+    } catch {
+      // ignore
+    }
+    setDesktopOn(on);
+  };
+
+  // Sign out everywhere / wipe data
+  const [logoutAll, { isLoading: isLoggingOutAll }] = useLogoutAllMutation();
+  const [deleteAllData, { isLoading: isWiping }] = useDeleteAllDataMutation();
+  const [wipeOpen, setWipeOpen] = useState(false);
+  const [wipeText, setWipeText] = useState("");
+  const [wipeError, setWipeError] = useState<string | null>(null);
+  const [wipeDone, setWipeDone] = useState(false);
+  const handleWipe = async () => {
+    setWipeError(null);
+    try {
+      await deleteAllData().unwrap();
+      setWipeOpen(false);
+      setWipeText("");
+      setWipeDone(true);
+    } catch {
+      setWipeError("Couldn't clear your data. Check your connection and try again.");
+    }
+  };
+
+  // PDF report for a date range (defaults to this month so far)
+  const [repFrom, setRepFrom] = useState(() => new Date().toISOString().slice(0, 8) + "01");
+  const [repTo, setRepTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [repStatus, setRepStatus] = useState<string | null>(null);
+  const handlePdfReport = async () => {
+    setRepStatus(null);
+    const sub = dispatch(transactionsApi.endpoints.getTransactions.initiate());
+    try {
+      const txs = await sub.unwrap();
+      if (!openPdfReport({ from: repFrom, to: repTo, name: user?.name, transactions: txs })) setRepStatus("Allow pop-ups to save the PDF.");
+    } catch {
+      setRepStatus("Couldn't load your transactions. Try again.");
+    } finally {
+      sub.unsubscribe();
+    }
   };
 
   // Export Feedback
@@ -338,7 +412,7 @@ export default function SettingsPage() {
     if (!profileName.trim()) return;
     setProfileStatus("idle");
     try {
-      await updateProfile({ name: profileName.trim(), phone: profilePhone.trim() || undefined }).unwrap();
+      await updateProfile({ name: profileName.trim(), phone: profilePhone.trim() || undefined, gender: profileGender }).unwrap();
       setProfileStatus("saved");
     } catch {
       setProfileStatus("error");
@@ -354,9 +428,11 @@ export default function SettingsPage() {
       dispatch(budgetsApi.endpoints.getBudgets.initiate()),
       dispatch(remindersApi.endpoints.getReminders.initiate()),
       dispatch(groupsApi.endpoints.getGroups.initiate()),
+      dispatch(subscriptionsApi.endpoints.getSubscriptions.initiate()),
+      dispatch(tasksApi.endpoints.getTasks.initiate({ from: "2000-01-01", to: "2100-12-31" })),
     ] as const;
     try {
-      const [transactions, khata, budgets, billReminders, groups] = await Promise.all(
+      const [transactions, khata, budgets, billReminders, groups, subscriptions, tasks] = await Promise.all(
         subs.map((s) => s.unwrap())
       );
       const backup = {
@@ -368,6 +444,8 @@ export default function SettingsPage() {
         budgets,
         billReminders,
         groups,
+        subscriptions,
+        tasks,
       };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -513,6 +591,19 @@ export default function SettingsPage() {
                   className={inputCls}
                 />
               </Cell>
+              <Cell hue="purple" icon={ICONS.person} label="Gender" hint="Used to suggest relevant deals">
+                <Segmented
+                  label="Gender"
+                  options={[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "other", label: "Other" },
+                    { value: "unspecified", label: "Skip" },
+                  ]}
+                  value={profileGender}
+                  onChange={setProfileGender}
+                />
+              </Cell>
             </ul>
             <div className="mt-2 flex flex-wrap items-center justify-end gap-3 px-1" aria-live="polite">
               {profileStatus === "saved" && !profileDirty && (
@@ -643,6 +734,22 @@ export default function SettingsPage() {
                   onChange={(e) => setPref("dailyDigest", e.target.checked)}
                 />
               </Cell>
+              <Cell
+                hue="emerald"
+                icon={ICONS.bell}
+                label="Desktop alerts"
+                hint={desktopMsg ?? "Pop up new alerts on this computer while TrackKaro is open"}
+                htmlFor="set-n-desktop"
+              >
+                <input
+                  id="set-n-desktop"
+                  type="checkbox"
+                  role="switch"
+                  className="switch"
+                  checked={desktopOn}
+                  onChange={(e) => void toggleDesktop(e.target.checked)}
+                />
+              </Cell>
             </ul>
           </SettingsGroup>
 
@@ -665,21 +772,30 @@ export default function SettingsPage() {
                         ? "Export failed. Try again"
                         : "Export backup as JSON"
                 }
-                hint="Transactions, khata, budgets, bill reminders and groups"
+                hint="Transactions, khata, budgets, bills, subscriptions, tasks and groups"
                 onClick={handleExportData}
                 disabled={exportStatus === "working"}
               />
-              <Cell
-                hue="teal"
-                icon={ICONS.shield}
-                label="End-to-end encrypted sync"
-                hint="256-bit encryption. Your data belongs to you."
-              >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[13px] font-bold text-[#059669] dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active
+              <Cell hue="indigo" icon={ICONS.doc} label="PDF report" hint={repStatus ?? "Totals, spending by category and every transaction"}>
+                <span className="flex flex-wrap items-center justify-end gap-1.5">
+                  <input type="date" value={repFrom} max={repTo} onChange={(e) => setRepFrom(e.target.value)} aria-label="From" className={`${inputCls} !h-9 !min-h-0 w-[150px] !text-[14px]`} />
+                  <input type="date" value={repTo} min={repFrom} onChange={(e) => setRepTo(e.target.value)} aria-label="To" className={`${inputCls} !h-9 !min-h-0 w-[150px] !text-[14px]`} />
+                  <button
+                    type="button"
+                    onClick={() => void handlePdfReport()}
+                    className="inline-flex h-9 items-center rounded-[10px] bg-[var(--primary)] px-3 text-[14px] font-bold text-[var(--on-primary)] transition hover:bg-[var(--primary-strong)]"
+                  >
+                    Create PDF
+                  </button>
                 </span>
               </Cell>
+              <LinkCell
+                hue="blue"
+                icon={ICONS.replay}
+                label="Replay the welcome tour"
+                hint="A quick walk through the main screens"
+                onClick={() => window.dispatchEvent(new Event("tk:replay-tour"))}
+              />
               <LinkCell hue="indigo" icon={ICONS.doc} label="Privacy policy" href="/privacy" />
               <LinkCell hue="purple" icon={ICONS.doc} label="Terms of service" href="/terms" />
               <LinkCell
@@ -691,7 +807,49 @@ export default function SettingsPage() {
                 disabled={isSigningOut}
                 danger
               />
+              <LinkCell
+                hue="danger"
+                icon={ICONS.devices}
+                label={isLoggingOutAll ? "Signing out everywhere…" : "Sign out of all devices"}
+                hint="Ends every session, including the phone app"
+                onClick={() => void logoutAll()}
+                disabled={isLoggingOutAll}
+                danger
+              />
+              <LinkCell
+                hue="danger"
+                icon={ICONS.trash}
+                label={wipeDone ? "All data cleared" : "Clear all data"}
+                hint="Deletes every transaction, ledger, group, bill, subscription and task. Your account stays."
+                onClick={() => {
+                  setWipeError(null);
+                  setWipeOpen(true);
+                }}
+                disabled={isWiping}
+                danger
+              />
             </ul>
+            <ConfirmDialog
+              isOpen={wipeOpen}
+              onCancel={() => {
+                setWipeOpen(false);
+                setWipeText("");
+              }}
+              onConfirm={() => {
+                if (wipeText.trim().toUpperCase() === "DELETE") void handleWipe();
+                else setWipeError('Type DELETE to confirm.');
+              }}
+              title="Clear all your data?"
+              description="This permanently deletes everything you've recorded in TrackKaro, on the web and in the app. It can't be undone. Export a backup first if you might need it."
+              confirmLabel="Clear everything"
+              isWorking={isWiping}
+              error={wipeError}
+            >
+              <label className="grid gap-1.5">
+                <span className="text-[14px] font-bold text-foreground-muted">Type DELETE to confirm</span>
+                <input value={wipeText} onChange={(e) => setWipeText(e.target.value)} className={inputCls} autoComplete="off" />
+              </label>
+            </ConfirmDialog>
             <p className="mt-3 px-1 text-[13px] text-foreground-muted">TrackKaro v1.0.0 · Web Edition</p>
           </SettingsGroup>
         </div>

@@ -989,6 +989,75 @@ body {
 .tk-cal-agenda { animation: tkRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes tkCalNext { from { opacity: 0; transform: translateX(28px); } }
 @keyframes tkCalPrev { from { opacity: 0; transform: translateX(-28px); } }
+/* Confirm group expenses: added → green ring + light sweep + check draws, then the card
+   fades, lifts and shrinks away (the rest glide into place via FLIP in the page). */
+.tk-cf {
+  transition: opacity 0.38s ease, transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.tk-cf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--good) 16%, transparent) 50%, transparent 80%);
+  transform: translateX(-110%);
+}
+/* The entrance (.tk-pop, fill "both") would pin transform/opacity; drop it once a card is acted on. */
+.tk-cf:not([data-phase="idle"]) { animation: none; }
+.tk-cf[data-phase="saving"] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent); }
+.tk-cf[data-phase="added"],
+.tk-cf[data-phase="leaving"] {
+  border-color: color-mix(in srgb, var(--good) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 16%, transparent);
+}
+.tk-cf[data-phase="added"]::after { animation: tkCfSweep 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.tk-cf[data-phase="added"] .tk-cf__btn { animation: tkCfPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tk-cf[data-phase="added"] .tk-cf__tile { animation: tkCfPop 0.42s 0.05s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.tk-cf[data-phase="leaving"] {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.94);
+  pointer-events: none;
+}
+.tk-cf__check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: tkCfDraw 0.45s 0.1s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes tkCfSweep { to { transform: translateX(110%); } }
+@keyframes tkCfPop { 0% { transform: scale(1); } 45% { transform: scale(1.07); } 100% { transform: scale(1); } }
+@keyframes tkCfDraw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-cf, .tk-cf[data-phase="leaving"] { transition: opacity 0.2s ease; transform: none; }
+  .tk-cf::after, .tk-cf__btn, .tk-cf__tile { animation: none !important; }
+  .tk-cf__check { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Phone menu: panel slides in from the left over a fading scrim; links rise in. */
+.tk-mnav { position: fixed; inset: 0; z-index: 210; pointer-events: none; }
+.tk-mnav.is-open { pointer-events: auto; }
+.tk-mnav__scrim {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, #000 42%, transparent);
+  opacity: 0; transition: opacity 0.25s ease;
+}
+.tk-mnav.is-open .tk-mnav__scrim { opacity: 1; }
+.tk-mnav__panel {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: min(300px, 86vw);
+  padding: 16px 12px calc(12px + env(safe-area-inset-bottom));
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  box-shadow: var(--shadow-pop);
+  transform: translateX(-104%);
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tk-mnav.is-open .tk-mnav__panel { transform: none; }
+.tk-mnav.is-open .tk-mnav__item { animation: tkNewItem 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .tk-mnav__panel, .tk-mnav__scrim { transition: none; }
+  .tk-mnav.is-open .tk-mnav__item { animation: none; }
+}
+
 /* "+ New" menu: drops from the button's corner; items slide in one after another. */
 .tk-newmenu {
   transform-origin: top right;

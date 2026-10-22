@@ -9,18 +9,20 @@ import { useSignOut } from "@/store/api/authApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import { useGetKhataEntriesQuery } from "@/store/api/khataApi";
 import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
+import { useGetRemindersQuery } from "@/store/api/remindersApi";
+import { daysUntil } from "@/lib/finance";
 
-export function DashboardSidebar() {
-  const pathname = usePathname();
-  const { signOut } = useSignOut();
+/** Menu sections (with live counts) shared by the desktop sidebar and the phone menu. */
+export function useNavSections() {
   const { user } = useAppSelector((state) => state.auth);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
   const { data: transactions = [] } = useGetTransactionsQuery();
   const { data: khataEntries = [] } = useGetKhataEntriesQuery();
   const { data: budgets = [] } = useGetBudgetsQuery();
 
   const pendingKhata = khataEntries.filter((e) => e.status === "pending").length;
+  // Bills due within 3 days (or overdue) — same "urgent" rule as the Bills page.
+  const { data: reminders = [] } = useGetRemindersQuery();
+  const dueBills = reminders.filter((r) => r.status === "pending" && daysUntil(r.dueDate) <= 3).length;
 
   const moneyNav = [
     {
@@ -99,8 +101,52 @@ export function DashboardSidebar() {
       ),
     },
     {
+      id: "bills",
+      label: "Bills",
+      href: "/dashboard/reminders",
+      count: dueBills > 0 ? dueBills : undefined,
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 3h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1z" />
+          <path d="M9 8h6M9 12h6" />
+        </svg>
+      ),
+    },
+    {
+      id: "subscriptions",
+      label: "Subscriptions",
+      href: "/dashboard/subscriptions",
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4.5h-4.5M6 21v-4.5h4.5" />
+        </svg>
+      ),
+    },
+    {
+      id: "assistant",
+      label: "AI Assistant",
+      href: "/dashboard/assistant",
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
+          <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
+        </svg>
+      ),
+    },
+    {
+      id: "tasks",
+      label: "Tasks",
+      href: "/dashboard/tasks",
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 5h14v14H5z" />
+          <path d="M8.5 12l2.5 2.5 4.5-5" />
+        </svg>
+      ),
+    },
+    {
       id: "calendar",
-      label: "Bills & Calendar",
+      label: "Calendar",
       href: "/dashboard/calendar",
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -137,9 +183,18 @@ export function DashboardSidebar() {
     { label: "Money", items: moneyNav },
     { label: "Studio", items: manageNav },
   ];
+  const all = [...moneyNav, ...manageNav];
+  return { sections, all, user, displayName, initials };
+}
+
+export function DashboardSidebar() {
+  const pathname = usePathname();
+  const { signOut } = useSignOut();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { sections, all, user, displayName, initials } = useNavSections();
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname === href || Boolean(pathname?.startsWith(`${href}/`));
-  const activeId = [...moneyNav, ...manageNav].find((i) => isActive(i.href))?.id ?? null;
+  const activeId = all.find((i) => isActive(i.href))?.id ?? null;
 
   // Sliding pill: a dark copy of the menu, clipped to the active item (see useNavPill).
   const asideRef = useRef<HTMLElement>(null);

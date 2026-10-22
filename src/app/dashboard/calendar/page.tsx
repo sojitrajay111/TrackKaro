@@ -531,7 +531,7 @@ export default function CalendarPage() {
                   </p>
                   <div className="grid">
                     {g.items.map((e) => (
-                      <div key={e.id} className="flex items-center gap-3 border-b border-border px-0.5 py-2.5 last:border-b-0">
+                      <div key={e.id} className="flex min-w-0 items-center gap-3 border-b border-border px-0.5 py-2.5 last:border-b-0">
                         <KindIcon kind={e.kind} />
                         <button
                           type="button"
@@ -567,24 +567,25 @@ export default function CalendarPage() {
                               Mark paid
                             </button>
                           )}
-                          {e.kind === "bill" && e.done && (
-                            <span className="flex items-center gap-1.5">
+                          {e.kind === "bill" && e.done &&
+                            (e.canUndo ? (
+                              <button
+                                  type="button"
+                                  onClick={() => e.bill && undoPayment(e.bill.id)}
+                                  title={"Paid · click to mark unpaid"}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="m5 12.5 4.5 4.5L19 7.5" />
+                                  </svg>
+                                  Undo
+                                </button>
+                            ) : (
                               <span className="pill pill--good">
                                 <i />
                                 Paid
                               </span>
-                              {e.canUndo && (
-                                <button
-                                  type="button"
-                                  onClick={() => e.bill && undoPayment(e.bill.id)}
-                                  title="Mark this bill unpaid again"
-                                  className="h-8 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
-                                >
-                                  Undo
-                                </button>
-                              )}
-                            </span>
-                          )}
+                            ))}
                           {/* Tasks: same labelled pattern — Mark done, then Done + Undo. */}
                           {e.kind === "task" && !e.done && (
                             <button
@@ -599,20 +600,17 @@ export default function CalendarPage() {
                             </button>
                           )}
                           {e.kind === "task" && e.done && (
-                            <span className="flex items-center gap-1.5">
-                              <span className="pill pill--good">
-                                <i />
-                                Done
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => e.task && updateTask({ id: e.task.id, patch: { status: "todo" } })}
-                                title="Mark this task as to do again"
-                                className="h-8 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
-                              >
-                                Undo
-                              </button>
-                            </span>
+                            <button
+                                  type="button"
+                                  onClick={() => e.task && updateTask({ id: e.task.id, patch: { status: "todo" } })}
+                                  title={"Done · click to mark as to do"}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <path d="m5 12.5 4.5 4.5L19 7.5" />
+                                  </svg>
+                                  Undo
+                                </button>
                           )}
                           {e.kind === "bill" && e.upcoming && (
                             <span className="pill pill--faint">

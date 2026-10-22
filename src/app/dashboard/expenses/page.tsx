@@ -1,11 +1,13 @@
 "use client";
 
 import { Fragment, useState, useMemo, type FormEvent } from "react";
+import { OnQueryParam } from "@/components/ui/query-param";
 import { CategoryIcon, CategoryTile, CATEGORY_TINT } from "@/components/ui/category-icon";
 import { Drawer } from "@/components/ui/drawer";
 import { TransactionDetail } from "@/components/expenses/transaction-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useGetTransactionsQuery,
   useAddTransactionMutation,
@@ -226,15 +228,21 @@ export default function ExpensesPage() {
   };
 
   // Delete Action
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const handleDeleteConfirm = async () => {
     if (!deleteTargetId) return;
+    setDeleteError(null);
     try {
       await deleteTransaction(deleteTargetId).unwrap();
       setDeleteTargetId(null);
     } catch {
-      // Error handled
+      setDeleteError("Couldn't delete it. Check your connection and try again.");
     }
   };
+  // Keep the last target visible while the dialog animates closed.
+  const [deletePreview, setDeletePreview] = useState<Transaction | null>(null);
+  const deleteTarget = transactions.find((t) => t.id === deleteTargetId) ?? null;
+  if (deleteTarget && deleteTarget !== deletePreview) setDeletePreview(deleteTarget);
 
   // Transaction Edit Handlers
   const handleStartEdit = (tx: Transaction) => {
@@ -383,6 +391,8 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-6 pb-16">
+      {/* From the search palette: /dashboard/expenses?q=… */}
+      <OnQueryParam name="q" onValue={setSearchQuery} />
       {/* Header: breadcrumb, title, summary line, actions */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-x-6 gap-y-4">
         <div className="flex flex-col gap-1.5 min-w-0">
@@ -952,42 +962,36 @@ export default function ExpensesPage() {
         spent={categoryBreakdown.find((c) => c.category === editingCategory)?.spent}
       />
 
-      {/* MODAL 3: DELETE CONFIRMATION */}
-      <Modal
+      {/* MODAL 3: DELETE CONFIRMATION (shows exactly what will be removed) */}
+      <ConfirmDialog
         isOpen={Boolean(deleteTargetId)}
-        onClose={() => setDeleteTargetId(null)}
-        title="Delete Transaction?"
-        description="Are you sure you want to remove this record? This action cannot be undone."
-        maxWidth="sm"
+        onCancel={() => {
+          setDeleteTargetId(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete this transaction?"
+        description="It's removed from your spending, budgets and reports. This can't be undone."
+        confirmLabel="Delete"
+        isWorking={isDeletingTx}
+        error={deleteError}
       >
-        <div className="space-y-4">
-          <div className="h-12 w-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
+        {deletePreview && (
+          <div className="tk-pop flex items-center gap-3 rounded-[16px] border border-border bg-[var(--surface-2)] p-3">
+            <CategoryTile name={deletePreview.category} size={42} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[16px] font-extrabold text-foreground">{deletePreview.title}</p>
+              <p className="truncate text-[14px] text-foreground-muted">
+                {deletePreview.category} · {new Date(deletePreview.date.slice(0, 10) + "T00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                {deletePreview.paymentMethod ? ` · ${deletePreview.paymentMethod}` : ""}
+              </p>
+            </div>
+            <b className={`shrink-0 text-[18px] font-extrabold tracking-[-0.02em] num ${deletePreview.type === "income" ? "text-[var(--good)]" : "text-foreground"}`}>
+              {deletePreview.type === "income" ? "+" : "−"}₹{deletePreview.amount.toLocaleString("en-IN")}
+            </b>
           </div>
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setDeleteTargetId(null)}
-              className="rounded-full px-5 py-2.5 text-xs sm:text-[13px] font-semibold border border-border bg-surface text-foreground hover:bg-surface-muted transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteConfirm}
-              disabled={isDeletingTx}
-              className="rounded-full px-6 py-2.5 text-xs sm:text-[13px] font-bold bg-red-600 hover:bg-red-700 text-white transition shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
-            >
-              {isDeletingTx && (
-                <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              )}
-              <span>Delete</span>
-            </button>
-          </div>
-        </div>
-      </Modal>
+        )}
+      </ConfirmDialog>
       {/* DRAWER: VIEW / EDIT TRANSACTION (Kesta-style animated side panel) */}
       <Drawer
         open={drawerOpen}

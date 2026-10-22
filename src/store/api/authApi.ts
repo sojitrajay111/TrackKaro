@@ -91,6 +91,33 @@ export const authApi = apiSlice.injectEndpoints({
       },
     }),
 
+    // Revokes every refresh token for this user (all devices), then logs out here too.
+    logoutAll: builder.mutation<{ success: boolean }, void>({
+      query: () => ({ url: "/auth/logout-all", method: "POST" }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          // still clear this browser
+        }
+        dispatch(logOut());
+        dispatch(apiSlice.util.resetApiState());
+      },
+    }),
+
+    // GDPR-style wipe of every record the user owns (account stays, data goes).
+    deleteAllData: builder.mutation<unknown, void>({
+      query: () => ({ url: "/account/data", method: "DELETE" }),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(apiSlice.util.resetApiState());
+        } catch {
+          // handled in component
+        }
+      },
+    }),
+
     updateProfile: builder.mutation<User, UpdateProfileRequest>({
       query: (body) => ({
         url: "/users/me",
@@ -129,6 +156,8 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useLogoutMutation,
+  useLogoutAllMutation,
+  useDeleteAllDataMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useUpdateProfileMutation,

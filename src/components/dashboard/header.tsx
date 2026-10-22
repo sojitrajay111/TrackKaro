@@ -8,10 +8,13 @@ import { NotificationsPopover } from "./notifications-popover";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RecordExpenseModal } from "@/components/ui/record-expense-modal";
 import { NewMenu } from "./new-menu";
+import { MobileNav } from "./mobile-nav";
+import { SearchPalette } from "./search-palette";
 
 export function DashboardHeader() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRecordModal, setShowRecordModal] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const { data: apiNotifications = [] } = useGetNotificationsQuery();
   const unreadCount = apiNotifications.filter((n) => !n.read).length;
@@ -31,7 +34,7 @@ export function DashboardHeader() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setShowRecordModal(true);
+        setShowSearch(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -44,6 +47,8 @@ export function DashboardHeader() {
         <div className="flex items-center justify-between gap-3 px-4 sm:px-8">
           {/* Left: Mobile Brand Mark + Finder Button */}
           <div className="flex items-center gap-3 flex-1 max-w-xl">
+            {/* Phone menu (the sidebar is hidden below lg) */}
+            <MobileNav />
             {/* Mobile Brand Mark */}
             <Link
               href="/dashboard"
@@ -56,9 +61,9 @@ export function DashboardHeader() {
             {/* Kesta Finder Button (⌘K) */}
             <button
               type="button"
-              onClick={() => setShowRecordModal(true)}
+              onClick={() => setShowSearch(true)}
               className="flex-1 max-w-md h-[42px] px-3.5 rounded-[12px] bg-surface hover:bg-surface-muted border border-border text-foreground-muted hover:text-foreground text-[15px] flex items-center justify-between transition-all shadow-xs"
-              aria-label="Search or Record (⌘K)"
+              aria-label="Search (⌘K)"
             >
               <div className="flex items-center gap-2.5 truncate">
                 <svg
@@ -136,6 +141,8 @@ export function DashboardHeader() {
           </div>
         </div>
       </header>
+
+      <SearchPalette open={showSearch} onClose={() => setShowSearch(false)} />
 
       {/* Record Expense / Income Modal */}
       <RecordExpenseModal

@@ -190,6 +190,9 @@ export default function SpendingInsightsPage() {
   const savingsRate = period.income > 0 ? Math.round((saved / period.income) * 100) : null;
   const spentChange = pctChange(period.spent, period.prevSpent);
   const overBudget = budgetRows.filter((b) => b.spent > b.limit).length;
+  // Budget alert, same rule as the app: the first category over its limit, else one at 75%+.
+  const alertBudget =
+    budgetRows.find((b) => b.spent > b.limit) ?? budgetRows.find((b) => b.limit > 0 && b.spent / b.limit >= 0.75) ?? null;
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const daysLeft = daysInMonth - today.getDate();
   // How far through the month we are (today counts as half gone).
@@ -431,6 +434,30 @@ export default function SpendingInsightsPage() {
               </div>
             ) : (
               <>
+                {alertBudget && (
+                  <div
+                    role="status"
+                    className="mb-5 flex items-start gap-3 rounded-[16px] border px-4 py-3"
+                    style={{
+                      borderColor: `color-mix(in srgb, ${alertBudget.spent > alertBudget.limit ? "var(--bad)" : "var(--amber)"} 35%, transparent)`,
+                      background: `color-mix(in srgb, ${alertBudget.spent > alertBudget.limit ? "var(--bad)" : "var(--amber)"} 9%, transparent)`,
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={alertBudget.spent > alertBudget.limit ? "var(--bad)" : "var(--amber)"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden="true">
+                      <path d="M12 3 2.5 20h19zM12 10v4.5M12 17.5h.01" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-extrabold" style={{ color: alertBudget.spent > alertBudget.limit ? "var(--bad)" : "var(--warn)" }}>
+                        {alertBudget.spent > alertBudget.limit ? `Over budget: ${alertBudget.category}` : `Nearing the limit: ${alertBudget.category}`}
+                      </p>
+                      <p className="text-[14px] text-foreground">
+                        {alertBudget.spent > alertBudget.limit
+                          ? `You've gone past your ${fmt(alertBudget.limit)} limit by ${fmt(alertBudget.spent - alertBudget.limit)}. Cut back on non-essentials for the rest of the month.`
+                          : `${alertBudget.category} is at ${Math.round((alertBudget.spent / alertBudget.limit) * 100)}% of its limit with ${fmt(alertBudget.limit - alertBudget.spent)} left for ${daysLeft} ${daysLeft === 1 ? "day" : "days"}.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {/* Pace: everything spent against every limit, with a "Today" marker */}
                 <div className="mb-5">
                   <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">

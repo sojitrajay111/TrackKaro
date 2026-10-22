@@ -3,13 +3,12 @@
 import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CategoryTile } from "@/components/ui/category-icon";
+import { PageHeader, StatTile, btnPrimary } from "@/components/ui/page-header";
 import { fmtINR } from "@/lib/form";
 import { daysUntil, shortDate } from "@/lib/finance";
-import {
-  useDeleteSubscriptionMutation,
-  useGetSubscriptionStatsQuery,
-  useGetSubscriptionsQuery,
-} from "@/store/api/subscriptionsApi";
+import { useDeleteSubscriptionMutation, useGetSubscriptionStatsQuery, useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import type { Subscription } from "@/store/types";
 import { SubscriptionForm } from "@/components/planner/subscription-form";
 
@@ -27,6 +26,7 @@ export default function SubscriptionsPage() {
   const [remove, { isLoading: deleting }] = useDeleteSubscriptionMutation();
   const [form, setForm] = useState<{ open: boolean; sub?: Subscription }>({ open: false });
   const [toDelete, setToDelete] = useState<Subscription | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const sorted = useMemo(() => [...subs].sort((a, b) => a.nextBillingDate.localeCompare(b.nextBillingDate)), [subs]);
   const redundant = subs.filter((s) => s.isRedundant);
@@ -34,94 +34,125 @@ export default function SubscriptionsPage() {
   const yearly = subs.reduce((s, x) => s + (x.annualCost || (x.billingCycle === "Yearly" ? x.amount : x.amount * 12)), 0);
   const redundantYearly = redundant.reduce((s, x) => s + (x.annualCost || x.amount * 12), 0);
   const change = stats?.monthlyChangePercent;
+  const nextUp = sorted.find((s) => daysUntil(s.nextBillingDate) >= 0);
 
   return (
     <div className="space-y-6 pb-16">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display font-normal text-[26px] sm:text-[32px] lg:text-[38px] tracking-[-0.02em] text-foreground leading-tight mb-1.5">
-            Subscriptions
-          </h1>
-          <p className="text-xs sm:text-sm text-foreground-muted">Track recurring services and cut the ones you don&apos;t use.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setForm({ open: true })}
-          className="h-10 self-start rounded-full bg-primary px-5 text-xs font-bold text-white hover:bg-primary-strong dark:text-emerald-950 lg:self-auto"
-        >
-          + Add subscription
-        </button>
-      </div>
+      <PageHeader
+        section="Studio"
+        title="Subscriptions"
+        summary={
+          subs.length ? (
+            <>
+              <strong className="font-bold text-foreground">{subs.length}</strong> active · <strong className="font-bold text-foreground num">{fmtINR(Math.round(monthly))}</strong> a month
+              {nextUp && (
+                <>
+                  {" "}
+                  · next: <strong className="font-bold text-foreground">{nextUp.name}</strong> {renewLabel(nextUp.nextBillingDate).toLowerCase()}
+                </>
+              )}
+            </>
+          ) : (
+            "Track recurring services and cut the ones you don't use."
+          )
+        }
+        actions={
+          <button type="button" onClick={() => setForm({ open: true })} className={btnPrimary}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add subscription
+          </button>
+        }
+      />
 
-      <dl className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: "Active", value: String(subs.length) },
-          { label: "Per month", value: fmtINR(Math.round(monthly)), extra: change != null ? `${change > 0 ? "+" : ""}${change}% vs last month` : undefined },
-          { label: "Per year", value: fmtINR(Math.round(yearly)) },
-          { label: "Could save / yr", value: fmtINR(Math.round(redundantYearly)), good: redundantYearly > 0 },
-        ].map((s) => (
-          <div key={s.label} className="glass glass--card rounded-[22px] px-4 py-3.5">
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">{s.label}</dt>
-            <dd className={`mt-1 font-display text-2xl font-medium tabular-nums ${s.good ? "text-[#059669] dark:text-emerald-400" : "text-foreground"}`}>
-              {isLoading ? "…" : s.value}
-            </dd>
-            {s.extra && <small className="text-[11px] text-foreground-muted">{s.extra}</small>}
-          </div>
-        ))}
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile index={0} label="Active" value={isLoading ? "…" : subs.length} note={redundant.length ? `${redundant.length} to review` : "All in use"} />
+        <StatTile
+          index={1}
+          label="Per month"
+          value={isLoading ? "…" : fmtINR(Math.round(monthly))}
+          note={change != null ? `${change > 0 ? "+" : ""}${change}% vs last month` : "Yearly plans spread out"}
+          tone={change != null && change > 0 ? "warn" : undefined}
+        />
+        <StatTile index={2} label="Per year" value={isLoading ? "…" : fmtINR(Math.round(yearly))} />
+        <StatTile index={3} label="Could save / yr" value={isLoading ? "…" : fmtINR(Math.round(redundantYearly))} tone={redundantYearly > 0 ? "good" : undefined} note="By cancelling flagged ones" />
       </dl>
 
       {redundant.length > 0 && (
-        <section className="rounded-[22px] border border-amber-500/30 bg-amber-500/8 px-5 py-4">
-          <b className="block text-sm text-foreground">AI found {redundant.length} subscription{redundant.length > 1 ? "s" : ""} that look duplicate or unused</b>
-          <ul className="mt-2 space-y-1 text-xs text-foreground-sub">
+        <section
+          className="tk-pop rounded-[16px] border px-4 py-3"
+          style={{ borderColor: "color-mix(in srgb, var(--amber) 40%, transparent)", background: "color-mix(in srgb, var(--amber) 9%, transparent)" }}
+        >
+          <p className="flex items-center gap-2 text-[15px] font-extrabold" style={{ color: "var(--warn)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3 2.5 20h19zM12 10v4.5M12 17.5h.01" />
+            </svg>
+            {redundant.length} subscription{redundant.length > 1 ? "s look" : " looks"} duplicate or unused
+          </p>
+          <ul className="mt-1.5 space-y-1 text-[14px] text-foreground">
             {redundant.map((s) => (
               <li key={s.id}>
-                <b>
-                  {s.icon} {s.name}
-                </b>
-                {s.redundancyReason ? `: ${s.redundancyReason}` : ""}
+                <b className="font-bold">{s.name}</b>
+                {s.redundancyReason ? <span className="text-foreground-muted"> — {s.redundancyReason}</span> : ""}
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      <section className="glass glass--card rounded-[28px] p-5 sm:p-6">
+      <section className="rounded-[22px] border border-border bg-surface p-4 shadow-xs sm:p-5">
+        <h2 className="mb-1 px-1 text-[17px] font-extrabold tracking-[-0.015em] text-foreground">Upcoming renewals</h2>
+        <p className="mb-3 px-1 text-[14px] font-medium text-foreground-muted">Soonest first</p>
         {isLoading ? (
-          <Skeleton className="h-48" />
+          <Skeleton className="h-48 rounded-[16px]" />
         ) : sorted.length === 0 ? (
-          <p className="rounded-[18px] bg-surface-muted/40 px-4 py-10 text-center text-xs text-foreground-muted">
-            No subscriptions yet. Add Netflix, Spotify, cloud storage and the like.
-          </p>
+          <p className="rounded-[16px] bg-[var(--surface-2)] px-4 py-10 text-center text-[15px] text-foreground-muted">No subscriptions yet. Add Netflix, Spotify, cloud storage and the like.</p>
         ) : (
-          <ul className="divide-y divide-border/50">
-            {sorted.map((s) => {
+          <ul>
+            {sorted.map((s, i) => {
               const days = daysUntil(s.nextBillingDate);
               return (
-                <li key={s.id} className="flex flex-wrap items-center gap-3 py-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg" aria-hidden="true">
-                    {s.icon || "🔄"}
-                  </span>
+                <li key={s.id} className="tk-cal-agenda flex items-center gap-3 border-b border-border px-1 py-3 last:border-b-0" style={{ animationDelay: `${Math.min(i, 10) * 0.03}s` }}>
+                  <CategoryTile name={s.category} size={40} />
                   <span className="min-w-0 flex-1">
-                    <b className="block truncate text-sm font-semibold text-foreground">
-                      {s.name}
-                      {s.isRedundant && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">Review</span>}
+                    <b className="flex min-w-0 items-center gap-2 text-[16px] font-bold text-foreground">
+                      <span className="truncate">{s.name}</span>
+                      {s.isRedundant && (
+                        <span className="pill pill--amber shrink-0">
+                          <i />
+                          Review
+                        </span>
+                      )}
                     </b>
-                    <small className="block text-[11px] text-foreground-muted">
+                    <small className="block truncate text-[14px] text-foreground-muted">
                       {s.category} · {shortDate(s.nextBillingDate)} ·{" "}
-                      <span className={days >= 0 && days <= 3 ? "font-semibold text-[#DC2626] dark:text-red-400" : ""}>{renewLabel(s.nextBillingDate)}</span>
+                      <span className={days >= 0 && days <= 3 ? "font-bold text-[var(--bad)]" : ""}>{renewLabel(s.nextBillingDate)}</span>
                     </small>
                   </span>
-                  <span className="text-right">
-                    <b className="block tabular-nums text-sm text-foreground">{fmtINR(s.amount)}</b>
-                    <small className="text-[10px] text-foreground-muted">/{s.billingCycle === "Yearly" ? "yr" : "mo"}</small>
+                  <span className="shrink-0 text-right">
+                    <b className="block text-[16px] font-extrabold text-foreground num">{fmtINR(s.amount)}</b>
+                    <small className="text-[13px] font-semibold text-foreground-muted">/{s.billingCycle === "Yearly" ? "year" : "month"}</small>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <button type="button" onClick={() => setForm({ open: true, sub: s })} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-foreground-sub hover:bg-surface-muted">
-                      Edit
+                  <span className="flex shrink-0 items-center gap-0.5">
+                    <button type="button" onClick={() => setForm({ open: true, sub: s })} aria-label={`Edit ${s.name}`} title="Edit" className="inline-grid h-8 w-8 place-items-center rounded-[10px] text-foreground-muted transition hover:bg-[var(--surface-2)] hover:text-foreground">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />
+                      </svg>
                     </button>
-                    <button type="button" onClick={() => setToDelete(s)} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-500/10">
-                      Delete
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setToDelete(s);
+                      }}
+                      aria-label={`Delete ${s.name}`}
+                      title="Delete"
+                      className="inline-grid h-8 w-8 place-items-center rounded-[10px] text-foreground-muted transition hover:bg-[color-mix(in_srgb,var(--rose)_14%,transparent)] hover:text-[var(--bad)]"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
+                      </svg>
                     </button>
                   </span>
                 </li>
@@ -135,24 +166,37 @@ export default function SubscriptionsPage() {
         {form.open && <SubscriptionForm key={form.sub?.id ?? "new"} sub={form.sub} onClose={() => setForm({ open: false })} />}
       </Modal>
 
-      <Modal isOpen={Boolean(toDelete)} onClose={() => setToDelete(null)} title="Delete this subscription?" description={toDelete?.name} maxWidth="sm">
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={() => setToDelete(null)} className="px-4 py-2 text-xs font-semibold text-foreground-muted">
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={async () => {
-              if (toDelete) await remove(toDelete.id).unwrap().catch(() => {});
-              setToDelete(null);
-            }}
-            className="rounded-full bg-red-600 px-5 py-2 text-xs font-bold text-white disabled:opacity-50"
-          >
-            {deleting ? "Deleting…" : "Delete"}
-          </button>
-        </div>
-      </Modal>
+      <ConfirmDialog
+        isOpen={Boolean(toDelete)}
+        onCancel={() => setToDelete(null)}
+        onConfirm={async () => {
+          if (!toDelete) return;
+          try {
+            await remove(toDelete.id).unwrap();
+            setToDelete(null);
+          } catch {
+            setDeleteError("Couldn't delete it. Try again.");
+          }
+        }}
+        title="Delete this subscription?"
+        description="It stops showing in your renewals and totals. This can't be undone."
+        isWorking={deleting}
+        error={deleteError}
+      >
+        {toDelete && (
+          <div className="flex items-center gap-3 rounded-[16px] border border-border bg-[var(--surface-2)] p-3">
+            <CategoryTile name={toDelete.category} size={40} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[16px] font-extrabold text-foreground">{toDelete.name}</p>
+              <p className="truncate text-[14px] text-foreground-muted">{renewLabel(toDelete.nextBillingDate)}</p>
+            </div>
+            <b className="shrink-0 text-[17px] font-extrabold text-foreground num">
+              {fmtINR(toDelete.amount)}
+              <small className="text-[13px] font-semibold text-foreground-muted">/{toDelete.billingCycle === "Yearly" ? "yr" : "mo"}</small>
+            </b>
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }
