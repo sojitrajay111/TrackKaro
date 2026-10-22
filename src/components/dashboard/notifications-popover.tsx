@@ -97,10 +97,10 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
       ref={popoverRef}
       role="dialog"
       aria-label="Notifications"
-      className="tk-notif absolute right-0 top-full z-[120] mt-2.5 w-[400px] max-w-[calc(100vw-2rem)] rounded-[20px] border border-border bg-[var(--raised)] p-3 text-foreground shadow-[var(--shadow-pop)]"
+      className="tk-notif absolute right-0 top-full z-[120] mt-2.5 flex max-h-[calc(100dvh-6rem)] w-[400px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[20px] border border-border bg-[var(--raised)] p-3 text-foreground shadow-[var(--shadow-pop)]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-1.5 pb-2 pt-1">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-1.5 pb-2 pt-1">
         <div className="flex items-center gap-2">
           <h3 className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">Notifications</h3>
           {unreadCount > 0 && (
@@ -130,7 +130,7 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
       </div>
 
       {/* Filters */}
-      <div className="flex gap-1.5 overflow-x-auto px-1 pb-2.5 no-scrollbar" role="group" aria-label="Filter">
+      <div className="flex shrink-0 gap-1.5 overflow-x-auto px-1 pb-2.5 no-scrollbar" role="group" aria-label="Filter">
         {FILTERS.map((f) => {
           const on = activeFilter === f.id;
           const count = f.id === "all" ? notifs.length : f.id === "unread" ? unreadCount : null;
@@ -152,7 +152,7 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
       </div>
 
       {/* List */}
-      <div className="max-h-[380px] overflow-y-auto no-scrollbar">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         {isLoading ? (
           <div className="space-y-2 p-1">
             {[1, 2, 3].map((i) => (
@@ -176,15 +176,15 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
             <p className="mt-0.5 text-[14px] text-foreground-muted">{activeFilter === "all" ? "No notifications yet." : "Nothing here for this filter."}</p>
           </div>
         ) : (
-          <ul key={activeFilter} className="grid gap-0.5">
+          <ul key={activeFilter} className="grid min-w-0 grid-cols-1 gap-0.5">
             {filtered.map((n, i) => {
               const m = meta(n);
               return (
-                <li key={n.id} className="tk-notif__row" style={{ animationDelay: `${Math.min(i, 8) * 0.03}s` }}>
+                <li key={n.id} className="tk-notif__row min-w-0" style={{ animationDelay: `${Math.min(i, 8) * 0.03}s` }}>
                   <button
                     type="button"
                     onClick={() => open(n)}
-                    className={`relative flex w-full items-start gap-3 rounded-[14px] p-2.5 text-left transition hover:bg-[var(--surface-2)] ${n.read ? "" : "bg-[color-mix(in_srgb,var(--primary)_6%,transparent)]"}`}
+                    className={`relative flex w-full min-w-0 items-start gap-3 rounded-[14px] p-2.5 pr-6 text-left transition hover:bg-[var(--surface-2)] ${n.read ? "" : "bg-[color-mix(in_srgb,var(--primary)_6%,transparent)]"}`}
                   >
                     <span
                       className="inline-grid h-10 w-10 shrink-0 place-items-center rounded-[12px]"
@@ -196,11 +196,11 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
                       </svg>
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline justify-between gap-2">
+                      <span className="flex min-w-0 items-baseline justify-between gap-2">
                         <b className={`truncate text-[15px] ${n.read ? "font-semibold text-foreground" : "font-extrabold text-foreground"}`}>{n.title}</b>
                         <small className="shrink-0 text-[12px] font-semibold text-foreground-muted">{formatRelativeTime(n.createdAt)}</small>
                       </span>
-                      <span className="mt-0.5 line-clamp-2 block text-[14px] leading-snug text-foreground-muted">{n.message}</span>
+                      <span className="mt-0.5 line-clamp-2 block break-words text-[14px] leading-snug text-foreground-muted [overflow-wrap:anywhere]">{n.message}</span>
                       <span className="mt-1 block text-[12px] font-bold" style={{ color: m.tint }}>
                         {m.label}
                       </span>
@@ -215,7 +215,7 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
       </div>
 
       {/* Footer */}
-      <div className="mt-2 flex items-center justify-between border-t border-border px-1.5 pt-2.5">
+      <div className="mt-2 flex shrink-0 items-center justify-between border-t border-border px-1.5 pt-2.5">
         {notifs.length > 0 ? (
           <button type="button" onClick={() => clearAll().catch(() => {})} className="h-8 rounded-[10px] px-2 text-[13px] font-bold text-foreground-muted transition hover:bg-[color-mix(in_srgb,var(--rose)_12%,transparent)] hover:text-[var(--bad)]">
             Clear all
