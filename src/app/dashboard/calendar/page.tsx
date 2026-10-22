@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { Modal } from "@/components/ui/modal";
 import { ReminderForm } from "@/components/planner/reminder-form";
 import { SubscriptionForm } from "@/components/planner/subscription-form";
@@ -51,6 +51,13 @@ const KINDS: Kind[] = ["spend", "bill", "sub", "task"];
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const pad = (n: number) => String(n).padStart(2, "0");
 const key = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
+/** Short money for small day cells: ₹540, ₹2.7k, ₹23.6k, ₹1.2L. */
+const fmtCompact = (n: number) => {
+  const v = Math.round(n);
+  if (v < 1000) return `₹${v}`;
+  if (v < 100000) return `₹${(v / 1000).toFixed(v < 10000 ? 1 : 0).replace(/\.0$/, "")}k`;
+  return `₹${(v / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+};
 
 type AddKind = "spend" | "task" | "bill" | "sub";
 
@@ -168,6 +175,38 @@ export default function CalendarPage() {
   const monthShort = new Date(month.y, month.m, 1).toLocaleDateString("en-IN", { month: "long" });
   const selectedLabel = new Date(selected + "T00:00").toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
   const isCurrentMonth = month.y === now.getFullYear() && month.m === now.getMonth();
+
+  // Hover preview: one floating card that glides between day cells (mouse devices only).
+  // `peek` keeps the last day while the card fades out, so it never empties mid-animation.
+  const gridWrap = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<number | undefined>(undefined);
+  const [peek, setPeek] = useState<{ k: string; x: number; y: number; above: boolean; align: "left" | "center" | "right" } | null>(null);
+  const [peekOn, setPeekOn] = useState(false);
+  const showPeek = (k: string, el: HTMLElement, col: number, row: number, rows: number) => {
+    window.clearTimeout(hideTimer.current);
+    const wrap = gridWrap.current;
+    if (!wrap || !(byDay.get(k)?.length)) {
+      setPeekOn(false);
+      return;
+    }
+    const w = wrap.getBoundingClientRect();
+    const c = el.getBoundingClientRect();
+    const above = row >= rows - 2 && rows > 3; // bottom rows open upward
+    const align = col === 0 ? "left" : col === 6 ? "right" : "center";
+    setPeek({
+      k,
+      x: (align === "left" ? c.left : align === "right" ? c.right : c.left + c.width / 2) - w.left,
+      y: (above ? c.top - 8 : c.bottom + 8) - w.top,
+      above,
+      align,
+    });
+    setPeekOn(true);
+  };
+  const hidePeek = () => {
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setPeekOn(false), 90);
+  };
+  const peekItems = peek ? (byDay.get(peek.k) ?? []) : [];
 
   const shiftMonth = (delta: number) => {
     setSlide(delta > 0 ? "next" : "prev");
@@ -317,6 +356,7 @@ export default function CalendarPage() {
             ))}
           </div>
 
+          <div ref={gridWrap} className="relative" onMouseLeave={hidePeek}>
           {/* Re-keyed per month so the slide replays */}
           <div
             key={from}
@@ -339,35 +379,43 @@ export default function CalendarPage() {
                   key={k}
                   type="button"
                   onClick={() => setSelected(k)}
+                  onMouseEnter={(ev) => showPeek(k, ev.currentTarget, i % 7, Math.floor(i / 7), cells.length / 7)}
+                  onMouseLeave={hidePeek}
+                  onFocus={(ev) => showPeek(k, ev.currentTarget, i % 7, Math.floor(i / 7), cells.length / 7)}
+                  onBlur={hidePeek}
                   aria-pressed={isSel}
                   aria-label={`${new Date(k + "T00:00").toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}, ${items.length} item${items.length === 1 ? "" : "s"}`}
-                  className={`group relative flex min-h-[52px] sm:min-h-[104px] flex-col items-stretch gap-1 rounded-[12px] border p-1.5 sm:p-2 text-left transition ${
+                  className={`@container group relative flex min-h-[52px] min-w-0 sm:min-h-[104px] flex-col items-stretch gap-1 overflow-hidden rounded-[12px] border p-1.5 sm:p-2 text-left transition ${
                     isSel
                       ? "border-transparent bg-foreground text-background shadow-[var(--shadow-pop)]"
                       : `border-border hover:border-[var(--line-2)] ${weekend ? "bg-[var(--surface-2)]" : "bg-surface"} text-foreground`
                   }`}
                 >
-                  <span className="flex items-center justify-between">
+                  <span className="flex min-w-0 items-center justify-between gap-1">
                     <span
-                      className={`inline-grid h-6 min-w-6 place-items-center rounded-full px-1 text-[13px] sm:text-[14px] font-extrabold num ${
+                      className={`inline-grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1 text-[13px] sm:text-[14px] font-extrabold num ${
                         isToday && !isSel ? "bg-[var(--accent)] text-[#1f1606]" : ""
                       }`}
                     >
                       {d}
                     </span>
+                    {/* Compact (₹23.6k) and only when the cell is wide enough to hold it. */}
                     {spent > 0 && (
-                      <span className={`hidden sm:inline text-[12px] font-bold num ${isSel ? "opacity-80" : "text-foreground-muted"}`}>
-                        {fmtINR(Math.round(spent))}
+                      <span
+                        className={`hidden @[5.25rem]:inline min-w-0 truncate text-[12px] font-bold num ${isSel ? "opacity-80" : "text-foreground-muted"}`}
+                        title={fmtINR(Math.round(spent))}
+                      >
+                        {fmtCompact(spent)}
                       </span>
                     )}
                   </span>
 
                   {/* Desktop: first two items as labels */}
-                  <span className="hidden sm:grid gap-1">
+                  <span className="hidden min-w-0 sm:grid gap-1">
                     {shown.map((e) => (
                       <span
                         key={e.id}
-                        className={`flex min-w-0 items-center gap-1.5 rounded-[7px] px-1.5 py-[3px] text-[12px] font-bold leading-tight ${e.done ? "line-through opacity-60" : e.upcoming ? "opacity-55" : ""}`}
+                        className={`flex min-w-0 items-center gap-1 @[6rem]:gap-1.5 rounded-[7px] px-1 @[6rem]:px-1.5 py-[3px] text-[12px] font-bold leading-tight ${e.done ? "line-through opacity-60" : e.upcoming ? "opacity-55" : ""}`}
                         style={{
                           background: isSel ? "color-mix(in srgb, var(--bg) 18%, transparent)" : `color-mix(in srgb, ${KIND_META[e.kind].color} 14%, transparent)`,
                         }}
@@ -376,7 +424,12 @@ export default function CalendarPage() {
                         <span className="truncate">{e.title}</span>
                       </span>
                     ))}
-                    {more > 0 && <span className={`px-1 text-[12px] font-bold ${isSel ? "opacity-80" : "text-foreground-muted"}`}>+{more} more</span>}
+                    {more > 0 && (
+                      <span className={`truncate whitespace-nowrap px-1 text-[12px] font-bold ${isSel ? "opacity-80" : "text-foreground-muted"}`}>
+                        +{more}
+                        <span className="hidden @[6.5rem]:inline"> more</span>
+                      </span>
+                    )}
                   </span>
 
                   {/* Phone: dots only */}
@@ -388,6 +441,54 @@ export default function CalendarPage() {
                 </button>
               );
             })}
+          </div>
+
+          {/* Day preview: position glides between cells; the card fades/scales in and out. */}
+          {peek && (
+            <div
+              className="tk-peek pointer-events-none absolute z-30 hidden [@media(hover:hover)]:block"
+              style={{
+                left: peek.x,
+                top: peek.y,
+                transform: `translate(${peek.align === "left" ? "0" : peek.align === "right" ? "-100%" : "-50%"}, ${peek.above ? "-100%" : "0"})`,
+              }}
+              aria-hidden="true"
+            >
+              <div
+                className="tk-peek__card w-[260px] rounded-[16px] border border-border bg-surface p-3 shadow-[var(--shadow-pop)]"
+                data-on={peekOn}
+                style={{ transformOrigin: `${peek.align === "left" ? "left" : peek.align === "right" ? "right" : "center"} ${peek.above ? "bottom" : "top"}` }}
+              >
+                <p className="flex items-center justify-between gap-2 pb-2 text-[13px] font-extrabold text-foreground">
+                  {new Date(peek.k + "T00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                  <span className="font-bold text-foreground-muted">
+                    {peekItems.length} item{peekItems.length === 1 ? "" : "s"}
+                  </span>
+                </p>
+                <ul key={peek.k} className="tk-peek__list grid gap-1.5">
+                  {peekItems.slice(0, 5).map((e) => (
+                    <li key={e.id} className="flex min-w-0 items-center gap-2 text-[13px]">
+                      <i className="h-2 w-2 shrink-0 rounded-full" style={{ background: KIND_META[e.kind].color }} />
+                      <span className={`min-w-0 flex-1 truncate font-semibold ${e.done ? "text-foreground-muted line-through" : "text-foreground"}`}>{e.title}</span>
+                      {e.kind === "bill" && (e.done || e.upcoming) && (
+                        <span className="shrink-0 text-[12px] font-bold text-foreground-muted">{e.done ? "Paid" : "Upcoming"}</span>
+                      )}
+                      {e.kind === "task" && e.done && <span className="shrink-0 text-[12px] font-bold text-foreground-muted">Done</span>}
+                      {e.amount != null && (
+                        <b className={`shrink-0 font-extrabold num ${e.income ? "text-[var(--good)]" : "text-foreground"}`}>
+                          {e.income ? "+" : ""}
+                          {fmtINR(e.amount)}
+                        </b>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {peekItems.length > 5 && (
+                  <p className="pt-2 text-[12px] font-bold text-foreground-muted">+{peekItems.length - 5} more · click the day to see all</p>
+                )}
+              </div>
+            </div>
+          )}
           </div>
         </section>
 
@@ -431,48 +532,7 @@ export default function CalendarPage() {
                   <div className="grid">
                     {g.items.map((e) => (
                       <div key={e.id} className="flex items-center gap-3 border-b border-border px-0.5 py-2.5 last:border-b-0">
-                        {e.kind === "task" || (e.kind === "bill" && !e.upcoming) ? (
-                          // Tasks: done / to do. Bills: paid / unpaid; only the latest payment can be undone.
-                          <button
-                            type="button"
-                            role="checkbox"
-                            aria-checked={Boolean(e.done)}
-                            aria-label={e.kind === "bill" ? `Paid: ${e.title}` : `Done: ${e.title}`}
-                            disabled={e.kind === "bill" && e.done && !e.canUndo}
-                            title={
-                              e.kind === "bill"
-                                ? e.done
-                                  ? e.canUndo
-                                    ? "Mark unpaid"
-                                    : "Only the latest payment can be undone"
-                                  : e.bill?.frequency === "One-time"
-                                    ? "Mark paid"
-                                    : "Mark paid (moves to the next due date)"
-                                : e.done
-                                  ? "Mark to do"
-                                  : "Mark done"
-                            }
-                            onClick={() => {
-                              if (e.task) updateTask({ id: e.task.id, patch: { status: e.done ? "todo" : "done" } });
-                              if (e.bill) {
-                                if (e.done) undoPayment(e.bill.id);
-                                else updateReminder({ id: e.bill.id, patch: { status: "paid" } });
-                              }
-                            }}
-                            className="inline-grid h-9 w-9 shrink-0 place-items-center rounded-[11px] border-2 transition disabled:cursor-not-allowed disabled:opacity-60"
-                            style={
-                              e.done
-                                ? { background: KIND_META[e.kind].color, borderColor: "transparent", color: "#fff" }
-                                : { borderColor: "var(--line-2)", color: "transparent" }
-                            }
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="m5 12.5 4.5 4.5L19 7.5" />
-                            </svg>
-                          </button>
-                        ) : (
-                          <KindIcon kind={e.kind} />
-                        )}
+                        <KindIcon kind={e.kind} />
                         <button
                           type="button"
                           disabled={e.kind === "spend"}
@@ -482,16 +542,85 @@ export default function CalendarPage() {
                           <b className={`block truncate font-bold ${e.done ? "text-foreground-muted line-through" : "text-foreground"}`}>{e.title}</b>
                           <small className="block truncate text-[14px] text-foreground-muted">
                             {e.kind === "spend" ? (e.income ? "Money in" : "Money out") : KIND_META[e.kind].one}
-                            {e.kind === "bill" ? (e.done ? " · paid" : e.upcoming ? ` · repeats ${e.bill?.frequency.toLowerCase()}` : " · unpaid") : ""}
+                            {e.kind === "bill" && e.upcoming ? ` · repeats ${e.bill?.frequency.toLowerCase()}` : ""}
                             {e.kind !== "spend" ? " · tap to edit" : ""}
                           </small>
                         </button>
-                        {e.amount != null && (
-                          <b className={`shrink-0 font-extrabold num ${e.income ? "text-[var(--good)]" : "text-foreground"}`}>
-                            {e.income ? "+" : ""}
-                            {fmtINR(e.amount)}
-                          </b>
-                        )}
+                        <span className="grid shrink-0 justify-items-end gap-1.5">
+                          {e.amount != null && (
+                            <b className={`font-extrabold num ${e.income ? "text-[var(--good)]" : e.done ? "text-foreground-muted" : "text-foreground"}`}>
+                              {e.income ? "+" : ""}
+                              {fmtINR(e.amount)}
+                            </b>
+                          )}
+                          {/* Bills: an explicit, labelled action instead of an unlabelled checkbox. */}
+                          {e.kind === "bill" && !e.upcoming && !e.done && (
+                            <button
+                              type="button"
+                              onClick={() => e.bill && updateReminder({ id: e.bill.id, patch: { status: "paid" } })}
+                              title={e.bill?.frequency === "One-time" ? undefined : "Records this payment and moves the bill to its next due date"}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-[10px] bg-[var(--good)] px-3 text-[13px] font-bold text-white transition hover:brightness-110 active:brightness-95"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="m5 12.5 4.5 4.5L19 7.5" />
+                              </svg>
+                              Mark paid
+                            </button>
+                          )}
+                          {e.kind === "bill" && e.done && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="pill pill--good">
+                                <i />
+                                Paid
+                              </span>
+                              {e.canUndo && (
+                                <button
+                                  type="button"
+                                  onClick={() => e.bill && undoPayment(e.bill.id)}
+                                  title="Mark this bill unpaid again"
+                                  className="h-8 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
+                                >
+                                  Undo
+                                </button>
+                              )}
+                            </span>
+                          )}
+                          {/* Tasks: same labelled pattern — Mark done, then Done + Undo. */}
+                          {e.kind === "task" && !e.done && (
+                            <button
+                              type="button"
+                              onClick={() => e.task && updateTask({ id: e.task.id, patch: { status: "done" } })}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-[10px] bg-[var(--violet)] px-3 text-[13px] font-bold text-white transition hover:brightness-110 active:brightness-95"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="m5 12.5 4.5 4.5L19 7.5" />
+                              </svg>
+                              Mark done
+                            </button>
+                          )}
+                          {e.kind === "task" && e.done && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="pill pill--good">
+                                <i />
+                                Done
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => e.task && updateTask({ id: e.task.id, patch: { status: "todo" } })}
+                                title="Mark this task as to do again"
+                                className="h-8 rounded-[10px] border border-border bg-surface px-2.5 text-[13px] font-bold text-foreground transition hover:bg-surface-muted"
+                              >
+                                Undo
+                              </button>
+                            </span>
+                          )}
+                          {e.kind === "bill" && e.upcoming && (
+                            <span className="pill pill--faint">
+                              <i />
+                              Upcoming
+                            </span>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
