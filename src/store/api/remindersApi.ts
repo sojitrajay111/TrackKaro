@@ -1,4 +1,5 @@
 import type { BillReminder } from '@/store/types';
+import { applyPaid, applyUndo } from '@/lib/reminders';
 import { apiSlice } from './apiSlice';
 
 export const remindersApi = apiSlice.injectEndpoints({
@@ -24,7 +25,48 @@ export const remindersApi = apiSlice.injectEndpoints({
 
     updateReminder: builder.mutation<BillReminder, { id: string; patch: Partial<BillReminder> }>({
       query: ({ id, patch }) => ({ url: `/reminders/${id}`, method: 'PATCH', body: patch }),
+      // Optimistic: apply the change to the cached list at once (paid toggle feels instant), undo on failure.
+      // Marking a recurring bill paid rolls it to the next due date, exactly as the server will.
+      async onQueryStarted({ id, patch }, { dispatch, queryFulfilled }) {
+        const undo = dispatch(
+          remindersApi.util.updateQueryData('getReminders', undefined, (draft) => {
+            const i = draft.findIndex((x) => x.id === id);
+            if (i < 0) return;
+            const { status, ...fields } = patch;
+            const next = { ...draft[i], ...fields };
+            draft[i] = status === 'paid' && draft[i].status === 'pending' ? applyPaid(next) : status ? { ...next, status } : next;
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          undo.undo();
+        }
+      },
       invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Reminders', id },
+        { type: 'Reminders', id: 'LIST' },
+        { type: 'Reminders', id: 'STATS' },
+      ],
+    }),
+
+    /** Reverse the latest payment: a recurring bill returns to the period it settled. */
+    undoReminderPayment: builder.mutation<BillReminder, string>({
+      query: (id) => ({ url: `/reminders/${id}/undo-payment`, method: 'POST' }),
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const undo = dispatch(
+          remindersApi.util.updateQueryData('getReminders', undefined, (draft) => {
+            const i = draft.findIndex((x) => x.id === id);
+            if (i >= 0) draft[i] = applyUndo(draft[i]);
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          undo.undo();
+        }
+      },
+      invalidatesTags: (_result, _error, id) => [
         { type: 'Reminders', id },
         { type: 'Reminders', id: 'LIST' },
         { type: 'Reminders', id: 'STATS' },
@@ -47,6 +89,7 @@ export const {
   useGetRemindersQuery,
   useAddReminderMutation,
   useUpdateReminderMutation,
+  useUndoReminderPaymentMutation,
   useDeleteReminderMutation,
   useGetReminderStatsQuery,
 } = remindersApi;

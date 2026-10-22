@@ -21,6 +21,25 @@ export const tasksApi = apiSlice.injectEndpoints({
 
     updateTask: builder.mutation<PlannerTask, { id: string; patch: Partial<PlannerTask> }>({
       query: ({ id, patch }) => ({ url: `/tasks/${id}`, method: 'PATCH', body: patch }),
+      // Optimistic: patch every cached task range holding this task, undo on failure.
+      async onQueryStarted({ id, patch }, { dispatch, getState, queryFulfilled }) {
+        const undos = tasksApi.util
+          .selectInvalidatedBy(getState(), [{ type: 'Tasks', id }])
+          .filter((e) => e.endpointName === 'getTasks')
+          .map((e) =>
+            dispatch(
+              tasksApi.util.updateQueryData('getTasks', e.originalArgs as { from: string; to: string }, (draft) => {
+                const t = draft.find((x) => x.id === id);
+                if (t) Object.assign(t, patch);
+              }),
+            ),
+          );
+        try {
+          await queryFulfilled;
+        } catch {
+          undos.forEach((u) => u.undo());
+        }
+      },
       invalidatesTags: (_r, _e, { id }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },

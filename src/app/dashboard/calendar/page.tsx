@@ -9,7 +9,8 @@ import { TransactionForm } from "@/components/planner/transaction-form";
 import { fmtINR, todayKey } from "@/lib/form";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
-import { useGetRemindersQuery } from "@/store/api/remindersApi";
+import { useGetRemindersQuery, useUndoReminderPaymentMutation, useUpdateReminderMutation } from "@/store/api/remindersApi";
+import { paidRows, upcomingRepeats } from "@/lib/reminders";
 import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import type { BillReminder, PlannerTask, Subscription } from "@/store/types";
 
@@ -24,6 +25,10 @@ interface CalEvent {
   amount?: number;
   done?: boolean;
   income?: boolean;
+  /** Bills: a future repeat of a recurring bill (display only, not yet its due date). */
+  upcoming?: boolean;
+  /** Bills: this paid occurrence is the latest payment, so it can be undone. */
+  canUndo?: boolean;
   task?: PlannerTask;
   bill?: BillReminder;
   sub?: Subscription;
@@ -89,6 +94,8 @@ export default function CalendarPage() {
   const { data: transactions = [] } = useGetTransactionsQuery();
   const { data: tasks = [] } = useGetTasksQuery({ from, to });
   const { data: bills = [] } = useGetRemindersQuery();
+  const [updateReminder] = useUpdateReminderMutation();
+  const [undoPayment] = useUndoReminderPaymentMutation();
   const { data: subs = [] } = useGetSubscriptionsQuery();
   const [updateTask] = useUpdateTaskMutation();
 
@@ -102,9 +109,16 @@ export default function CalendarPage() {
       const d = t.dueDate.slice(0, 10);
       if (inMonth(d)) list.push({ id: `k-${t.id}`, kind: "task", date: d, title: t.title, done: t.status === "done", task: t });
     }
+    // Bills: the current due date (unpaid), each settled period (paid), and later repeats.
     for (const b of bills) {
       const d = b.dueDate.slice(0, 10);
-      if (inMonth(d)) list.push({ id: `b-${b.id}`, kind: "bill", date: d, title: b.title, amount: b.amount, done: b.status === "paid", bill: b });
+      if (b.status === "pending" && inMonth(d)) list.push({ id: `b-${b.id}`, kind: "bill", date: d, title: b.title, amount: b.amount, bill: b });
+      for (const day of upcomingRepeats(b, to)) {
+        if (inMonth(day)) list.push({ id: `b-${b.id}-${day}`, kind: "bill", date: day, title: b.title, amount: b.amount, bill: b, upcoming: true });
+      }
+    }
+    for (const p of paidRows(bills)) {
+      if (inMonth(p.dueDate)) list.push({ id: `b-${p.rowKey}`, kind: "bill", date: p.dueDate, title: p.title, amount: p.amount, done: true, canUndo: p.canUndo, bill: p });
     }
     for (const s of subs) {
       const d = s.nextBillingDate.slice(0, 10);
@@ -122,7 +136,7 @@ export default function CalendarPage() {
       if (e.kind === "spend") {
         if (e.income) t.income += e.amount ?? 0;
         else t.spent += e.amount ?? 0;
-      } else if (e.kind === "bill" && !e.done) {
+      } else if (e.kind === "bill" && !e.done && !e.upcoming) {
         t.billsDue++;
         t.billsDueAmt += e.amount ?? 0;
       } else if (e.kind === "sub") {
@@ -172,7 +186,8 @@ export default function CalendarPage() {
   const close = () => setAdding(null);
   const openEvent = (e: CalEvent) => {
     if (e.task) setEditTask(e.task);
-    if (e.bill) setEditBill(e.bill);
+    // Paid/upcoming rows carry that period's date; always edit the live reminder.
+    if (e.bill) setEditBill(bills.find((b) => b.id === e.bill?.id) ?? e.bill);
     if (e.sub) setEditSub(e.sub);
   };
 
@@ -352,7 +367,7 @@ export default function CalendarPage() {
                     {shown.map((e) => (
                       <span
                         key={e.id}
-                        className={`flex min-w-0 items-center gap-1.5 rounded-[7px] px-1.5 py-[3px] text-[12px] font-bold leading-tight ${e.done ? "line-through opacity-60" : ""}`}
+                        className={`flex min-w-0 items-center gap-1.5 rounded-[7px] px-1.5 py-[3px] text-[12px] font-bold leading-tight ${e.done ? "line-through opacity-60" : e.upcoming ? "opacity-55" : ""}`}
                         style={{
                           background: isSel ? "color-mix(in srgb, var(--bg) 18%, transparent)" : `color-mix(in srgb, ${KIND_META[e.kind].color} 14%, transparent)`,
                         }}
@@ -416,17 +431,40 @@ export default function CalendarPage() {
                   <div className="grid">
                     {g.items.map((e) => (
                       <div key={e.id} className="flex items-center gap-3 border-b border-border px-0.5 py-2.5 last:border-b-0">
-                        {e.kind === "task" ? (
+                        {e.kind === "task" || (e.kind === "bill" && !e.upcoming) ? (
+                          // Tasks: done / to do. Bills: paid / unpaid; only the latest payment can be undone.
                           <button
                             type="button"
                             role="checkbox"
                             aria-checked={Boolean(e.done)}
-                            aria-label={`Done: ${e.title}`}
-                            onClick={() => e.task && updateTask({ id: e.task.id, patch: { status: e.done ? "todo" : "done" } })}
-                            className={`inline-grid h-9 w-9 shrink-0 place-items-center rounded-[11px] border-2 transition ${
-                              e.done ? "border-transparent text-white" : "border-[var(--line-2)] text-transparent hover:border-[var(--violet)]"
-                            }`}
-                            style={e.done ? { background: "var(--violet)" } : undefined}
+                            aria-label={e.kind === "bill" ? `Paid: ${e.title}` : `Done: ${e.title}`}
+                            disabled={e.kind === "bill" && e.done && !e.canUndo}
+                            title={
+                              e.kind === "bill"
+                                ? e.done
+                                  ? e.canUndo
+                                    ? "Mark unpaid"
+                                    : "Only the latest payment can be undone"
+                                  : e.bill?.frequency === "One-time"
+                                    ? "Mark paid"
+                                    : "Mark paid (moves to the next due date)"
+                                : e.done
+                                  ? "Mark to do"
+                                  : "Mark done"
+                            }
+                            onClick={() => {
+                              if (e.task) updateTask({ id: e.task.id, patch: { status: e.done ? "todo" : "done" } });
+                              if (e.bill) {
+                                if (e.done) undoPayment(e.bill.id);
+                                else updateReminder({ id: e.bill.id, patch: { status: "paid" } });
+                              }
+                            }}
+                            className="inline-grid h-9 w-9 shrink-0 place-items-center rounded-[11px] border-2 transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={
+                              e.done
+                                ? { background: KIND_META[e.kind].color, borderColor: "transparent", color: "#fff" }
+                                : { borderColor: "var(--line-2)", color: "transparent" }
+                            }
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <path d="m5 12.5 4.5 4.5L19 7.5" />
@@ -444,7 +482,7 @@ export default function CalendarPage() {
                           <b className={`block truncate font-bold ${e.done ? "text-foreground-muted line-through" : "text-foreground"}`}>{e.title}</b>
                           <small className="block truncate text-[14px] text-foreground-muted">
                             {e.kind === "spend" ? (e.income ? "Money in" : "Money out") : KIND_META[e.kind].one}
-                            {e.kind === "bill" ? (e.done ? " · paid" : " · unpaid") : ""}
+                            {e.kind === "bill" ? (e.done ? " · paid" : e.upcoming ? ` · repeats ${e.bill?.frequency.toLowerCase()}` : " · unpaid") : ""}
                             {e.kind !== "spend" ? " · tap to edit" : ""}
                           </small>
                         </button>

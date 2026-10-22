@@ -10,9 +10,11 @@ import {
   useDeleteReminderMutation,
   useGetReminderStatsQuery,
   useGetRemindersQuery,
+  useUndoReminderPaymentMutation,
   useUpdateReminderMutation,
 } from "@/store/api/remindersApi";
 import type { BillReminder } from "@/store/types";
+import { paidRows, type PaidRow } from "@/lib/reminders";
 import { ReminderForm } from "@/components/planner/reminder-form";
 
 type Tab = "pending" | "urgent" | "paid";
@@ -26,6 +28,7 @@ export default function RemindersPage() {
   const { data: reminders = [], isLoading } = useGetRemindersQuery();
   const { data: stats } = useGetReminderStatsQuery();
   const [updateReminder] = useUpdateReminderMutation();
+  const [undoPayment] = useUndoReminderPaymentMutation();
   const [deleteReminder, { isLoading: deleting }] = useDeleteReminderMutation();
 
   const [tab, setTab] = useState<Tab>("pending");
@@ -34,7 +37,8 @@ export default function RemindersPage() {
   const [toDelete, setToDelete] = useState<BillReminder | null>(null);
 
   const pending = useMemo(() => reminders.filter((r) => r.status === "pending"), [reminders]);
-  const paid = useMemo(() => reminders.filter((r) => r.status === "paid"), [reminders]);
+  // Each settled period of a recurring bill, plus paid one-time bills.
+  const paid = useMemo(() => paidRows(reminders), [reminders]);
   const urgent = useMemo(() => pending.filter((r) => daysUntil(r.dueDate) <= 3), [pending]);
   const totalDue = pending.reduce((s, r) => s + r.amount, 0);
   const urgentAmount = urgent.reduce((s, r) => s + r.amount, 0);
@@ -43,8 +47,8 @@ export default function RemindersPage() {
   );
   const upcoming = [...pending].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 6);
 
-  const list = useMemo(() => {
-    const base = tab === "pending" ? pending : tab === "urgent" ? urgent : paid;
+  const list = useMemo<(BillReminder & Partial<PaidRow>)[]>(() => {
+    const base: (BillReminder & Partial<PaidRow>)[] = tab === "pending" ? pending : tab === "urgent" ? urgent : paid;
     return [...base].sort((a, b) =>
       sort === "amount" ? b.amount - a.amount : sort === "title" ? a.title.localeCompare(b.title) : a.dueDate.localeCompare(b.dueDate)
     );
@@ -159,8 +163,11 @@ export default function RemindersPage() {
             {list.map((r) => {
               const isPaid = r.status === "paid";
               const days = daysUntil(r.dueDate);
+              // Edit/delete always act on the live reminder, not a past period's row.
+              const live = reminders.find((x) => x.id === r.id) ?? r;
+              const isHistory = isPaid && r.rowKey !== undefined && r.rowKey !== r.id;
               return (
-                <li key={r.id} className="flex flex-wrap items-center gap-3 py-3">
+                <li key={r.rowKey ?? r.id} className="flex flex-wrap items-center gap-3 py-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg" aria-hidden="true">
                     {CATEGORY_ICON[r.category] ?? "📄"}
                   </span>
@@ -168,6 +175,8 @@ export default function RemindersPage() {
                     <b className={`block truncate text-sm font-semibold ${isPaid ? "text-foreground-muted line-through" : "text-foreground"}`}>{r.title}</b>
                     <small className="block text-[11px] text-foreground-muted">
                       {r.frequency} · due {shortDate(r.dueDate)}
+                      {isPaid && r.paidAt ? ` · paid ${shortDate(r.paidAt.slice(0, 10))}` : ""}
+                      {!isPaid && live.payments?.length ? ` · last paid ${shortDate(live.payments[live.payments.length - 1].dueDate)}` : ""}
                       {!isPaid && (
                         <span className={days <= 3 ? " font-semibold text-[#DC2626] dark:text-red-400" : ""}> · {dueLabel(r.dueDate)}</span>
                       )}
@@ -175,21 +184,29 @@ export default function RemindersPage() {
                   </span>
                   <b className="tabular-nums text-sm text-foreground">{fmtINR(r.amount)}</b>
                   <span className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => updateReminder({ id: r.id, patch: { status: isPaid ? "pending" : "paid" } })}
-                      className={`rounded-full px-3 py-1 text-[11px] font-bold ${
-                        isPaid ? "bg-surface-muted text-foreground-sub" : "bg-emerald-500/12 text-[#059669] dark:text-emerald-400"
-                      }`}
-                    >
-                      {isPaid ? "Mark pending" : "Mark paid"}
-                    </button>
-                    <button type="button" onClick={() => setForm({ open: true, reminder: r })} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-foreground-sub hover:bg-surface-muted">
-                      Edit
-                    </button>
-                    <button type="button" onClick={() => setToDelete(r)} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-500/10">
-                      Delete
-                    </button>
+                    {/* Recurring bills roll to the next due date when paid; only the latest payment can be undone. */}
+                    {(!isPaid || r.canUndo) && (
+                      <button
+                        type="button"
+                        onClick={() => (isPaid ? undoPayment(r.id) : updateReminder({ id: r.id, patch: { status: "paid" } }))}
+                        title={!isPaid && r.frequency !== "One-time" ? "Records this payment and moves the bill to its next due date" : undefined}
+                        className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                          isPaid ? "bg-surface-muted text-foreground-sub" : "bg-emerald-500/12 text-[#059669] dark:text-emerald-400"
+                        }`}
+                      >
+                        {isPaid ? "Undo payment" : "Mark paid"}
+                      </button>
+                    )}
+                    {!isHistory && (
+                      <>
+                        <button type="button" onClick={() => setForm({ open: true, reminder: live })} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-foreground-sub hover:bg-surface-muted">
+                          Edit
+                        </button>
+                        <button type="button" onClick={() => setToDelete(live)} className="rounded-full px-2.5 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-500/10">
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </span>
                 </li>
               );

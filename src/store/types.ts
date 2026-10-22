@@ -108,6 +108,8 @@ export type BillReminder = {
   frequency: Frequency;
   status: 'pending' | 'paid';
   notes?: string;
+  /** Settled occurrences of a recurring bill, oldest first (paying rolls dueDate forward). */
+  payments?: { dueDate: string; paidAt: string; amount: number }[];
 };
 
 export type BillingCycle = 'Monthly' | 'Yearly';
