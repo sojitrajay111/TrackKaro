@@ -233,7 +233,7 @@ export default function CalendarPage() {
   const btnGhost =
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93]";
   const btnDark =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93]";
   const card = "rounded-[22px] border border-border bg-surface p-5 shadow-xs";
   const tile = "min-w-0 rounded-[16px] border border-border bg-surface px-4 py-3";
   const chipCls = (on: boolean) =>
@@ -394,7 +394,7 @@ export default function CalendarPage() {
                   <span className="flex min-w-0 items-center justify-between gap-1">
                     <span
                       className={`inline-grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1 text-[13px] sm:text-[14px] font-extrabold num ${
-                        isToday && !isSel ? "bg-[var(--accent)] text-[#1f1606]" : ""
+                        isToday && !isSel ? "bg-[var(--accent)] text-[var(--on-accent)]" : ""
                       }`}
                     >
                       {d}

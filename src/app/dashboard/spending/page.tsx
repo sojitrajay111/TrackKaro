@@ -424,7 +424,7 @@ export default function SpendingInsightsPage() {
                 <button
                   type="button"
                   onClick={() => setLimitEdit({ open: true })}
-                  className="inline-flex h-[38px] items-center rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]"
+                  className="inline-flex h-[38px] items-center rounded-[12px] bg-[var(--primary)] px-3.5 text-[14px] font-bold text-[var(--on-primary)]"
                 >
                   Set a budget
                 </button>

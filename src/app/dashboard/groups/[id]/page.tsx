@@ -181,7 +181,7 @@ export default function GroupDetailPage() {
   const btnGhost =
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93]";
   const btnDark =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93]";
   const btnXs =
     "inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground transition hover:bg-surface-muted";
   const card = "rounded-[22px] border border-border bg-surface p-5 shadow-xs";
@@ -631,7 +631,7 @@ export default function GroupDetailPage() {
       {toast && (
         <div
           role="status"
-          className="tk-pop fixed bottom-6 left-1/2 z-[220] -translate-x-1/2 rounded-[14px] bg-[#161614] px-4 py-2.5 text-[15px] font-bold text-white shadow-[var(--shadow-pop)] dark:bg-[#f0c35a] dark:text-[#161614]"
+          className="tk-pop fixed bottom-6 left-1/2 z-[220] -translate-x-1/2 rounded-[14px] bg-[var(--primary)] px-4 py-2.5 text-[15px] font-bold text-[var(--on-primary)] shadow-[var(--shadow-pop)]"
         >
           {toast}
         </div>

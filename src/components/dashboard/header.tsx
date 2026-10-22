@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useGetNotificationsQuery } from "@/store/api/notificationsApi";
 import { NotificationsPopover } from "./notifications-popover";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RecordExpenseModal } from "@/components/ui/record-expense-modal";
+import { NewMenu } from "./new-menu";
 
 export function DashboardHeader() {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -45,12 +47,10 @@ export function DashboardHeader() {
             {/* Mobile Brand Mark */}
             <Link
               href="/dashboard"
-              className="lg:hidden flex items-center justify-center w-8 h-8 rounded-xl bg-[#e0a92e] text-[#1f1606] font-extrabold text-sm shrink-0 shadow-xs"
+              className="lg:hidden flex items-center justify-center w-9 h-9 overflow-hidden rounded-[11px] shrink-0 shadow-xs"
               aria-label="TrackKaro Overview"
             >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M6 4h3.5v6.5L14.5 4H19l-6 7.5L19.5 20h-4.5l-5.5-7.5V20H6V4z" />
-              </svg>
+              <Image src="/logo.png" alt="" width={40} height={40} className="h-full w-full scale-[1.16] object-contain" />
             </Link>
 
             {/* Kesta Finder Button (⌘K) */}
@@ -131,18 +131,8 @@ export function DashboardHeader() {
               />
             </div>
 
-            {/* Kesta "+ New" Magnetic Primary Button */}
-            <button
-              type="button"
-              onClick={() => setShowRecordModal(true)}
-              className="inline-flex items-center justify-center gap-2 h-11 px-[18px] rounded-[14px] font-bold text-[16px] bg-[#161614] hover:bg-black text-white dark:bg-[#f0c35a] dark:hover:bg-[#e0b445] dark:text-[#161614] shadow-xs transition-all cursor-pointer select-none leading-none"
-              aria-label="Record expense or income"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              <span>New</span>
-            </button>
+            {/* Kesta "+ New" quick-add menu */}
+            <NewMenu />
           </div>
         </div>
       </header>

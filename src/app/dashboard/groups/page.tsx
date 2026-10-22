@@ -39,7 +39,7 @@ export default function GroupsPage() {
   const btnGhost =
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93]";
   const btnDark =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93]";
   const tile = "min-w-0 rounded-[16px] border border-border bg-surface px-4 py-3";
   const card = "rounded-[22px] border border-border bg-surface p-5 shadow-xs";
   const memberTotal = groups.reduce((acc, g) => acc + (g.members?.length || 0), 0);
@@ -99,7 +99,7 @@ export default function GroupsPage() {
             </b>
             <small className="block text-[14px] text-foreground-muted">Add your share to your own spending with the right category.</small>
           </span>
-          <span className="inline-flex h-[38px] items-center rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]">Review</span>
+          <span className="inline-flex h-[38px] items-center rounded-[12px] bg-[var(--primary)] px-3.5 text-[14px] font-bold text-[var(--on-primary)]">Review</span>
         </Link>
       )}
 

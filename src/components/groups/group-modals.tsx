@@ -190,7 +190,7 @@ function GroupForm({
           <button
             type="button"
             onClick={addMember}
-            className="inline-flex h-11 shrink-0 items-center rounded-[12px] bg-[#161614] px-4 text-[15px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]"
+            className="inline-flex h-11 shrink-0 items-center rounded-[12px] bg-[var(--primary)] px-4 text-[15px] font-bold text-[var(--on-primary)]"
           >
             Add
           </button>

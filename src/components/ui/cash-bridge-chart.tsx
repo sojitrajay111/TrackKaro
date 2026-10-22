@@ -123,7 +123,7 @@ export function CashBridgeChart({
           </div>
 
           {/* Segment Control */}
-          <div className="inline-flex items-center p-0.5 rounded-full bg-[#2822120d] dark:bg-white/10 border border-border">
+          <div className="inline-flex items-center p-0.5 rounded-full bg-[var(--well)] border border-border">
             <button
               type="button"
               className={`h-[30px] px-3 rounded-full text-[14px] font-bold transition-all ${
@@ -154,7 +154,7 @@ export function CashBridgeChart({
 
       {/* 3 Summary Blocks (`dl.ov-sum`) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="px-3.5 py-3 rounded-[16px] bg-[#faf5e4]/70 dark:bg-[#1f1d18]/70 border border-border">
+        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
           <div className="text-[14px] font-bold text-foreground-muted">
             Cash on {visibleMonths[0]?.month || "Nov"} 1
           </div>
@@ -164,7 +164,7 @@ export function CashBridgeChart({
           </div>
         </div>
 
-        <div className="px-3.5 py-3 rounded-[16px] bg-[#faf5e4]/70 dark:bg-[#1f1d18]/70 border border-border">
+        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
           <div className="text-[14px] font-bold text-foreground-muted">
             {totalChange >= 0 ? "Up over" : "Down over"} {range === "6M" ? "6 months" : "12 months"}
           </div>
@@ -179,8 +179,8 @@ export function CashBridgeChart({
           </div>
         </div>
 
-        <div className="px-3.5 py-3 rounded-[16px] bg-[#fbeecf] dark:bg-[#2b2413] border border-[#e5c986] dark:border-[#524421]">
-          <div className="text-[14px] font-semibold text-[#8a6b1f] dark:text-[#f0c35a] flex items-center gap-1.5">
+        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--primary-soft)] border border-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
+          <div className="text-[14px] font-semibold text-[var(--primary)] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1f8366] inline-block" />
             Cash today
           </div>

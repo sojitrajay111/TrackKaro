@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, useMemo, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer";
@@ -37,6 +38,26 @@ interface CustomerSummary {
   totalCount: number;
   lastDate: string;
   latestNote?: string;
+}
+
+/** Opens the add-entry form when arriving from the header's "+ New → Khata entry" (?new=gave). */
+function OpenNewFromQuery({ onOpen }: { onOpen: (type: KhataType) => void }) {
+  const params = useSearchParams();
+  const router = useRouter();
+  const want = params.get("new");
+  // Open once per arrival; re-renders before the URL is cleaned must not reset the form.
+  const handled = useRef(false);
+  useEffect(() => {
+    if (want !== "gave" && want !== "took") {
+      handled.current = false;
+      return;
+    }
+    if (handled.current) return;
+    handled.current = true;
+    onOpen(want);
+    router.replace("/dashboard/khata", { scroll: false });
+  }, [want, onOpen, router]);
+  return null;
 }
 
 export default function KhataPage() {
@@ -354,7 +375,7 @@ export default function KhataPage() {
   const btnGhost =
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93]";
   const btnDark =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93]";
   const btnXs =
     "inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground transition hover:bg-surface-muted";
   const chipCls = (on: boolean) =>
@@ -373,6 +394,9 @@ export default function KhataPage() {
 
   return (
     <div className="space-y-6 pb-16">
+      <Suspense fallback={null}>
+        <OpenNewFromQuery onOpen={handleOpenAdd} />
+      </Suspense>
       {/* Header: breadcrumb, title, summary line, actions */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-x-6 gap-y-4">
         <div className="flex min-w-0 flex-col gap-1.5">
@@ -706,7 +730,7 @@ export default function KhataPage() {
                 <button type="button" onClick={() => setShowJoinGroupModal(true)} className="inline-flex h-[38px] items-center rounded-[12px] border border-border bg-surface px-3.5 text-[14px] font-bold text-foreground hover:bg-surface-muted">
                   Join with code
                 </button>
-                <button type="button" onClick={() => setShowCreateGroupModal(true)} className="inline-flex h-[38px] items-center rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]">
+                <button type="button" onClick={() => setShowCreateGroupModal(true)} className="inline-flex h-[38px] items-center rounded-[12px] bg-[var(--primary)] px-3.5 text-[14px] font-bold text-[var(--on-primary)]">
                   New group
                 </button>
               </div>

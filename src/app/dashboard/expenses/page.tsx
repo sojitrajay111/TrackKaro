@@ -366,7 +366,7 @@ export default function ExpensesPage() {
   const btnGhost =
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted disabled:opacity-50";
   const btnDark =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)]";
   const selectCls =
     "h-[42px] rounded-[12px] border border-[var(--line-2)] bg-surface px-3 text-[15px] font-[650] text-foreground focus:outline-none focus:border-foreground";
   const chipCls = (on: boolean) =>
@@ -1004,7 +1004,7 @@ export default function ExpensesPage() {
                 type="submit"
                 form="tx-edit-form"
                 disabled={isUpdatingTx}
-                className="ml-auto inline-flex h-[38px] items-center gap-2 rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white transition hover:bg-black disabled:opacity-50 dark:bg-[#f0c35a] dark:text-[#161614]"
+                className="ml-auto inline-flex h-[38px] items-center gap-2 rounded-[12px] bg-[var(--primary)] px-3.5 text-[14px] font-bold text-[var(--on-primary)] transition hover:bg-[var(--primary-strong)] disabled:opacity-50"
               >
                 {isUpdatingTx ? "Saving…" : "Save changes"}
               </button>

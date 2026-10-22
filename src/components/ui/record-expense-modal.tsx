@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
+import { CategoryTile } from "@/components/ui/category-icon";
+import { inputCls } from "@/lib/form";
 import { useAddTransactionMutation } from "@/store/api/transactionsApi";
 import type { CategoryName, PaymentMethod, TransactionType } from "@/store/types";
 
@@ -12,33 +15,31 @@ interface RecordExpenseModalProps {
 
 const CATEGORIES: CategoryName[] = [
   "Food",
+  "Groceries",
   "Shopping",
   "Travel",
+  "Fuel",
   "Bills",
-  "Entertainment",
-  "Health",
   "Rent",
   "EMI",
-  "Fuel",
-  "Groceries",
   "Subscriptions",
+  "Entertainment",
+  "Health",
   "Education",
   "Other",
 ];
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  "UPI",
-  "Debit Card",
-  "Credit Card",
-  "Net Banking",
-  "Cash",
-];
+const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Debit Card", "Credit Card", "Net Banking", "Cash"];
 
-export function RecordExpenseModal({
-  isOpen,
-  onClose,
-  defaultType = "expense",
-}: RecordExpenseModalProps) {
+/** Selectable chip (category / payment method), Kesta 34px chip with an emerald selected ring. */
+const chipCls = (on: boolean) =>
+  `inline-flex h-[38px] shrink-0 items-center gap-2 rounded-[12px] border px-2.5 text-[14px] font-bold transition select-none ${
+    on
+      ? "border-[var(--primary)] bg-[var(--primary-soft)] text-foreground shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_14%,transparent)]"
+      : "border-border bg-surface text-foreground-muted hover:border-[var(--line-2)] hover:text-foreground"
+  }`;
+
+export function RecordExpenseModal({ isOpen, onClose, defaultType = "expense" }: RecordExpenseModalProps) {
   const [type, setType] = useState<TransactionType>(defaultType);
   const [title, setTitle] = useState("");
   const [merchant, setMerchant] = useState("");
@@ -49,8 +50,6 @@ export function RecordExpenseModal({
   const [error, setError] = useState<string | null>(null);
 
   const [addTransaction, { isLoading }] = useAddTransactionMutation();
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,188 +86,123 @@ export function RecordExpenseModal({
     }
   };
 
+  const isExpense = type === "expense";
+  const tone = isExpense ? "var(--coral)" : "var(--pine)";
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isExpense ? "Record an expense" : "Record income"}
+      description={isExpense ? "A payment out of your accounts. Automatically tracks your budget." : "Money coming into your operating or savings balance."}
+      maxWidth="xl"
     >
-      <div className="relative w-full max-w-lg rounded-3xl glass glass--card glass-specular p-6 sm:p-7 shadow-2xl border border-border/80 text-foreground animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-border/50">
-          <div>
-            <h2 className="text-lg font-extrabold tracking-tight text-foreground">
-              {type === "expense" ? "Record an expense" : "Record income"}
-            </h2>
-            <p className="text-xs text-foreground-muted mt-0.5">
-              {type === "expense"
-                ? "A payment out of your accounts. Automatically tracks your budget."
-                : "Money coming into your operating or savings balance."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-foreground-muted hover:text-foreground hover:bg-surface-muted transition"
-            aria-label="Close"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <ModalSegmentedPicker
+          options={[
+            { value: "expense" as const, label: "Expense · money out" },
+            { value: "income" as const, label: "Income · money in" },
+          ]}
+          selected={type}
+          onChange={setType}
+        />
 
-        {/* Type toggle pill */}
-        <div className="flex justify-center my-4">
-          <div className="seg-kesta p-1">
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              aria-pressed={type === "expense"}
-              className={type === "expense" ? "text-coral font-bold" : ""}
-            >
-              Expense (Out)
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              aria-pressed={type === "income"}
-              className={type === "income" ? "text-pine font-bold" : ""}
-            >
-              Income (In)
-            </button>
+        {/* Amount: the main figure, large and tinted by direction */}
+        <div
+          className="rounded-[18px] border px-4 py-3.5 transition-colors"
+          style={{
+            borderColor: `color-mix(in srgb, ${tone} 28%, var(--line))`,
+            background: `color-mix(in srgb, ${tone} 7%, var(--surface))`,
+          }}
+        >
+          <label htmlFor="rx-amount" className="block text-[14px] font-bold text-foreground-muted">
+            Amount
+          </label>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="shrink-0 whitespace-nowrap text-[30px] font-extrabold leading-none" style={{ color: tone }} aria-hidden="true">
+              {isExpense ? "−₹" : "+₹"}
+            </span>
+            <input
+              id="rx-amount"
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+              autoFocus
+              className="tk-compact tk-bare w-full min-w-0 border-0 bg-transparent p-0 text-[34px] font-extrabold leading-none tracking-[-0.03em] text-foreground num outline-none placeholder:text-[var(--line-2)] focus:ring-0"
+            />
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-              Description
-            </label>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <ModalField label="Description">
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Blue Tokai Coffee, Grocery run, Rent"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-sm placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
-              required
+              placeholder="e.g. Coffee, Grocery run, Rent"
+              className={inputCls}
             />
+          </ModalField>
+          <ModalField label={isExpense ? "Paid to" : "Received from"}>
+            <input
+              type="text"
+              value={merchant}
+              onChange={(e) => setMerchant(e.target.value)}
+              placeholder={isExpense ? "e.g. Swiggy, Amazon" : "e.g. Employer, Client"}
+              className={inputCls}
+            />
+          </ModalField>
+        </div>
+
+        <ModalField label="Category">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Category">
+            {CATEGORIES.map((c) => (
+              <button key={c} type="button" role="radio" aria-checked={category === c} onClick={() => setCategory(c)} className={chipCls(category === c)}>
+                <CategoryTile name={c} size={24} />
+                {c}
+              </button>
+            ))}
           </div>
+        </ModalField>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-                Amount (₹)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-2.5 text-foreground-muted text-sm font-bold num">
-                  ₹
-                </span>
-                <input
-                  type="number"
-                  step="any"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-sm num font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  required
-                />
-              </div>
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[minmax(0,1fr)_170px]">
+          <ModalField label={isExpense ? "Paid with" : "Received via"}>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Payment method">
+              {PAYMENT_METHODS.map((pm) => (
+                <button
+                  key={pm}
+                  type="button"
+                  role="radio"
+                  aria-checked={paymentMethod === pm}
+                  onClick={() => setPaymentMethod(pm)}
+                  className={`${chipCls(paymentMethod === pm)} px-3`}
+                >
+                  {pm}
+                </button>
+              ))}
             </div>
+          </ModalField>
+          <ModalField label="Date">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`${inputCls} num`} />
+          </ModalField>
+        </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-                Paid to / Merchant
-              </label>
-              <input
-                type="text"
-                value={merchant}
-                onChange={(e) => setMerchant(e.target.value)}
-                placeholder="e.g. Swiggy, Amazon"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-          </div>
+        {error && (
+          <p role="alert" className="rounded-[12px] border border-[color-mix(in_srgb,var(--bad)_30%,transparent)] bg-[color-mix(in_srgb,var(--bad)_8%,transparent)] px-3 py-2.5 text-[14px] font-semibold text-[var(--bad)]">
+            {error}
+          </p>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as CategoryName)}
-                className="w-full px-3 py-2.5 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-                Account / Mode
-              </label>
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                className="w-full px-3 py-2.5 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
-              >
-                {PAYMENT_METHODS.map((pm) => (
-                  <option key={pm} value={pm}>
-                    {pm}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-foreground-sub uppercase tracking-wider mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-surface-muted/60 border border-border/80 text-foreground text-xs num font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-xs font-medium text-coral bg-coral-soft/50 p-2.5 rounded-lg border border-coral/30">
-              {error}
-            </p>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/50">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-kesta btn-kesta--ghost"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-kesta btn-kesta--primary"
-            >
-              {isLoading
-                ? "Saving…"
-                : type === "expense"
-                ? "Record expense"
-                : "Record income"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <ModalFooter
+          onCancel={onClose}
+          isSubmitting={isLoading}
+          confirmLabel={isLoading ? "Saving…" : isExpense ? "Record expense" : "Record income"}
+        />
+      </form>
+    </Modal>
   );
 }

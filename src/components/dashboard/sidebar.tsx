@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store";
@@ -188,19 +189,25 @@ export function DashboardSidebar() {
                 <>
                   <span className="shrink-0 opacity-90">{item.icon}</span>
                   {!isCollapsed && <span className="tk-side-text flex-1 truncate">{item.label}</span>}
-                  {item.count !== undefined && (
-                    <span
-                      className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-[7px] text-[13px] font-extrabold num ${
-                        isCollapsed ? "absolute right-1.5 top-[3px] h-[18px] min-w-[18px] px-[5px] text-[12px]" : ""
-                      } ${
-                        variant === "pill"
-                          ? "bg-[var(--on-side-pill)] text-[var(--side-pill)]"
-                          : "bg-[var(--side-soft)] text-foreground"
-                      }`}
-                    >
-                      {item.count}
-                    </span>
-                  )}
+                  {/* Expanded: count pill. Collapsed: a small dot on the icon (count is in the tooltip),
+                      since a number can't fit beside a 20px icon in the narrow rail. */}
+                  {item.count !== undefined &&
+                    (isCollapsed ? (
+                      <span
+                        className={`absolute left-1/2 top-[9px] ml-[5px] h-2 w-2 rounded-full ring-2 ${
+                          variant === "pill" ? "bg-[var(--on-side-pill)] ring-[var(--side-pill)]" : "bg-[var(--accent)] ring-[var(--surface)]"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span
+                        className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-[7px] text-[13px] font-extrabold num ${
+                          variant === "pill" ? "bg-[var(--on-side-pill)] text-[var(--side-pill)]" : "bg-[var(--side-soft)] text-foreground"
+                        }`}
+                      >
+                        {item.count > 999 ? "999+" : item.count}
+                      </span>
+                    ))}
                 </>
               );
               const cls = `flex h-11 items-center gap-3 rounded-[14px] text-[16px] font-[650] ${
@@ -219,7 +226,7 @@ export function DashboardSidebar() {
                   href={item.href}
                   data-nav={item.id}
                   aria-current={active ? "page" : undefined}
-                  title={isCollapsed ? item.label : undefined}
+                  title={isCollapsed ? (item.count !== undefined ? `${item.label} (${item.count})` : item.label) : undefined}
                   style={stagger()}
                   className={`tk-side-item ${cls} relative text-foreground transition-[background-color,filter] duration-150 hover:bg-[var(--side-hover)] active:brightness-[0.93] ${
                     active ? "hover:bg-transparent" : ""
@@ -254,10 +261,9 @@ export function DashboardSidebar() {
           style={{ "--i": 0 } as CSSProperties}
           title="TrackKaro — Overview"
         >
-          <span className="flex h-[38px] w-[38px] shrink-0 select-none items-center justify-center rounded-[12px] bg-[#e0a92e] text-[#1f1606] shadow-xs">
-            <svg className="h-[22px] w-[22px] fill-current" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 4h3.5v6.5L14.5 4H19l-6 7.5L19.5 20h-4.5l-5.5-7.5V20H6V4z" />
-            </svg>
+          {/* App logo (same artwork as the TrackKaro app icon); scaled to trim its transparent margin. */}
+          <span className="flex h-10 w-10 shrink-0 select-none items-center justify-center overflow-hidden rounded-[12px] shadow-[0_4px_14px_-4px_#04785766]">
+            <Image src="/logo.png" alt="" width={48} height={48} priority className="h-full w-full scale-[1.16] object-contain" />
           </span>
           {!isCollapsed && (
             <span className="tk-side-text flex min-w-0 flex-col">
@@ -294,8 +300,16 @@ export function DashboardSidebar() {
 
       {/* Profile + sign out */}
       <div className={`flex items-center border-t border-border pt-3 ${isCollapsed ? "flex-col gap-2" : "justify-between"}`}>
-        <div className={`tk-side-item flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl p-2 transition hover:bg-[var(--side-hover)] ${isCollapsed ? "justify-center" : ""}`} style={stagger()}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1f8366] text-[13px] font-bold text-white shadow-xs">
+        {/* Profile opens Settings (account details live there). */}
+        <Link
+          href="/dashboard/settings"
+          title={isCollapsed ? `${displayName} · Settings` : "Account settings"}
+          className={`tk-side-item flex min-w-0 items-center gap-2.5 rounded-2xl p-2 transition hover:bg-[var(--side-hover)] active:brightness-[0.95] ${
+            isCollapsed ? "justify-center" : "flex-1"
+          }`}
+          style={stagger()}
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-[13px] font-bold text-[var(--on-primary)] shadow-xs">
             {initials}
           </div>
           {!isCollapsed && (
@@ -304,7 +318,7 @@ export function DashboardSidebar() {
               <div className="truncate text-[13px] font-medium text-foreground-muted">{user?.email || "Personal account"}</div>
             </div>
           )}
-        </div>
+        </Link>
         <button
           type="button"
           onClick={() => signOut()}

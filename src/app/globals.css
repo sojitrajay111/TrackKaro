@@ -13,51 +13,55 @@
   --fs-lg: 1.0625rem;
   --fs-xl: 1.125rem;
 
-  --bg: #f5efda;
-  --glow-a: #fbecb8;
-  --glow-b: #f3ead2;
-  --surface: #fffdf4;
-  --surface-2: #faf5e4;
-  --raised: #fffefa;
-  --well: #2822120f;
-  --line: #2822121c;
-  --line-2: #28221233;
-  --shadow: 0 1px 0 #2822120a;
-  --shadow-pop: 0 24px 60px -18px #28221252, 0 2px 6px #28221214;
+  /* TrackKaro emerald (light): mint paper, white cards, deep forest ink, emerald actions. */
+  --bg: #eef5f0;
+  --glow-a: #cdeedd;
+  --glow-b: #e4f3ea;
+  --surface: #fbfefc;
+  --surface-2: #f1f8f3;
+  --raised: #ffffff;
+  --well: #0b3b2a10;
+  --line: #0b3b2a1a;
+  --line-2: #0b3b2a33;
+  --shadow: 0 1px 0 #0b3b2a0a;
+  --shadow-pop: 0 24px 60px -18px #0b2a1f45, 0 2px 6px #0b2a1f12;
 
-  --text: #1f1d18;
-  --muted: #5c5646;
-  --faint: #716a58;
-  --primary: #1f1d18;
-  --on-primary: #fdf7e2;
+  --text: #0c1f17;
+  --muted: #45594f;
+  --faint: #62766c;
+  --primary: #047857;
+  --primary-strong: #065f46;
+  --primary-soft: #d6f3e5;
+  --on-primary: #ffffff;
 
-  --side: #fffcf0;
-  --on-side: #1f1d18;
-  --side-dim: #6f6853;
-  --side-hover: #2822120f;
-  --side-soft: #e0a92e24;
-  --side-rim: #2822121c;
-  --side-pill: #1f1d18;
-  --on-side-pill: #fdf7e2;
+  --side: #f8fcf9;
+  --on-side: #0c1f17;
+  --side-dim: #5b6f65;
+  --side-hover: #0b3b2a0d;
+  --side-soft: #10b98124;
+  --side-rim: #0b3b2a1a;
+  --side-pill: #064e3b;
+  --on-side-pill: #ecfdf5;
 
-  --accent: #e0a92e;
-  --toast: #1f1d18;
-  --on-toast: #fdf7e2;
-  --toast-accent: #f0c35a;
+  --accent: #10b981;
+  --on-accent: #032b1e;
+  --toast: #0b2a1f;
+  --on-toast: #ecfdf5;
+  --toast-accent: #34d399;
 
-  --pine: #1f8366;
+  --pine: #0e8a62;
   --coral: #e2683f;
-  --amber: #cc8a12;
+  --amber: #c98a12;
   --sky: #3b7fc4;
-  --teal: #178a9a;
+  --teal: #138a8a;
   --rose: #d1495b;
-  --lime: #5a9a2c;
-  --slate: #6b6f80;
+  --lime: #4d9a2c;
+  --slate: #66707a;
   --violet: #7a68d6;
-  --ink: #142520;
-  --good: #1f7f45;
+  --ink: #0c1f17;
+  --good: #047857;
   --warn: #8f5f06;
-  --bad: #ad2b22;
+  --bad: #b42318;
   --info: #2f6fb5;
 
   --in: var(--pine);
@@ -73,49 +77,53 @@
 }
 
 :root[data-theme=dark] {
-  --bg: #14120d;
-  --glow-a: #e0a92e1f;
-  --glow-b: #e2683f0d;
-  --surface: #1c1913;
-  --surface-2: #231f18;
-  --raised: #2a261e;
-  --well: #ffffff0e;
-  --line: #ffffff14;
-  --line-2: #ffffff29;
+  /* TrackKaro emerald (dark): obsidian green, layered emerald cards, neon emerald actions. */
+  --bg: #060d09;
+  --glow-a: #00df811a;
+  --glow-b: #10b9810d;
+  --surface: #0c1712;
+  --surface-2: #112019;
+  --raised: #162a21;
+  --well: #ffffff0d;
+  --line: #ffffff12;
+  --line-2: #ffffff26;
   --shadow: 0 1px 0 #ffffff08 inset;
-  --shadow-pop: 0 24px 60px -18px #000000c7, 0 0 0 1px #ffffff14;
+  --shadow-pop: 0 24px 60px -18px #000000d0, 0 0 0 1px #ffffff12;
 
-  --text: #f5efdc;
-  --muted: #bdb49c;
-  --faint: #9c947e;
-  --primary: #f0c35a;
-  --on-primary: #1f1606;
+  --text: #ecfff5;
+  --muted: #a6c3b5;
+  --faint: #86a596;
+  --primary: #00df81;
+  --primary-strong: #00c371;
+  --primary-soft: #00df8124;
+  --on-primary: #03140c;
 
-  --side: #1c1913;
-  --on-side: #f5efdc;
-  --side-dim: #ada48b;
-  --side-hover: #f0c35a14;
-  --side-soft: #f0c35a14;
-  --side-rim: #ffffff14;
-  --side-pill: #f0c35a;
-  --on-side-pill: #1f1606;
+  --side: #09140f;
+  --on-side: #ecfff5;
+  --side-dim: #8fae9f;
+  --side-hover: #00df8112;
+  --side-soft: #00df8114;
+  --side-rim: #ffffff12;
+  --side-pill: #00df81;
+  --on-side-pill: #03140c;
 
-  --accent: #f0c35a;
-  --toast: #2a261e;
-  --on-toast: #f5efdc;
-  --toast-accent: #f0c35a;
+  --accent: #00df81;
+  --on-accent: #03140c;
+  --toast: #162a21;
+  --on-toast: #ecfff5;
+  --toast-accent: #00df81;
 
-  --pine: #6cc7a2;
+  --pine: #34d399;
   --coral: #ff9670;
   --amber: #f0b44a;
   --sky: #6eaef0;
   --teal: #4cc0cf;
   --rose: #f07a8c;
   --lime: #8ccc5e;
-  --slate: #a2a6b6;
+  --slate: #a2acb6;
   --violet: #a493f0;
-  --ink: #e9f2ee;
-  --good: #63d18f;
+  --ink: #ecfff5;
+  --good: #3ddc97;
   --warn: #f1b437;
   --bad: #f2806e;
   --info: #7db4f2;
@@ -131,6 +139,9 @@
   --color-foreground-sub: var(--muted);
   --color-foreground-muted: var(--faint);
   --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
   --color-accent: var(--accent);
   --color-pine: var(--pine);
   --color-coral: var(--coral);
@@ -560,72 +571,72 @@ body {
 }
 
 .btn-kesta--primary, .btn--primary {
-  background: #161614 !important;
-  color: #fffdf4 !important;
-  border-color: #161614 !important;
-  box-shadow: 0 1px 3px rgba(40, 34, 18, 0.08);
+  background: var(--primary) !important;
+  color: var(--on-primary) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 1px 3px rgba(11, 42, 31, 0.10);
 }
 
 .btn-kesta--primary:hover, .btn--primary:hover {
-  background: #000000 !important;
-  border-color: #000000 !important;
-  color: #ffffff !important;
+  background: var(--primary-strong) !important;
+  border-color: var(--primary-strong) !important;
+  color: var(--on-primary) !important;
 }
 
 :root[data-theme=dark] .btn-kesta--primary,
 :root[data-theme=dark] .btn--primary {
-  background: #f0c35a !important;
-  color: #161614 !important;
-  border-color: #f0c35a !important;
+  background: var(--primary) !important;
+  color: var(--on-primary) !important;
+  border-color: var(--primary) !important;
 }
 
 :root[data-theme=dark] .btn-kesta--primary:hover,
 :root[data-theme=dark] .btn--primary:hover {
-  background: #e0b445 !important;
-  border-color: #e0b445 !important;
-  color: #161614 !important;
+  background: var(--primary-strong) !important;
+  border-color: var(--primary-strong) !important;
+  color: var(--on-primary) !important;
 }
 
 .btn-kesta--ghost, .btn--ghost {
-  background: #fffdf4 !important;
-  color: #1f1d18 !important;
-  border: 1px solid #28221226 !important;
-  box-shadow: 0 1px 2px rgba(40, 34, 18, 0.04);
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line-2) !important;
+  box-shadow: 0 1px 2px rgba(11, 42, 31, 0.05);
 }
 
 .btn-kesta--ghost:hover, .btn--ghost:hover {
-  background: #faf5e4 !important;
-  border-color: #28221240 !important;
+  background: var(--surface-2) !important;
+  border-color: var(--line-2) !important;
 }
 
 :root[data-theme=dark] .btn-kesta--ghost,
 :root[data-theme=dark] .btn--ghost {
-  background: #1c1913 !important;
-  color: #f5efdc !important;
-  border-color: #ffffff1f !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--line-2) !important;
 }
 
 :root[data-theme=dark] .btn-kesta--ghost:hover,
 :root[data-theme=dark] .btn--ghost:hover {
-  background: #231f18 !important;
+  background: var(--surface-2) !important;
 }
 
 .btn-kesta--soft, .btn--soft {
-  background: #2822120f !important;
-  color: #1f1d18 !important;
-  border: 1px solid #2822121c !important;
+  background: var(--well) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--line) !important;
   padding: 5px 12px;
   font-size: 0.75rem;
 }
 
 .btn-kesta--soft:hover, .btn--soft:hover {
-  background: #fffdf4 !important;
+  background: var(--surface) !important;
 }
 
 :root[data-theme=dark] .btn-kesta--soft,
 :root[data-theme=dark] .btn--soft {
   background: #ffffff14 !important;
-  color: #f5efdc !important;
+  color: var(--text) !important;
   border-color: #ffffff1f !important;
 }
 
@@ -870,7 +881,12 @@ body {
 
 /* Fields inside any dialog take Kesta's field style (these rules sit outside Tailwind's
    layers, so they win over the old per-page input colours without touching each page). */
-.tk-modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+/* Bare inputs (the large amount figure) hide the browser's number spinner. */
+.tk-bare::-webkit-outer-spin-button,
+.tk-bare::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.tk-bare[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+/* .tk-bare opts an input out entirely (e.g. the large amount figure in Record an expense). */
+.tk-modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(.tk-bare),
 .tk-modal select,
 .tk-modal textarea {
   background: var(--surface);
@@ -885,11 +901,12 @@ body {
 .tk-modal select:not(.tk-compact):not([class*="h-7"]) {
   min-height: 44px;
 }
-.tk-modal input::placeholder,
+.tk-modal input.tk-bare::placeholder { color: var(--line-2); }
+.tk-modal input:not(.tk-bare)::placeholder,
 .tk-modal textarea::placeholder {
   color: var(--faint);
 }
-.tk-modal input:focus,
+.tk-modal input:not(.tk-bare):focus,
 .tk-modal select:focus,
 .tk-modal textarea:focus {
   outline: none;
@@ -972,6 +989,30 @@ body {
 .tk-cal-agenda { animation: tkRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes tkCalNext { from { opacity: 0; transform: translateX(28px); } }
 @keyframes tkCalPrev { from { opacity: 0; transform: translateX(-28px); } }
+/* "+ New" menu: drops from the button's corner; items slide in one after another. */
+.tk-newmenu {
+  transform-origin: top right;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.96);
+  transition: opacity 0.16s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.24s;
+}
+.tk-newmenu[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.16s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+}
+.tk-newmenu[data-open="true"] .tk-newmenu__item {
+  animation: tkNewItem 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 22ms);
+}
+@keyframes tkNewItem { from { opacity: 0; transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-newmenu, .tk-newmenu[data-open="true"] { transform: none; }
+  .tk-newmenu[data-open="true"] .tk-newmenu__item { animation: none; }
+}
+
 /* Day hover preview: the wrapper glides between cells, the card fades + scales, rows rise in. */
 .tk-peek { transition: left 0.22s cubic-bezier(0.22, 1, 0.36, 1), top 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
 .tk-peek__card {
@@ -1051,7 +1092,7 @@ body {
   transform: translateX(18px);
 }
 :root[data-theme="dark"] .switch:checked::after {
-  background: #14120d;
+  background: var(--on-primary);
 }
 .switch:focus-visible {
   outline: 2px solid var(--primary);
@@ -1069,25 +1110,25 @@ body {
   aspect-ratio: 1.5;
   overflow: hidden;
   border-radius: 12px;
-  background: #f5efda;
+  background: #eef5f0;
   border: 1px solid #0000000f;
 }
 .tk-theme-pic i {
   position: absolute;
   border-radius: 6px;
-  background: #fffdf4;
-  box-shadow: 0 0 0 1px #2822121f;
+  background: #fbfefc;
+  box-shadow: 0 0 0 1px #0b3b2a1f;
 }
 .tk-theme-pic i:nth-child(1) { top: 8%; bottom: 8%; left: 6%; width: 22%; }
 .tk-theme-pic i:nth-child(2) { top: 8%; left: 34%; right: 6%; height: 34%; }
 .tk-theme-pic i:nth-child(3) { inset: 50% 30% 8% 34%; }
-.tk-theme-pic--dark { background: #14120d; }
-.tk-theme-pic--dark i:nth-child(1) { background: #1c1913; box-shadow: 0 0 0 1px #ffffff1a; }
+.tk-theme-pic--dark { background: #060d09; }
+.tk-theme-pic--dark i:nth-child(1) { background: #0c1712; box-shadow: 0 0 0 1px #ffffff1a; }
 .tk-theme-pic--dark i:nth-child(2),
-.tk-theme-pic--dark i:nth-child(3) { background: #231f18; box-shadow: 0 0 0 1px #ffffff14; }
-.tk-theme-pic--system { background: linear-gradient(135deg, #f5efda 50%, #14120d 50%); }
+.tk-theme-pic--dark i:nth-child(3) { background: #112019; box-shadow: 0 0 0 1px #ffffff14; }
+.tk-theme-pic--system { background: linear-gradient(135deg, #eef5f0 50%, #060d09 50%); }
 .tk-theme-pic--system i:nth-child(2),
-.tk-theme-pic--system i:nth-child(3) { background: linear-gradient(135deg, #fffdf4 50%, #231f18 50%); }
+.tk-theme-pic--system i:nth-child(3) { background: linear-gradient(135deg, #fbfefc 50%, #112019 50%); }
 
 @media (prefers-reduced-motion: reduce) {
   .switch::after { transition: none; }

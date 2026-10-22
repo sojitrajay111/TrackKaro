@@ -317,7 +317,7 @@ export default function DashboardOverviewPage() {
           <button
             type="button"
             onClick={() => setShowRecordModal(true)}
-            className="inline-flex items-center justify-center gap-2 h-11 px-[18px] rounded-[14px] font-bold text-[16px] bg-[#161614] hover:bg-black text-white dark:bg-[#f0c35a] dark:hover:bg-[#e0b445] dark:text-[#161614] shadow-xs transition-all cursor-pointer select-none leading-none"
+            className="inline-flex items-center justify-center gap-2 h-11 px-[18px] rounded-[14px] font-bold text-[16px] bg-[var(--primary)] hover:bg-[var(--primary-strong)] text-[var(--on-primary)] shadow-xs transition-all cursor-pointer select-none leading-none"
           >
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
               <path d="M12 5v14M5 12h14" />
@@ -556,7 +556,7 @@ export default function DashboardOverviewPage() {
                           await updateReminder({ id: r.id, patch: { status: "paid" } }).unwrap();
                         } catch {}
                       }}
-                      className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[14px] font-bold bg-[#2822120f] dark:bg-white/10 hover:bg-surface border border-border text-foreground transition-all cursor-pointer select-none"
+                      className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[14px] font-bold bg-[var(--well)] hover:bg-surface border border-border text-foreground transition-all cursor-pointer select-none"
                     >
                       Pay
                     </button>

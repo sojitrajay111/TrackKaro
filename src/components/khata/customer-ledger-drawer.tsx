@@ -186,7 +186,7 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
       label={name ? `${name} khata` : "Khata"}
       footer={
         <>
-          <button type="button" onClick={handleSendWhatsApp} className={`${btnSm} bg-[#161614] text-white hover:bg-black dark:bg-[#f0c35a] dark:text-[#161614]`}>
+          <button type="button" onClick={handleSendWhatsApp} className={`${btnSm} bg-[var(--primary)] text-[var(--on-primary)] hover:bg-[var(--primary-strong)]`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6z" />
               <path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-1.8-1-1 .7a3.6 3.6 0 0 1-1.9-1.9l.7-1-1-1.8z" />
@@ -350,7 +350,7 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
             <button type="button" onClick={() => setShowQuickAdd(false)} className={`${btnSm} text-foreground-muted hover:text-foreground`}>
               Cancel
             </button>
-            <button type="submit" disabled={isAdding} className={`${btnSm} bg-[#161614] text-white disabled:opacity-50 dark:bg-[#f0c35a] dark:text-[#161614]`}>
+            <button type="submit" disabled={isAdding} className={`${btnSm} bg-[var(--primary)] text-[var(--on-primary)] disabled:opacity-50`}>
               {isAdding ? "Saving…" : quickType === "gave" ? "Save udhar" : "Save received"}
             </button>
           </div>

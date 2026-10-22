@@ -464,7 +464,7 @@ export default function SettingsPage() {
                   onClick={() => goTo(s.id)}
                   aria-current={isActive ? "true" : undefined}
                   className={`shrink-0 flex h-11 items-center gap-3 rounded-[14px] px-2.5 text-left text-[16px] font-[650] transition active:brightness-[0.93] ${
-                    isActive ? "bg-[#161614] text-white dark:bg-[#f0c35a] dark:text-[#161614]" : "text-foreground hover:bg-[var(--surface-2)]"
+                    isActive ? "bg-[var(--primary)] text-[var(--on-primary)]" : "text-foreground hover:bg-[var(--surface-2)]"
                   }`}
                 >
                   <PIcon hue={s.hue}>{s.icon}</PIcon>
@@ -530,7 +530,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={!profileDirty || !profileName.trim() || isSavingProfile}
-                className="inline-flex h-11 items-center rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] disabled:opacity-40 dark:bg-[#f0c35a] dark:text-[#161614]"
+                className="inline-flex h-11 items-center rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93] disabled:opacity-40"
               >
                 {isSavingProfile ? "Saving…" : "Save changes"}
               </button>

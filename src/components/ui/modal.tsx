@@ -192,7 +192,7 @@ export function ModalFooter({
         type={onConfirm ? "button" : "submit"}
         onClick={onConfirm}
         disabled={isSubmitting}
-        className="inline-flex h-11 items-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] disabled:opacity-50 dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]"
+        className="inline-flex h-11 items-center gap-2 rounded-[14px] bg-[var(--primary)] px-[18px] text-[16px] font-bold text-[var(--on-primary)] shadow-xs transition hover:bg-[var(--primary-strong)] active:brightness-[0.93] disabled:opacity-50"
       >
         {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
         <span>{confirmLabel}</span>
