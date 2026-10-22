@@ -56,6 +56,13 @@ export const dealsApi = apiSlice.injectEndpoints({
     searchRealDeals: builder.mutation<DealSearchResponse, string | void>({
       query: (q) => ({ url: `/deals/search${q ? `?q=${encodeURIComponent(q)}` : ''}` }),
     }),
+
+    // Same endpoint as a cached query, for the website's Deals page: each search term is kept
+    // for the backend's offer-cache window (~6h), so going back to a term is instant.
+    searchDeals: builder.query<DealSearchResponse, string>({
+      query: (q) => `/deals/search?q=${encodeURIComponent(q)}`,
+      keepUnusedDataFor: 6 * 60 * 60,
+    }),
   }),
 });
 
@@ -66,4 +73,5 @@ export const {
   useSetDealAlertMutation,
   useRecordDealClickMutation,
   useSearchRealDealsMutation,
+  useSearchDealsQuery,
 } = dealsApi;
