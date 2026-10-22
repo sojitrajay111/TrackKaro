@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
+import { avatarTint } from "@/lib/avatar";
 import { Segmented } from "@/components/ui/segmented";
 import { useI18n } from "@/i18n";
 import type { Lang } from "@/i18n/translations";
@@ -145,13 +146,13 @@ function SettingsGroup({
     <section
       id={`set-${id}`}
       aria-labelledby={`set-${id}-t`}
-      className="glass glass--card glass-specular rounded-[28px] p-5 sm:p-6 scroll-mt-24"
+      className="rounded-[22px] border border-border bg-surface p-5 shadow-xs scroll-mt-24"
     >
       <header className="mb-3 px-1">
-        <h2 id={`set-${id}-t`} className="font-display font-medium text-lg sm:text-xl text-foreground">
+        <h2 id={`set-${id}-t`} className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">
           {title}
         </h2>
-        <p className="text-xs text-foreground-muted mt-0.5">{subtitle}</p>
+        <p className="mt-0.5 text-[14px] font-medium text-foreground-muted">{subtitle}</p>
       </header>
       {children}
     </section>
@@ -178,7 +179,7 @@ function Cell({
 }) {
   const Text = htmlFor ? "label" : "span";
   return (
-    <li className="flex items-start gap-3.5 py-3 px-1">
+    <li className="flex items-start gap-3.5 py-[13px] px-0.5">
       <PIcon hue={hue}>{icon}</PIcon>
       <div
         className={`flex-1 min-w-0 flex gap-3 ${
@@ -186,8 +187,8 @@ function Cell({
         } min-h-[2.125rem] justify-center`}
       >
         <Text htmlFor={htmlFor} className="min-w-0">
-          <b className="block text-[13px] sm:text-sm font-semibold text-foreground">{label}</b>
-          {hint && <small className="block text-[11px] sm:text-xs text-foreground-muted mt-0.5">{hint}</small>}
+          <b className="block text-[16px] font-[750] text-foreground">{label}</b>
+          {hint && <small className="block text-[14px] text-foreground-muted mt-0.5">{hint}</small>}
         </Text>
         {children && <div className="shrink-0">{children}</div>}
       </div>
@@ -219,16 +220,16 @@ function LinkCell({
     <>
       <PIcon hue={hue}>{icon}</PIcon>
       <span className="flex-1 min-w-0 text-left">
-        <b className={`block text-[13px] sm:text-sm font-semibold ${danger ? "text-[#EF4444]" : "text-foreground"}`}>
+        <b className={`block text-[16px] font-[750] ${danger ? "text-[var(--bad)]" : "text-foreground"}`}>
           {label}
         </b>
-        {hint && <small className="block text-[11px] sm:text-xs text-foreground-muted mt-0.5">{hint}</small>}
+        {hint && <small className="block text-[14px] text-foreground-muted mt-0.5">{hint}</small>}
       </span>
       <span className="text-foreground-muted">{ICONS.chevron}</span>
     </>
   );
   const cls =
-    "w-full flex items-center gap-3.5 py-3 px-1 -mx-0 rounded-2xl transition hover:bg-surface-muted/50 disabled:opacity-60";
+    "w-full flex items-center gap-3.5 py-[13px] px-1.5 rounded-[14px] transition hover:bg-[var(--surface-2)] disabled:opacity-60";
   return (
     <li>
       {href ? (
@@ -245,7 +246,7 @@ function LinkCell({
 }
 
 const inputCls =
-  "h-9 w-full sm:w-60 rounded-xl bg-surface-muted/70 px-3 text-[13px] font-medium text-foreground sm:text-right placeholder:text-foreground-muted/60 border-0 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-border)_80%,transparent)] focus:outline-none focus:shadow-[inset_0_0_0_2px_var(--color-primary)] focus:text-left transition";
+  "h-11 w-full sm:w-64 rounded-[12px] border border-[var(--line-2)] bg-surface px-[13px] text-[15px] font-medium text-foreground placeholder:text-[var(--faint)] focus:outline-none focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_16%,transparent)] transition";
 
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
@@ -407,50 +408,49 @@ export default function SettingsPage() {
   ];
 
   const avatar = (size: "md" | "xl") => (
-    <span className="relative shrink-0">
-      <span
-        className={`flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-display font-semibold shadow-[0_8px_20px_-8px_rgba(5,150,105,0.6)] ${
-          size === "xl" ? "h-20 w-20 text-2xl" : "h-12 w-12 text-base"
-        }`}
-      >
-        {initials || "👤"}
-      </span>
-      <i
-        className={`absolute rounded-full bg-emerald-400 ring-[3px] ring-[var(--glass-fill-card)] ${
-          size === "xl" ? "right-0.5 bottom-0.5 h-4 w-4" : "right-0 bottom-0 h-3 w-3"
-        }`}
-        title="Online"
-      />
+    <span
+      className={`inline-grid shrink-0 place-items-center rounded-full font-extrabold tracking-[0.02em] text-[#1e1724] ${
+        size === "xl" ? "tk-pop h-[84px] w-[84px] text-[30px]" : "h-11 w-11 text-[15px]"
+      }`}
+      style={{ background: avatarTint(profileName || email || "?") }}
+      aria-hidden="true"
+    >
+      {initials || "?"}
     </span>
   );
 
   return (
     <div className="pb-16">
       {/* Header */}
-      <header className="mb-6 sm:mb-8">
-        <h1 className="font-display font-normal text-[26px] sm:text-[32px] lg:text-[38px] tracking-[-0.02em] text-foreground leading-tight mb-1.5">
+      <header className="mb-6 flex flex-col gap-1.5">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[14px] font-[650] text-foreground-muted">
+          <span>Account</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m9.5 6 6 6-6 6" />
+          </svg>
+          <span className="text-foreground">Settings</span>
+        </nav>
+        <h1 className="text-[30px] lg:text-[clamp(1.875rem,2.5vw,2.375rem)] font-extrabold tracking-[-0.04em] leading-[1.08] text-foreground">
           Settings
         </h1>
-        <p className="text-xs sm:text-sm font-medium text-foreground-muted">
-          Your profile, the look of TrackKaro, and when it nudges you
-        </p>
+        <p className="text-[16px] font-medium text-foreground-muted">Your profile, how TrackKaro looks, and when it nudges you.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[272px_minmax(0,1fr)] gap-5 items-start">
         {/* Section nav */}
         <nav
           aria-label="Settings sections"
-          className="glass glass--card glass-specular rounded-[28px] p-3 lg:sticky lg:top-24"
+          className="rounded-[22px] border border-border bg-surface p-3 shadow-xs lg:sticky lg:top-24"
         >
           <button
             type="button"
             onClick={() => goTo("profile")}
-            className="w-full flex items-center gap-3 p-2.5 mb-2 rounded-2xl text-left hover:bg-surface-muted/50 transition"
+            className="mb-2 flex w-full items-center gap-3 rounded-[16px] p-2 text-left transition hover:bg-[var(--surface-2)]"
           >
             {avatar("md")}
             <span className="min-w-0">
-              <b className="block text-sm font-semibold text-foreground truncate">{profileName}</b>
-              <small className="block text-xs text-foreground-muted truncate">{email}</small>
+              <b className="block truncate text-[15px] font-bold text-foreground">{profileName || "Your profile"}</b>
+              <small className="block truncate text-[13px] text-foreground-muted">{email}</small>
             </span>
           </button>
 
@@ -463,15 +463,13 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => goTo(s.id)}
                   aria-current={isActive ? "true" : undefined}
-                  className={`shrink-0 flex items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-[13px] sm:text-sm font-semibold transition ${
-                    isActive
-                      ? "bg-[var(--glass-fill-card)] text-foreground shadow-[0_4px_14px_-6px_rgba(10,48,28,0.25),inset_0_1px_0_rgba(255,255,255,0.8)] dark:bg-emerald-400/12 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                      : "text-foreground-sub hover:bg-surface-muted/50"
+                  className={`shrink-0 flex h-11 items-center gap-3 rounded-[14px] px-2.5 text-left text-[16px] font-[650] transition active:brightness-[0.93] ${
+                    isActive ? "bg-[#161614] text-white dark:bg-[#f0c35a] dark:text-[#161614]" : "text-foreground hover:bg-[var(--surface-2)]"
                   }`}
                 >
                   <PIcon hue={s.hue}>{s.icon}</PIcon>
                   <span className="flex-1 pr-1">{s.label}</span>
-                  <span className="hidden lg:inline text-foreground-muted">{ICONS.chevron}</span>
+                  <span className={`hidden lg:inline ${isActive ? "opacity-70" : "text-foreground-muted"}`}>{ICONS.chevron}</span>
                 </button>
               );
             })}
@@ -481,17 +479,12 @@ export default function SettingsPage() {
         <div className="space-y-6 min-w-0">
           {/* Profile */}
           <SettingsGroup id="profile" title="Profile" subtitle="How your ledgers and groups see you">
-            <div className="flex items-center gap-4 rounded-[22px] bg-surface-muted/40 p-4 mb-2">
+            <div className="mb-2 flex items-center gap-4 rounded-[18px] border border-border bg-[var(--surface-2)] p-4">
               {avatar("xl")}
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <b className="font-display font-medium text-xl text-foreground truncate">{profileName}</b>
-                  <span className="rounded-full bg-emerald-500/15 text-[#059669] dark:text-emerald-400 px-2 py-0.5 text-[10px] font-bold">
-                    PRO
-                  </span>
-                </div>
-                <span className="block text-xs text-foreground-sub mt-0.5">{profilePhone}</span>
-                <small className="block text-xs text-foreground-muted font-mono truncate">{email}</small>
+                <b className="block truncate text-[20px] font-extrabold tracking-[-0.02em] text-foreground">{profileName || "Add your name"}</b>
+                <span className="block text-[15px] text-foreground-sub">{profilePhone || "No phone saved"}</span>
+                <small className="block truncate text-[14px] text-foreground-muted">{email}</small>
               </div>
             </div>
 
@@ -508,7 +501,7 @@ export default function SettingsPage() {
                 />
               </Cell>
               <Cell hue="indigo" icon={ICONS.mail} label="Email" hint="Used to sign in">
-                <span className="text-[13px] font-medium text-foreground-sub font-mono">{email}</span>
+                <span className="text-[15px] font-semibold text-foreground-sub">{email}</span>
               </Cell>
               <Cell hue="emerald" icon={ICONS.phone} label="Phone" htmlFor="set-phone">
                 <input
@@ -523,21 +516,21 @@ export default function SettingsPage() {
             </ul>
             <div className="mt-2 flex flex-wrap items-center justify-end gap-3 px-1" aria-live="polite">
               {profileStatus === "saved" && !profileDirty && (
-                <span className="text-xs font-semibold text-[#059669] dark:text-emerald-400">Profile saved</span>
+                <span className="text-[14px] font-bold text-[var(--good)]">Profile saved</span>
               )}
               {profileStatus === "error" && (
-                <span className="text-xs font-semibold text-[#DC2626] dark:text-red-400">
+                <span className="text-[14px] font-bold text-[var(--bad)]">
                   Couldn&apos;t save. Check your connection and try again.
                 </span>
               )}
               {!profileName.trim() && (
-                <span className="text-xs text-[#DC2626] dark:text-red-400">Name can&apos;t be empty</span>
+                <span className="text-[14px] font-bold text-[var(--bad)]">Name can&apos;t be empty</span>
               )}
               <button
                 type="button"
                 onClick={handleSaveProfile}
                 disabled={!profileDirty || !profileName.trim() || isSavingProfile}
-                className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-[13px] font-bold text-white transition hover:bg-primary-strong disabled:opacity-40 dark:text-emerald-950"
+                className="inline-flex h-11 items-center rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] disabled:opacity-40 dark:bg-[#f0c35a] dark:text-[#161614]"
               >
                 {isSavingProfile ? "Saving…" : "Save changes"}
               </button>
@@ -548,12 +541,42 @@ export default function SettingsPage() {
           <SettingsGroup
             id="appearance"
             title="Appearance"
-            subtitle="The whole app re-tints through its glass"
+            subtitle="Pick a theme. Auto follows your device."
           >
+            <div className="mb-2 grid grid-cols-2 sm:grid-cols-3 gap-3" role="group" aria-label="Theme">
+              {themeOptions.map((o) => {
+                const on = theme === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={(e) => setTheme(o.value, e.currentTarget)}
+                    className={`grid gap-2.5 rounded-[18px] border-[1.5px] p-2.5 text-left font-[750] text-foreground transition ${
+                      on
+                        ? "border-[var(--primary)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_18%,transparent)]"
+                        : "border-border hover:border-[var(--line-2)]"
+                    }`}
+                  >
+                    <span className={`tk-theme-pic tk-theme-pic--${o.value}`} aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <span className="flex items-center gap-2 px-1 pb-1 text-[15px]">
+                      {o.icon}
+                      {o.label}
+                      {on && (
+                        <svg className="ml-auto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m5 12.5 4.5 4.5L19 7.5" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             <ul className="cells">
-              <Cell hue="indigo" icon={ICONS.moon} label="Theme" hint="Auto follows your system">
-                <Segmented label="Theme" options={themeOptions} value={theme} onChange={setTheme} />
-              </Cell>
               <Cell
                 hue="blue"
                 icon={ICONS.globe}
@@ -652,7 +675,7 @@ export default function SettingsPage() {
                 label="End-to-end encrypted sync"
                 hint="256-bit encryption. Your data belongs to you."
               >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[11px] font-bold text-[#059669] dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-1 text-[13px] font-bold text-[#059669] dark:text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Active
                 </span>
@@ -669,7 +692,7 @@ export default function SettingsPage() {
                 danger
               />
             </ul>
-            <p className="mt-3 px-1 text-[11px] text-foreground-muted">TrackKaro v1.0.0 · Web Edition</p>
+            <p className="mt-3 px-1 text-[13px] text-foreground-muted">TrackKaro v1.0.0 · Web Edition</p>
           </SettingsGroup>
         </div>
       </div>

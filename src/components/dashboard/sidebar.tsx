@@ -1,98 +1,121 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/store";
 import { useSignOut } from "@/store/api/authApi";
-import { useI18n } from "@/i18n";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import { useGetKhataEntriesQuery } from "@/store/api/khataApi";
+import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { signOut } = useSignOut();
   const { user } = useAppSelector((state) => state.auth);
-  const { t } = useI18n();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const { data: transactions = [] } = useGetTransactionsQuery();
   const { data: khataEntries = [] } = useGetKhataEntriesQuery();
+  const { data: budgets = [] } = useGetBudgetsQuery();
 
-  const navItems = [
+  const pendingKhata = khataEntries.filter((e) => e.status === "pending").length;
+
+  const moneyNav = [
     {
       id: "overview",
-      label: t.navOverview || "Overview",
+      label: "Overview",
       href: "/dashboard",
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15V15a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5.5H5.5A1.5 1.5 0 0 1 4 19z" />
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.5" y="3.5" width="7.5" height="9" rx="2" />
+          <rect x="13" y="3.5" width="7.5" height="5.5" rx="2" />
+          <rect x="3.5" y="14.5" width="7.5" height="6" rx="2" />
+          <rect x="13" y="11" width="7.5" height="9.5" rx="2" />
         </svg>
       ),
     },
     {
       id: "expenses",
-      label: t.navExpenses || "Expenses",
+      label: "Expenses",
       href: "/dashboard/expenses",
-      badge: transactions.length > 0 ? transactions.length : undefined,
+      count: transactions.length > 0 ? transactions.length : undefined,
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="4" y="4" width="16" height="16" rx="4" />
-          <path d="m8.5 12 2.5 2.5 4.5-5" />
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3.5 12h3.5l2.5-6 5 12 2.5-6h3.5" />
         </svg>
       ),
     },
     {
       id: "khata",
-      label: t.navKhata || "Khata Ledger",
+      label: "Khata Ledger",
       href: "/dashboard/khata",
-      badge: khataEntries.length > 0 ? khataEntries.length : undefined,
+      count: pendingKhata > 0 ? pendingKhata : undefined,
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-          <path d="M6 6h10M6 10h10M6 14h6" />
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="3" />
+          <circle cx="12" cy="10" r="2.8" />
+          <path d="M8 17c.8-1.8 2.3-2.5 4-2.5s3.2.7 4 2.5" />
         </svg>
       ),
     },
     {
       id: "groups",
-      label: t.navGroups || "Groups",
+      label: "Split Groups",
       href: "/dashboard/groups",
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="9" cy="8.5" r="3.5" />
-          <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5" />
-          <path d="M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c1.8.6 3 2.2 3.5 4.7" />
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="3" />
+          <path d="M3 10h18" />
+          <circle cx="16" cy="14" r="1.2" fill="currentColor" />
+        </svg>
+      ),
+    },
+  ];
+
+  const manageNav = [
+    {
+      id: "budgets",
+      label: "Budgets & Limits",
+      href: "/dashboard/spending",
+      count: budgets.length > 0 ? budgets.length : undefined,
+      icon: (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2.5" />
+          <path d="M7 5v14M17 5v14M3 12h18" />
         </svg>
       ),
     },
     {
       id: "deals",
-      label: t.navDeals || "Live Deals",
+      label: "Live Deals",
       href: "/dashboard/deals",
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
           <line x1="7" y1="7" x2="7.01" y2="7" />
         </svg>
       ),
     },
     {
-      id: "spending",
-      label: "Spending Analysis",
-      href: "/dashboard/spending",
+      id: "calendar",
+      label: "Bills & Calendar",
+      href: "/dashboard/calendar",
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4.5 19.5h15" />
-          <path d="M7.5 16v-4.5M12 16V7.5M16.5 16v-6.5" />
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       ),
     },
     {
       id: "settings",
-      label: t.settings || "Settings",
+      label: "Settings",
       href: "/dashboard/settings",
       icon: (
-        <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
           <path d="M12 2.8l2 2.1 2.9-.4.7 2.8 2.6 1.4-1 2.8 1 2.8-2.6 1.4-.7 2.8-2.9-.4-2 2.1-2-2.1-2.9.4-.7-2.8-2.6-1.4 1-2.8-1-2.8 2.6-1.4.7-2.8 2.9.4Z" />
         </svg>
@@ -100,125 +123,317 @@ export function DashboardSidebar() {
     },
   ];
 
-  const displayName = user?.name || "Friend";
-  const userInitials = displayName.charAt(0).toUpperCase();
+  const displayName = user?.name || user?.email?.split("@")[0] || "You";
+  const initials =
+    displayName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  const sections = [
+    { label: "Money", items: moneyNav },
+    { label: "Studio", items: manageNav },
+  ];
+  const isActive = (href: string) =>
+    href === "/dashboard" ? pathname === href : pathname === href || Boolean(pathname?.startsWith(`${href}/`));
+  const activeId = [...moneyNav, ...manageNav].find((i) => isActive(i.href))?.id ?? null;
+
+  // Sliding pill: a dark copy of the menu, clipped to the active item (see useNavPill).
+  const asideRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  useNavPill(trackRef, pillRef, activeId, isCollapsed);
+
+  // Collapse: labels fade out first, then the sidebar narrows (Kesta: 0.16s, then 0.32s).
+  const toggleCollapsed = () => {
+    const aside = asideRef.current;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!isCollapsed && aside && !reduce) {
+      aside.classList.add("is-folding");
+      setTimeout(() => {
+        aside.classList.remove("is-folding");
+        setIsCollapsed(true);
+      }, 160);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
+  // Entrance stagger order: brand, fold button, then labels and items top to bottom, then the footer.
+  let order = 2;
+  const stagger = () => ({ "--i": order++ }) as CSSProperties;
+
+  const renderNav = (variant: "base" | "pill") => (
+    <div className="space-y-2">
+      {sections.map((section) => (
+        <div key={section.label}>
+          {isCollapsed ? (
+            <div className="h-3.5" aria-hidden="true" />
+          ) : (
+            <div
+              className={`px-3 pt-3 pb-1.5 text-[12px] font-extrabold uppercase tracking-[0.1em] text-foreground-muted ${
+                variant === "pill" ? "invisible" : "tk-side-item tk-side-label"
+              }`}
+              style={variant === "base" ? stagger() : undefined}
+            >
+              {section.label}
+            </div>
+          )}
+          <div className="space-y-0.5">
+            {section.items.map((item) => {
+              const active = item.id === activeId;
+              const inner = (
+                <>
+                  <span className="shrink-0 opacity-90">{item.icon}</span>
+                  {!isCollapsed && <span className="tk-side-text flex-1 truncate">{item.label}</span>}
+                  {item.count !== undefined && (
+                    <span
+                      className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-[7px] text-[13px] font-extrabold num ${
+                        isCollapsed ? "absolute right-1.5 top-[3px] h-[18px] min-w-[18px] px-[5px] text-[12px]" : ""
+                      } ${
+                        variant === "pill"
+                          ? "bg-[var(--on-side-pill)] text-[var(--side-pill)]"
+                          : "bg-[var(--side-soft)] text-foreground"
+                      }`}
+                    >
+                      {item.count}
+                    </span>
+                  )}
+                </>
+              );
+              const cls = `flex h-11 items-center gap-3 rounded-[14px] text-[16px] font-[650] ${
+                isCollapsed ? "justify-center px-0" : "px-3"
+              }`;
+              if (variant === "pill") {
+                return (
+                  <span key={item.id} className={`${cls} relative text-[var(--on-side-pill)]`}>
+                    {inner}
+                  </span>
+                );
+              }
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  data-nav={item.id}
+                  aria-current={active ? "page" : undefined}
+                  title={isCollapsed ? item.label : undefined}
+                  style={stagger()}
+                  className={`tk-side-item ${cls} relative text-foreground transition-[background-color,filter] duration-150 hover:bg-[var(--side-hover)] active:brightness-[0.93] ${
+                    active ? "hover:bg-transparent" : ""
+                  }`}
+                >
+                  {inner}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <aside
-      className="hidden lg:flex h-[calc(100vh-2rem)] my-4 ml-4 w-64 shrink-0 flex-col rounded-3xl glass glass--chrome glass-specular p-4 z-40 select-none shadow-2xl transition-all"
-      aria-label="Dashboard Sidebar"
+      ref={asideRef}
+      aria-label="Dashboard navigation"
+      className={`tk-side hidden lg:flex h-[calc(100vh-2rem)] my-4 ml-4 shrink-0 flex-col rounded-[26px] bg-surface border border-border px-3 pt-4 pb-3 z-40 select-none shadow-xs transition-[width] duration-[320ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
+        isCollapsed ? "w-[84px]" : "w-[244px]"
+      }`}
+      onTransitionEnd={(e) => {
+        if (e.target === e.currentTarget && e.propertyName === "width") trackRef.current?.dispatchEvent(new Event("tk-remeasure"));
+      }}
     >
-      {/* Brand Header */}
-      <Link
-        href="/dashboard"
-        className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all hover:bg-white/10 dark:hover:bg-white/5"
-      >
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-md">
-          <Image
-            src="/logo.png"
-            alt="TrackKaro"
-            width={28}
-            height={28}
-            className="h-6 w-6 rounded-lg object-contain"
-            priority
-          />
-          <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
-        </div>
-        <div className="flex flex-col">
-          <span className="font-display text-[19px] font-bold tracking-tight text-foreground leading-none">
-            Track<span className="text-emerald-600 dark:text-emerald-400">Karo</span>
+      {/* Brand + fold toggle */}
+      <div className={`flex items-center gap-2 pb-3.5 ${isCollapsed ? "flex-col" : "justify-between"}`}>
+        <Link
+          href="/dashboard"
+          className="tk-side-item flex items-center gap-[11px] overflow-hidden px-1.5 py-0.5"
+          style={{ "--i": 0 } as CSSProperties}
+          title="TrackKaro — Overview"
+        >
+          <span className="flex h-[38px] w-[38px] shrink-0 select-none items-center justify-center rounded-[12px] bg-[#e0a92e] text-[#1f1606] shadow-xs">
+            <svg className="h-[22px] w-[22px] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 4h3.5v6.5L14.5 4H19l-6 7.5L19.5 20h-4.5l-5.5-7.5V20H6V4z" />
+            </svg>
           </span>
-          <span className="text-[10px] uppercase font-semibold tracking-widest text-foreground-muted mt-1">
-            Finance Glass
-          </span>
+          {!isCollapsed && (
+            <span className="tk-side-text flex min-w-0 flex-col">
+              <span className="text-[22px] font-extrabold leading-tight tracking-[-0.03em] text-foreground">TrackKaro</span>
+              <span className="truncate text-[13px] font-semibold text-foreground-muted">Personal Finance</span>
+            </span>
+          )}
+        </Link>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="tk-side-item flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-foreground-muted transition hover:bg-[var(--side-hover)] hover:text-foreground"
+          style={{ "--i": 1 } as CSSProperties}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-pressed={isCollapsed}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3.5" y="4.5" width="17" height="15" rx="3" />
+            <path d="M9.5 4.5v15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Menu, with the sliding active pill layered on top */}
+      <nav aria-label="Main" className="flex-1 overflow-y-auto no-scrollbar py-1">
+        <div ref={trackRef} className="relative">
+          {renderNav("base")}
+          <div ref={pillRef} aria-hidden="true" className="tk-nav-pill pointer-events-none absolute inset-0 bg-[var(--side-pill)]">
+            {renderNav("pill")}
+          </div>
         </div>
-      </Link>
-
-      {/* Nav List */}
-      <nav className="mt-5 flex-1 space-y-1.5 overflow-y-auto no-scrollbar">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname?.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`group flex items-center justify-between rounded-2xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-200 ${
-                isActive
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/25 dark:bg-emerald-500 dark:text-emerald-950 font-bold"
-                  : "text-foreground-sub hover:bg-white/30 dark:hover:bg-white/5 hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? "text-white dark:text-emerald-950" : "text-foreground-muted group-hover:text-primary"
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </div>
-
-              {typeof item.badge === "number" && (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold leading-none ${
-                    isActive
-                      ? "bg-white/25 text-white dark:bg-emerald-950/20 dark:text-emerald-950"
-                      : "bg-surface-muted text-foreground-muted group-hover:bg-primary-soft group-hover:text-primary"
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
       </nav>
 
-      {/* Pinned / Quick Ledger Pulse */}
-      {/* <div className="my-3 px-3 py-2.5 rounded-2xl bg-white/20 dark:bg-white/5 border border-white/20 dark:border-white/10">
-        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-foreground-muted">
-          <span>Active Pulse</span>
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-        </div>
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="text-foreground-sub">Smart Bahi Khata</span>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">Synced</span>
-        </div>
-      </div> */}
-
-      {/* User Account / Sign Out */}
-      <div className="pt-2 border-t border-border/40">
-        <div className="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-white/20 dark:bg-white/5 border border-white/10">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 font-bold text-white text-xs shadow-xs">
-              {userInitials}
-            </div>
-            <div className="truncate">
-              <p className="truncate text-xs font-bold text-foreground leading-tight">{displayName}</p>
-              <p className="truncate text-[10px] text-foreground-muted">{user?.email || "Personal"}</p>
-            </div>
+      {/* Profile + sign out */}
+      <div className={`flex items-center border-t border-border pt-3 ${isCollapsed ? "flex-col gap-2" : "justify-between"}`}>
+        <div className={`tk-side-item flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl p-2 transition hover:bg-[var(--side-hover)] ${isCollapsed ? "justify-center" : ""}`} style={stagger()}>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1f8366] text-[13px] font-bold text-white shadow-xs">
+            {initials}
           </div>
-
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            title="Log Out"
-            aria-label="Log Out"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-foreground-muted hover:bg-rose-500/15 hover:text-rose-600 transition"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
+          {!isCollapsed && (
+            <div className="tk-side-text min-w-0 flex-1">
+              <div className="truncate text-[15px] font-bold leading-tight text-foreground">{displayName}</div>
+              <div className="truncate text-[13px] font-medium text-foreground-muted">{user?.email || "Personal account"}</div>
+            </div>
+          )}
         </div>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          title="Sign out"
+          aria-label="Sign out"
+          className="tk-side-item inline-flex h-[34px] w-[34px] items-center justify-center rounded-[10px] text-foreground-muted transition hover:bg-[var(--side-hover)] hover:text-coral"
+          style={stagger()}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
     </aside>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sliding pill                                                               */
+/* -------------------------------------------------------------------------- */
+
+type Edges = { t: number; r: number; b: number; l: number };
+
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+/**
+ * Clips the dark pill layer to the active menu item. When the active item changes, the
+ * leading edge moves first (0.36s, ease-out) and the trailing edge follows (0.55s), so the
+ * pill stretches toward the new item and then catches up — Kesta's motion, without a library.
+ */
+function useNavPill(
+  trackRef: RefObject<HTMLDivElement | null>,
+  pillRef: RefObject<HTMLDivElement | null>,
+  activeId: string | null,
+  collapsed: boolean
+) {
+  const current = useRef<Edges | null>(null);
+  const frame = useRef(0);
+  const firstRun = useRef(true);
+  const lastCollapsed = useRef(collapsed);
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    const pill = pillRef.current;
+    if (!track || !pill) return;
+
+    const clip = (e: Edges) => `inset(${e.t}px ${e.r}px ${e.b}px ${e.l}px round 14px)`;
+    const measure = (): Edges | null => {
+      const el = activeId ? track.querySelector<HTMLElement>(`[data-nav="${activeId}"]`) : null;
+      if (!el || !el.offsetWidth) return null;
+      return {
+        l: el.offsetLeft,
+        t: el.offsetTop,
+        r: track.scrollWidth - (el.offsetLeft + el.offsetWidth),
+        b: track.scrollHeight - (el.offsetTop + el.offsetHeight),
+      };
+    };
+    const place = () => {
+      cancelAnimationFrame(frame.current);
+      const to = measure();
+      if (!to) {
+        pill.style.opacity = "0";
+        current.current = null;
+        return;
+      }
+      current.current = to;
+      pill.style.opacity = "1";
+      pill.style.clipPath = clip(to);
+    };
+
+    const to = measure();
+    const from = current.current;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const collapseChanged = lastCollapsed.current !== collapsed;
+    lastCollapsed.current = collapsed;
+    if (!to || !from || reduce || firstRun.current || collapseChanged) {
+      firstRun.current = false;
+      place();
+    } else {
+      // Which way are we moving, and which edge leads?
+      const vertical = Math.abs(to.t - from.t) > Math.abs(to.l - from.l);
+      const forward = vertical ? to.t > from.t : to.l > from.l;
+      const [lead, trail] = vertical ? (forward ? ["b", "t"] : ["t", "b"]) : forward ? ["r", "l"] : ["l", "r"];
+      const cross = vertical ? ["l", "r"] : ["t", "b"];
+      const dur: Record<string, [number, (t: number) => number]> = {
+        [lead]: [360, easeOut],
+        [trail]: [550, easeInOut],
+        [cross[0]]: [450, easeInOut],
+        [cross[1]]: [450, easeInOut],
+      };
+      const start = performance.now();
+      const startEdges = { ...from };
+      cancelAnimationFrame(frame.current);
+      const tick = (now: number) => {
+        const e = { ...startEdges };
+        let done = true;
+        (Object.keys(e) as (keyof Edges)[]).forEach((k) => {
+          const [ms, ease] = dur[k];
+          const p = Math.min(1, (now - start) / ms);
+          if (p < 1) done = false;
+          e[k] = startEdges[k] + (to[k] - startEdges[k]) * ease(p);
+        });
+        current.current = e;
+        pill.style.opacity = "1";
+        pill.style.clipPath = clip(e);
+        if (!done) frame.current = requestAnimationFrame(tick);
+      };
+      frame.current = requestAnimationFrame(tick);
+    }
+
+    // Re-place without animation when the sidebar resizes or finishes collapsing.
+    // (ResizeObserver also fires once on observe; ignore that so it doesn't cancel the slide.)
+    let size = `${track.offsetWidth}x${track.offsetHeight}`;
+    const ro = new ResizeObserver(() => {
+      const next = `${track.offsetWidth}x${track.offsetHeight}`;
+      if (next === size) return;
+      size = next;
+      place();
+    });
+    ro.observe(track);
+    track.addEventListener("tk-remeasure", place);
+    return () => {
+      ro.disconnect();
+      track.removeEventListener("tk-remeasure", place);
+    };
+  }, [trackRef, pillRef, activeId, collapsed]);
+
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
 }

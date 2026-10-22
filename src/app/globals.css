@@ -1,210 +1,534 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/*! Kesta Design System Tokens directly from Kesta Reference */
 :root {
-  --background: #EDF7F2;
-  --surface: #E2EFE7; /* Soft sage-mint frosted card surface - NOT BEIGE, NOT WHITE */
-  --surface-muted: #D3E8DC; /* Recessed well / pill surface */
-  --border: #C6DFD0;
-  --foreground: #102117;
-  --foreground-sub: #3E5A4A;
-  --foreground-muted: #6B8B79;
-  --primary: #059669;
-  --primary-strong: #047857;
-  --primary-soft: #D1EEDE;
-  --accent: #00DF81;
-  --amber: #D97706;
-  --amber-soft: #FEF3C7;
-  --night: #0E1F16;
-  --night-ink: #F1FBF6;
-  --shadow-color: 6 78 59;
+  --font: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-2xs: .75rem;
+  --fs-xs: .8125rem;
+  --fs-sm: .875rem;
+  --fs-md: .9375rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.125rem;
+
+  --bg: #f5efda;
+  --glow-a: #fbecb8;
+  --glow-b: #f3ead2;
+  --surface: #fffdf4;
+  --surface-2: #faf5e4;
+  --raised: #fffefa;
+  --well: #2822120f;
+  --line: #2822121c;
+  --line-2: #28221233;
+  --shadow: 0 1px 0 #2822120a;
+  --shadow-pop: 0 24px 60px -18px #28221252, 0 2px 6px #28221214;
+
+  --text: #1f1d18;
+  --muted: #5c5646;
+  --faint: #716a58;
+  --primary: #1f1d18;
+  --on-primary: #fdf7e2;
+
+  --side: #fffcf0;
+  --on-side: #1f1d18;
+  --side-dim: #6f6853;
+  --side-hover: #2822120f;
+  --side-soft: #e0a92e24;
+  --side-rim: #2822121c;
+  --side-pill: #1f1d18;
+  --on-side-pill: #fdf7e2;
+
+  --accent: #e0a92e;
+  --toast: #1f1d18;
+  --on-toast: #fdf7e2;
+  --toast-accent: #f0c35a;
+
+  --pine: #1f8366;
+  --coral: #e2683f;
+  --amber: #cc8a12;
+  --sky: #3b7fc4;
+  --teal: #178a9a;
+  --rose: #d1495b;
+  --lime: #5a9a2c;
+  --slate: #6b6f80;
+  --violet: #7a68d6;
+  --ink: #142520;
+  --good: #1f7f45;
+  --warn: #8f5f06;
+  --bad: #ad2b22;
+  --info: #2f6fb5;
+
+  --in: var(--pine);
+  --out: var(--coral);
+  --soft: 14%;
+  --r-card: 22px;
+  --r-tile: 16px;
+  --gap: 16px;
+  --side-w: 244px;
+  --side-inset: 12px;
+  --gutter: clamp(16px, 1.8vw, 30px);
+  --ease: cubic-bezier(.2, .8, .2, 1);
 }
 
-:root[data-theme="dark"] {
-  --background: #06130B;
-  --surface: #0E1F16; /* Deep forest emerald card surface */
-  --surface-muted: #142B1F;
-  --border: #1B3829;
-  --foreground: #F1FBF6;
-  --foreground-sub: #A9C4B6;
-  --foreground-muted: #6B8C7C;
-  --primary: #00DF81;
-  --primary-strong: #00C070;
-  --primary-soft: rgba(0, 223, 129, 0.12);
-  --accent: #00DF81;
-  --amber: #FBBF24;
-  --amber-soft: rgba(251, 191, 36, 0.14);
-  --night: #18261E;
-  --night-ink: #F1FBF6;
-  --shadow-color: 0 0 0;
+:root[data-theme=dark] {
+  --bg: #14120d;
+  --glow-a: #e0a92e1f;
+  --glow-b: #e2683f0d;
+  --surface: #1c1913;
+  --surface-2: #231f18;
+  --raised: #2a261e;
+  --well: #ffffff0e;
+  --line: #ffffff14;
+  --line-2: #ffffff29;
+  --shadow: 0 1px 0 #ffffff08 inset;
+  --shadow-pop: 0 24px 60px -18px #000000c7, 0 0 0 1px #ffffff14;
+
+  --text: #f5efdc;
+  --muted: #bdb49c;
+  --faint: #9c947e;
+  --primary: #f0c35a;
+  --on-primary: #1f1606;
+
+  --side: #1c1913;
+  --on-side: #f5efdc;
+  --side-dim: #ada48b;
+  --side-hover: #f0c35a14;
+  --side-soft: #f0c35a14;
+  --side-rim: #ffffff14;
+  --side-pill: #f0c35a;
+  --on-side-pill: #1f1606;
+
+  --accent: #f0c35a;
+  --toast: #2a261e;
+  --on-toast: #f5efdc;
+  --toast-accent: #f0c35a;
+
+  --pine: #6cc7a2;
+  --coral: #ff9670;
+  --amber: #f0b44a;
+  --sky: #6eaef0;
+  --teal: #4cc0cf;
+  --rose: #f07a8c;
+  --lime: #8ccc5e;
+  --slate: #a2a6b6;
+  --violet: #a493f0;
+  --ink: #e9f2ee;
+  --good: #63d18f;
+  --warn: #f1b437;
+  --bad: #f2806e;
+  --info: #7db4f2;
+  --soft: 20%;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg);
   --color-surface: var(--surface);
-  --color-surface-muted: var(--surface-muted);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-foreground-sub: var(--foreground-sub);
-  --color-foreground-muted: var(--foreground-muted);
+  --color-surface-muted: var(--surface-2);
+  --color-border: var(--line);
+  --color-foreground: var(--text);
+  --color-foreground-sub: var(--muted);
+  --color-foreground-muted: var(--faint);
   --color-primary: var(--primary);
-  --color-primary-strong: var(--primary-strong);
-  --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
+  --color-pine: var(--pine);
+  --color-coral: var(--coral);
   --color-amber: var(--amber);
-  --color-amber-soft: var(--amber-soft);
-  --color-night: var(--night);
-  --color-night-ink: var(--night-ink);
-  --font-sans: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Outfit", system-ui, sans-serif;
+  --color-sky: var(--sky);
+  --color-teal: var(--teal);
+  --color-slate: var(--slate);
+  --color-violet: var(--violet);
+  --color-rose: var(--rose);
+
+  --font-sans: var(--font);
+  --font-mono: var(--mono);
 }
 
-* {
-  border-color: var(--color-border);
+*, :before, :after {
+  box-sizing: border-box;
 }
 
 html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   scroll-behavior: smooth;
 }
 
 body {
+  min-height: 100dvh;
+  color: var(--text);
   background:
-    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.22), transparent 70%),
-    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.18), transparent 70%),
-    radial-gradient(50% 40% at 0% 15%, rgba(167, 243, 208, 0.35), transparent 60%),
-    linear-gradient(160deg, #EDF7F2, #E4F3EA 55%, #D7EFE1);
-  color: var(--color-foreground);
-  font-family: "Outfit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  letter-spacing: -0.015em;
+    radial-gradient(60vmax 50vmax at 18% -12%, var(--glow-a), transparent 70%),
+    radial-gradient(50vmax 40vmax at 100% 0%, var(--glow-b), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  font: 500 var(--fs-md)/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  overflow-x: hidden;
 }
 
-:root[data-theme="dark"] body {
-  background:
-    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.12), transparent 70%),
-    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.14), transparent 70%),
-    linear-gradient(160deg, #06130B, #091A10 55%, #0B2014);
+/* Number formatting - NOT code font, but clean tabular sans-serif */
+.num, b[data-count], .tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
-.coterie-bg {
-  background:
-    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.22), transparent 70%),
-    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.18), transparent 70%),
-    linear-gradient(160deg, #EDF7F2, #E4F3EA 55%, #D7EFE1);
+.mono {
+  font-family: var(--mono);
+  letter-spacing: 0;
+  font-size: .92em;
 }
 
-:root[data-theme="dark"] .coterie-bg {
-  background:
-    radial-gradient(90% 70% at 100% 100%, rgba(0, 223, 129, 0.08), transparent 70%),
-    radial-gradient(60% 50% at 88% 0%, rgba(5, 150, 105, 0.12), transparent 70%),
-    linear-gradient(160deg, #0e1210, #141916 55%, #18201a);
+.ico {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+  width: 18px;
+  height: 18px;
 }
 
-.seg__stripes {
-  background: repeating-linear-gradient(-55deg, rgba(29, 29, 27, 0.16) 0 1.5px, transparent 1.5px 9px);
-  animation: 3.2s linear infinite stripes;
+/* Kesta Card Architecture */
+.card {
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-width: 0;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  position: relative;
 }
 
-:root[data-theme="dark"] .seg__stripes {
-  background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.18) 0 1.5px, transparent 1.5px 9px);
+.card__head {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  display: flex;
 }
 
-@keyframes stripes {
-  to {
-    transform: translateX(22px);
+.card__htext {
+  min-width: 0;
+}
+
+.card__title {
+  font-size: var(--fs-lg);
+  letter-spacing: -.015em;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  display: flex;
+}
+
+.card__sub {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  margin-top: 2px;
+  font-weight: 550;
+}
+
+.card__tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.card__link {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--primary);
+  white-space: nowrap;
+  align-items: center;
+  gap: 4px;
+  display: inline-flex;
+}
+
+.card__link:hover {
+  text-underline-offset: 3px;
+  text-decoration: underline;
+}
+
+/* Kesta Buttons */
+.btn {
+  height: 44px;
+  font-weight: 750;
+  font-size: var(--fs-base);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  display: inline-flex;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.btn .ico {
+  width: 17px;
+  height: 17px;
+}
+
+.btn--primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--primary) 90%, transparent);
+}
+
+.btn--primary:hover {
+  filter: brightness(1.12);
+}
+
+:root[data-theme=dark] .btn--primary:hover {
+  filter: brightness(.94);
+}
+
+.btn--ghost {
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-2);
+}
+
+.btn--soft {
+  background: color-mix(in srgb, var(--pine) var(--soft), transparent);
+  color: color-mix(in srgb, var(--primary) 85%, var(--text));
+  height: 32px;
+  font-size: var(--fs-sm);
+  border-radius: 10px;
+  gap: 6px;
+  padding: 0 11px;
+}
+
+.btn--soft:hover {
+  background: color-mix(in srgb, var(--pine) 22%, transparent);
+}
+
+/* Kesta Segment Control */
+.seg {
+  background: var(--well);
+  border-radius: 12px;
+  flex: none;
+  padding: 3px;
+  display: inline-flex;
+  position: relative;
+}
+
+.seg__btn {
+  z-index: 1;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  white-space: nowrap;
+  border-radius: 9px;
+  padding: 5px 12px;
+  font-weight: 700;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.seg__btn[aria-pressed=true] {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(18, 50, 42, 0.14);
+}
+
+:root[data-theme=dark] .seg__btn[aria-pressed=true] {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+/* Kesta Pill */
+.pill {
+  --c: var(--faint);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: color-mix(in srgb, var(--c) 75%, var(--text));
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  border-radius: 999px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  font-weight: 700;
+  display: inline-flex;
+  line-height: 1.2;
+}
+
+.pill i {
+  background: var(--c);
+  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+}
+
+.pill--pine { --c: var(--pine); }
+.pill--coral { --c: var(--coral); }
+.pill--amber { --c: var(--amber); color: var(--warn); }
+.pill--sky { --c: var(--sky); }
+.pill--teal { --c: var(--teal); }
+.pill--violet { --c: var(--violet); }
+.pill--rose { --c: var(--rose); }
+.pill--slate { --c: var(--slate); }
+.pill--good { --c: var(--good); }
+.pill--bad { --c: var(--bad); color: var(--bad); }
+.pill--faint { --c: var(--faint); }
+
+/* Meter (progress bar) */
+.meter {
+  background: var(--well);
+  border-radius: 999px;
+  height: 8px;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+
+.meter__fill {
+  border-radius: inherit;
+  transform-origin: 0;
+  height: 100%;
+  display: block;
+  transition: width 0.5s var(--ease);
+}
+
+/* Tints */
+.tint-bg--pine { background: var(--pine) !important; }
+.tint-bg--coral { background: var(--coral) !important; }
+.tint-bg--amber { background: var(--amber) !important; }
+.tint-bg--sky { background: var(--sky) !important; }
+.tint-bg--teal { background: var(--teal) !important; }
+.tint-bg--rose { background: var(--rose) !important; }
+.tint-bg--slate { background: var(--slate) !important; }
+.tint-bg--violet { background: var(--violet) !important; }
+
+.tint-stroke--pine { stroke: var(--pine) !important; }
+.tint-stroke--coral { stroke: var(--coral) !important; }
+.tint-stroke--amber { stroke: var(--amber) !important; }
+.tint-stroke--sky { stroke: var(--sky) !important; }
+
+.tint-fill--pine { fill: var(--pine) !important; }
+.tint-fill--coral { fill: var(--coral) !important; }
+.tint-fill--amber { fill: var(--amber) !important; }
+
+/* Legend */
+.legend {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-weight: 650;
+  display: flex;
+}
+
+.legend span {
+  align-items: center;
+  gap: 6px;
+  display: inline-flex;
+}
+
+.legend i {
+  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+}
+
+/* Currencies & Badges */
+.cur {
+  --c: var(--pine);
+  font-weight: 800;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  align-items: center;
+  gap: 7px;
+  line-height: 1;
+  display: inline-flex;
+}
+
+.cur--eur { --c: var(--sky); }
+.cur--gbp { --c: var(--teal); }
+.cur--jpy { --c: var(--amber); }
+
+.cur > i {
+  width: 26px;
+  height: 26px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text));
+  background: color-mix(in srgb, var(--c) var(--soft), transparent);
+  border-radius: 8px;
+  place-items: center;
+  font-style: normal;
+  font-weight: 800;
+  display: grid;
+}
+
+.cur > b {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.badge {
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  border-radius: 8px;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  font-weight: 800;
+  display: inline-flex;
+}
+
+.badge--good {
+  background: color-mix(in srgb, var(--good) var(--soft), transparent);
+  color: var(--good);
+}
+
+.badge--bad {
+  background: color-mix(in srgb, var(--bad) var(--soft), transparent);
+  color: var(--bad);
+}
+
+/* Circular Icon container */
+.cico {
+  color: var(--t, var(--primary));
+  background: color-mix(in srgb, var(--t, var(--primary)) var(--soft), transparent);
+  border-radius: 11px;
+  flex: none;
+  place-items: center;
+  display: inline-grid;
+}
+
+.cico--sm {
+  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+}
+
+.cico.tint--pine { --t: var(--pine); }
+.cico.tint--coral { --t: var(--coral); }
+.cico.tint--amber { --t: var(--amber); }
+.cico.tint--sky { --t: var(--sky); }
+.cico.tint--teal { --t: var(--teal); }
+.cico.tint--slate { --t: var(--slate); }
+
+/* Live breathe dot */
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--good) 18%, transparent);
   }
 }
 
-.font-display {
-  font-family: "Outfit", system-ui, sans-serif !important;
-}
-
-.card-shadow {
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 18px 40px -24px rgba(10, 48, 28, 0.16);
-}
-
-:root[data-theme="dark"] .card-shadow {
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 20px 45px -20px rgba(0, 0, 0, 0.7);
-}
-
-.brand-glow {
-  background: radial-gradient(60% 60% at 50% 0%, rgba(0, 223, 129, 0.18) 0%, rgba(0, 223, 129, 0) 70%);
-}
-
-.page-grid-bg {
-  background-color: var(--color-background);
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-border) 55%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(to bottom, black 0%, black 85%, transparent 100%);
-}
-
-.section-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.section-eyebrow::before {
-  content: "";
-  width: 1.25rem;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--color-accent);
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 3rem;
-  padding-inline: 1.5rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: white;
-  background: var(--color-primary);
-  box-shadow: 0 8px 24px -8px rgba(var(--shadow-color) / 0.35);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-strong);
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 3rem;
-  padding-inline: 1.5rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--color-foreground);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.btn-secondary:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
-  color: var(--color-primary);
-}
-
-::selection {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-strong);
-}
-
+/* Custom Scrollbars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -214,262 +538,543 @@ body {
   scrollbar-width: none;
 }
 
+/* Authentic Kesta Pill Buttons */
+.btn-kesta, .btn {
+  font-family: inherit;
+  font-size: var(--fs-xs, 0.8125rem);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  line-height: 1.25;
+  transition: all 0.15s var(--ease);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-kesta--primary, .btn--primary {
+  background: #161614 !important;
+  color: #fffdf4 !important;
+  border-color: #161614 !important;
+  box-shadow: 0 1px 3px rgba(40, 34, 18, 0.08);
+}
+
+.btn-kesta--primary:hover, .btn--primary:hover {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme=dark] .btn-kesta--primary,
+:root[data-theme=dark] .btn--primary {
+  background: #f0c35a !important;
+  color: #161614 !important;
+  border-color: #f0c35a !important;
+}
+
+:root[data-theme=dark] .btn-kesta--primary:hover,
+:root[data-theme=dark] .btn--primary:hover {
+  background: #e0b445 !important;
+  border-color: #e0b445 !important;
+  color: #161614 !important;
+}
+
+.btn-kesta--ghost, .btn--ghost {
+  background: #fffdf4 !important;
+  color: #1f1d18 !important;
+  border: 1px solid #28221226 !important;
+  box-shadow: 0 1px 2px rgba(40, 34, 18, 0.04);
+}
+
+.btn-kesta--ghost:hover, .btn--ghost:hover {
+  background: #faf5e4 !important;
+  border-color: #28221240 !important;
+}
+
+:root[data-theme=dark] .btn-kesta--ghost,
+:root[data-theme=dark] .btn--ghost {
+  background: #1c1913 !important;
+  color: #f5efdc !important;
+  border-color: #ffffff1f !important;
+}
+
+:root[data-theme=dark] .btn-kesta--ghost:hover,
+:root[data-theme=dark] .btn--ghost:hover {
+  background: #231f18 !important;
+}
+
+.btn-kesta--soft, .btn--soft {
+  background: #2822120f !important;
+  color: #1f1d18 !important;
+  border: 1px solid #2822121c !important;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+}
+
+.btn-kesta--soft:hover, .btn--soft:hover {
+  background: #fffdf4 !important;
+}
+
+:root[data-theme=dark] .btn-kesta--soft,
+:root[data-theme=dark] .btn--soft {
+  background: #ffffff14 !important;
+  color: #f5efdc !important;
+  border-color: #ffffff1f !important;
+}
+
+
 /* ==========================================================================
-   Liquid Glass Design System (Pane UI for TrackKaro)
+   Drawer (Kesta-style floating side panel; bottom sheet on phones)
    ========================================================================== */
 
-:root {
-  --glass-fill: rgba(226, 239, 231, 0.65);
-  --glass-fill-chrome: rgba(226, 239, 231, 0.82);
-  --glass-fill-card: rgba(255, 255, 255, 0.62);
-  --glass-border: rgba(198, 223, 208, 0.7);
-  --glass-border-highlight: rgba(255, 255, 255, 0.85);
-  --glass-shadow: 0 20px 48px -16px rgba(10, 48, 28, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  --glass-shadow-sm: 0 8px 24px -8px rgba(10, 48, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  --glass-blur: 24px;
-}
-
-:root[data-theme="dark"] {
-  --glass-fill: rgba(14, 31, 22, 0.65);
-  --glass-fill-chrome: rgba(14, 31, 22, 0.82);
-  --glass-fill-card: rgba(18, 38, 28, 0.55);
-  --glass-border: rgba(35, 70, 52, 0.6);
-  --glass-border-highlight: rgba(255, 255, 255, 0.12);
-  --glass-shadow: 0 24px 64px -20px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
-  --glass-shadow-sm: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
-  --glass-blur: 28px;
-}
-
-.glass {
-  background: var(--glass-fill);
-  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  position: relative;
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.glass--chrome {
-  background: var(--glass-fill-chrome);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  box-shadow: var(--glass-shadow);
-}
-
-.glass--card {
-  background: var(--glass-fill-card);
-  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow-sm);
-}
-
-.glass--card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--glass-border));
-}
-
-.glass-specular {
-  position: relative;
-}
-
-.glass-specular::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, var(--glass-border-highlight) 0%, transparent 45%, rgba(0, 223, 129, 0.15) 100%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Ambient Liquid Glass Wallpaper behind dashboard */
-.glass-wall {
+.tk-drawer-scrim {
   position: fixed;
   inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
+  z-index: 100;
+  background: rgb(20 18 12 / 0.28);
+  animation: tkFadeIn 0.3s ease both;
+}
+.tk-drawer-scrim.is-closing {
+  animation: tkFadeOut 0.26s ease both;
 }
 
-.glass-wall::before,
-.glass-wall::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.55;
-  animation: floatWall 18s ease-in-out infinite alternate;
+.tk-drawer {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 101;
+  width: min(480px, 100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-pop);
+  outline: none;
+  animation: tkDrawerIn 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+.tk-drawer.is-closing {
+  animation: tkDrawerOut 0.26s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-.glass-wall::before {
-  width: 55vw;
-  height: 55vw;
-  top: -15vw;
-  right: -10vw;
-  background: radial-gradient(circle, rgba(0, 223, 129, 0.25) 0%, rgba(5, 150, 105, 0.08) 60%, transparent 75%);
-}
-
-.glass-wall::after {
-  width: 45vw;
-  height: 45vw;
-  bottom: -10vw;
-  left: 10vw;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(52, 211, 153, 0.05) 60%, transparent 75%);
-  animation-delay: -9s;
-}
-
-:root[data-theme="dark"] .glass-wall::before {
-  opacity: 0.35;
-  background: radial-gradient(circle, rgba(0, 223, 129, 0.18) 0%, rgba(4, 120, 87, 0.05) 65%, transparent 80%);
-}
-
-:root[data-theme="dark"] .glass-wall::after {
-  opacity: 0.25;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.04) 65%, transparent 80%);
-}
-
-@keyframes floatWall {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(3vw, 2vh) scale(1.05); }
-  100% { transform: translate(-2vw, -3vh) scale(0.98); }
-}
-
-/* ==========================================================================
-   Settings (Pane-style grouped glass cells)
-   ========================================================================== */
-
-/* Tinted rounded-square icon tile */
-.picon {
+.tk-drawer__close {
+  position: sticky;
+  top: 14px;
+  z-index: 3;
+  align-self: flex-end;
+  margin: 14px 14px -54px 0;
   display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 2.125rem;
-  height: 2.125rem;
-  border-radius: 0.7rem;
-  color: #fff;
-  background: var(--hue);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 14px -6px var(--hue);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--muted);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.tk-drawer__close:hover {
+  color: var(--text);
+  background: var(--surface-2);
 }
 
-.hue--emerald { --hue: #10B981; }
-.hue--blue { --hue: #3B82F6; }
-.hue--indigo { --hue: #6366F1; }
-.hue--purple { --hue: #A855F7; }
-.hue--pink { --hue: #EC4899; }
-.hue--orange { --hue: #F59E0B; }
-.hue--teal { --hue: #14B8A6; }
-.hue--danger { --hue: #EF4444; }
-
-/* Grouped list of rows inside a settings card */
-.cells > li + li {
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+.tk-drawer__inner {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 24px;
+  flex: 1 0 auto;
 }
 
-/* iOS-style switch on a native checkbox */
-.switch {
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  flex-shrink: 0;
-  width: 2.75rem;
-  height: 1.625rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent);
-  cursor: pointer;
-  transition: background 0.2s ease;
+/* Sections rise in one after another (Kesta: y 14px, 0.05s apart, 0.08s delay). */
+.tk-drawer__inner > * {
+  animation: tkRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.tk-drawer__inner > *:nth-child(1) { animation-delay: 0.08s; }
+.tk-drawer__inner > *:nth-child(2) { animation-delay: 0.13s; }
+.tk-drawer__inner > *:nth-child(3) { animation-delay: 0.18s; }
+.tk-drawer__inner > *:nth-child(4) { animation-delay: 0.23s; }
+.tk-drawer__inner > *:nth-child(5) { animation-delay: 0.28s; }
+.tk-drawer__inner > *:nth-child(6) { animation-delay: 0.33s; }
+.tk-drawer__inner > *:nth-child(n + 7) { animation-delay: 0.38s; }
+
+.tk-drawer__foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 24px 18px;
+  background: var(--raised);
+  border-top: 1px solid var(--line);
+  animation: tkRise 0.45s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 0.1875rem;
-  left: 0.1875rem;
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 9999px;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+/* Detail rows inside drawers */
+.d-big {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
 }
-
-.switch:checked {
-  background: var(--color-primary);
-}
-
-.switch:checked::after {
-  transform: translateX(1.125rem);
-}
-
-.switch:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Segmented control with a sliding glass pill */
-.seg {
-  position: relative;
-  display: inline-grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  padding: 3px;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--color-surface-muted) 75%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 70%, transparent);
-}
-
-.seg__pill {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  border-radius: 9999px;
-  background: var(--glass-fill-card);
-  box-shadow: 0 4px 12px -4px rgba(10, 48, 28, 0.25), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  transition: transform 0.35s cubic-bezier(0.3, 1.3, 0.5, 1);
-  pointer-events: none;
-}
-
-:root[data-theme="dark"] .seg__pill {
-  background: rgba(0, 223, 129, 0.16);
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.1) inset;
-}
-
-.seg__btn {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
+.d-big small { color: var(--muted); font-weight: 650; }
+.d-big b { font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; }
+.d-big b.up { color: var(--good); }
+.d-rows { display: grid; }
+.d-row {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  height: 2.125rem;
-  padding-inline: 0.875rem;
-  border-radius: 9999px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--color-foreground-muted);
-  transition: color 0.2s ease;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.d-row:last-child { border-bottom: 0; }
+.d-row > :first-child { color: var(--muted); font-weight: 600; }
+.d-row > :last-child { min-width: 0; text-align: right; font-weight: 700; }
+.d-row select {
+  height: 38px;
+  max-width: 220px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 650;
 }
 
-.seg__btn[aria-pressed="true"] {
-  color: var(--color-foreground);
+@keyframes tkFadeIn { from { opacity: 0; } }
+@keyframes tkFadeOut { to { opacity: 0; } }
+@keyframes tkDrawerIn { from { opacity: 0; transform: translateX(60px); } }
+@keyframes tkDrawerOut { to { opacity: 0; transform: translateX(40px); } }
+@keyframes tkSheetIn { from { opacity: 0; transform: translateY(90px); } }
+@keyframes tkSheetOut { to { opacity: 0; transform: translateY(60px); } }
+@keyframes tkRise { from { opacity: 0; transform: translateY(14px); } }
+
+@media (max-width: 640px) {
+  .tk-drawer {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: 24px 24px 0 0;
+    animation-name: tkSheetIn;
+  }
+  .tk-drawer.is-closing { animation-name: tkSheetOut; }
+  .tk-drawer::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    z-index: 4;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: var(--line-2);
+  }
+  .tk-drawer__inner { padding: 22px 18px; }
+  .tk-drawer__foot { padding: 12px 18px calc(14px + env(safe-area-inset-bottom)); }
 }
 
-.seg__btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
+/* Keep animationend firing (the drawer unmounts on it), just make it instant. */
 @media (prefers-reduced-motion: reduce) {
-  .switch::after,
-  .seg__pill {
-    transition: none;
+  .tk-drawer,
+  .tk-drawer-scrim,
+  .tk-drawer__inner > *,
+  .tk-drawer__foot {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
   }
 }
 
 
+/* ==========================================================================
+   Sidebar motion (Kesta): entrance stagger, label fades on collapse, pill layer
+   ========================================================================== */
+
+.tk-side {
+  animation: tkSideIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* Brand, fold button, labels, items and footer slide in 35ms apart after 0.15s. */
+.tk-side-item {
+  animation: tkSideItemIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.15s + var(--i, 0) * 35ms);
+}
+/* The pill appears once the items underneath it have arrived. */
+.tk-nav-pill {
+  animation: tkFadeIn 0.3s 0.7s ease both;
+}
+/* Text fades back in after the sidebar finishes widening. */
+.tk-side-text {
+  animation: tkFadeIn 0.3s 0.18s ease both;
+}
+.tk-side.is-folding .tk-side-text,
+.tk-side.is-folding .tk-side-label {
+  opacity: 0;
+  transition: opacity 0.16s ease-in;
+}
+
+@keyframes tkSideIn { from { opacity: 0; transform: translateX(-60px); } }
+@keyframes tkSideItemIn { from { opacity: 0; transform: translateX(-12px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-side,
+  .tk-side-item,
+  .tk-nav-pill,
+  .tk-side-text {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Dialogs (Kesta modal) + small motion helpers
+   ========================================================================== */
+
+.tk-modal-scrim {
+  background: rgb(20 18 12 / 0.32);
+  animation: tkFadeIn 0.25s ease both;
+}
+.tk-modal {
+  padding: 22px;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-pop);
+  /* Kesta: rises in with back.out(1.4) */
+  animation: tkModalIn 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+.tk-modal--right {
+  animation-name: tkDrawerIn;
+}
+@keyframes tkModalIn { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
+
+/* Fields inside any dialog take Kesta's field style (these rules sit outside Tailwind's
+   layers, so they win over the old per-page input colours without touching each page). */
+.tk-modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+.tk-modal select,
+.tk-modal textarea {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 15px;
+}
+/* Small inline inputs (split amounts) opt out with .tk-compact. */
+.tk-modal input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(.tk-compact):not([class*="h-7"]),
+.tk-modal select:not(.tk-compact):not([class*="h-7"]) {
+  min-height: 44px;
+}
+.tk-modal input::placeholder,
+.tk-modal textarea::placeholder {
+  color: var(--faint);
+}
+.tk-modal input:focus,
+.tk-modal select:focus,
+.tk-modal textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+/* Pop in (Kesta avatar: from 50%) and grow-up bars (scaleY from 0). */
+.tk-pop {
+  animation: tkPop 0.5s 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.tk-bar {
+  transform-origin: 50% 100%;
+  animation: tkBarUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes tkPop { from { opacity: 0; transform: scale(0.5); } }
+@keyframes tkBarUp { from { transform: scaleY(0); } }
+
+@media (max-width: 640px) {
+  .tk-modal-wrap:not(:has(.tk-modal--right)) {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .tk-modal:not(.tk-modal--right) {
+    max-width: none;
+    max-height: 92dvh;
+    padding: 20px 18px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+    animation-name: tkSheetIn;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-modal,
+  .tk-modal-scrim,
+  .tk-pop,
+  .tk-bar {
+    animation: none !important;
+  }
+}
+
+/* Theme switch: the new theme grows as a circle from the clicked control (see theme-provider). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Theme icon spins in after a switch (Kesta: from -90deg, 60%, back-out). */
+.tk-theme-spin {
+  animation: tkThemeSpin 0.6s cubic-bezier(0.34, 1.8, 0.64, 1) both;
+}
+@keyframes tkThemeSpin { from { transform: rotate(-90deg) scale(0.6); } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-theme-spin { animation: none; }
+}
+
+
+/* Budget rings draw in; pace bar grows from the left (Kesta budgets). */
+/* Entrance only (fill "backwards"), so later changes animate through the transition. */
+.tk-ring {
+  animation: tkRing 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.3s ease;
+}
+@keyframes tkRing { from { stroke-dashoffset: var(--c); } }
+.tk-grow-x {
+  transform-origin: 0 50%;
+  animation: tkGrowX 0.9s 0.1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+}
+@keyframes tkGrowX { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-ring, .tk-grow-x { animation: none; }
+}
+
+/* Calendar: month grid slides in from the direction you moved; agenda rises in. */
+.tk-cal-next { animation: tkCalNext 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tk-cal-prev { animation: tkCalPrev 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tk-cal-agenda { animation: tkRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes tkCalNext { from { opacity: 0; transform: translateX(28px); } }
+@keyframes tkCalPrev { from { opacity: 0; transform: translateX(-28px); } }
+@media (prefers-reduced-motion: reduce) {
+  .tk-cal-next, .tk-cal-prev, .tk-cal-agenda { animation: none; }
+}
+
+/* ==========================================================================
+   Settings building blocks (Kesta): soft icon tiles, row dividers, switch,
+   and theme preview cards
+   ========================================================================== */
+
+.picon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  color: var(--hue);
+  background: color-mix(in srgb, var(--hue) 15%, transparent);
+}
+.hue--emerald { --hue: var(--pine); }
+.hue--blue { --hue: var(--sky); }
+.hue--indigo { --hue: var(--violet); }
+.hue--purple { --hue: var(--violet); }
+.hue--pink { --hue: var(--rose); }
+.hue--orange { --hue: var(--coral); }
+.hue--teal { --hue: var(--teal); }
+.hue--danger { --hue: var(--bad); }
+
+.cells > li + li {
+  border-top: 1px solid var(--line);
+}
+
+/* Kesta switch on a native checkbox: 44x26 track, 20px knob. */
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--line-2);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fffdfa;
+  box-shadow: 0 1px 3px #0003;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.switch:checked {
+  background: var(--primary);
+}
+.switch:checked::after {
+  transform: translateX(18px);
+}
+:root[data-theme="dark"] .switch:checked::after {
+  background: #14120d;
+}
+.switch:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Theme cards: a tiny picture of the app in each theme. */
+.tk-theme-pic {
+  position: relative;
+  display: block;
+  aspect-ratio: 1.5;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f5efda;
+  border: 1px solid #0000000f;
+}
+.tk-theme-pic i {
+  position: absolute;
+  border-radius: 6px;
+  background: #fffdf4;
+  box-shadow: 0 0 0 1px #2822121f;
+}
+.tk-theme-pic i:nth-child(1) { top: 8%; bottom: 8%; left: 6%; width: 22%; }
+.tk-theme-pic i:nth-child(2) { top: 8%; left: 34%; right: 6%; height: 34%; }
+.tk-theme-pic i:nth-child(3) { inset: 50% 30% 8% 34%; }
+.tk-theme-pic--dark { background: #14120d; }
+.tk-theme-pic--dark i:nth-child(1) { background: #1c1913; box-shadow: 0 0 0 1px #ffffff1a; }
+.tk-theme-pic--dark i:nth-child(2),
+.tk-theme-pic--dark i:nth-child(3) { background: #231f18; box-shadow: 0 0 0 1px #ffffff14; }
+.tk-theme-pic--system { background: linear-gradient(135deg, #f5efda 50%, #14120d 50%); }
+.tk-theme-pic--system i:nth-child(2),
+.tk-theme-pic--system i:nth-child(3) { background: linear-gradient(135deg, #fffdf4 50%, #231f18 50%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::after { transition: none; }
+}

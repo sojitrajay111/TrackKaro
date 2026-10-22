@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Modal, ModalField, ModalFooter } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer";
+import { GroupDrawer } from "@/components/groups/group-drawer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { avatarTint, initialsOf } from "@/lib/avatar";
 import { useI18n } from "@/i18n";
 import {
   useGetKhataEntriesQuery,
@@ -282,6 +285,7 @@ export default function KhataPage() {
       await createGroup({
         name: newGroupName.trim(),
         category: newGroupCategory,
+        members: [],
       }).unwrap();
       setShowCreateGroupModal(false);
       setNewGroupName("");
@@ -337,577 +341,453 @@ export default function KhataPage() {
     window.open(url, "_blank");
   };
 
+  const shortDate = (d: string) => {
+    const [y, m, day] = (d || "").slice(0, 10).split("-").map(Number);
+    if (!y) return d || "—";
+    return new Date(y, m - 1, day).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  const openCount = customerSummaries.filter((c) => c.pendingCount > 0).length;
+  const ownedGroups = expenseGroups.filter((g) => g.isOwner !== false).length;
+  const memberTotal = expenseGroups.reduce((acc, g) => acc + (g.members?.length || 0), 0);
+
+  const btnGhost =
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93]";
+  const btnDark =
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]";
+  const btnXs =
+    "inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground transition hover:bg-surface-muted";
+  const chipCls = (on: boolean) =>
+    `inline-flex h-[34px] items-center whitespace-nowrap rounded-full border px-[13px] text-[14px] font-bold transition ${
+      on ? "border-transparent bg-foreground text-background" : "border-border bg-surface text-foreground hover:border-[var(--line-2)]"
+    }`;
+  const card = "rounded-[22px] border border-border bg-surface p-5 shadow-xs";
+  const tile = "min-w-0 rounded-[16px] border border-border bg-surface px-4 py-3";
+  const tileLabel = "text-[14px] font-bold text-foreground-muted";
+  const tileValue = "truncate text-[20px] lg:text-[24px] font-extrabold tracking-[-0.035em] num";
+
+  const TABS: { id: KhataSubTab; label: string; n: number }[] = [
+    { id: "personal", label: "People", n: customerSummaries.length },
+    { id: "groups", label: "Shared groups", n: expenseGroups.length },
+  ];
+
   return (
-    <div className="space-y-8 pb-16">
-      {/* 1. Header Row (Matching Coterie Styling & Outfit Font) */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div>
-          <h1 className="font-display font-normal text-[26px] sm:text-[32px] lg:text-[38px] tracking-[-0.02em] text-foreground leading-tight mb-1.5">
-            Bahi Khata & Ledger
+    <div className="space-y-6 pb-16">
+      {/* Header: breadcrumb, title, summary line, actions */}
+      <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-x-6 gap-y-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[14px] font-[650] text-foreground-muted">
+            <span>Money</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m9.5 6 6 6-6 6" />
+            </svg>
+            <span className="text-foreground">Khata Ledger</span>
+          </nav>
+          <h1 className="text-[30px] lg:text-[clamp(1.875rem,2.5vw,2.375rem)] font-extrabold tracking-[-0.04em] leading-[1.08] text-foreground">
+            Khata Ledger
           </h1>
-          <p className="text-xs sm:text-sm font-medium text-foreground-muted">
-            Personal 1-on-1 digital ledger, udhar tracking & customer balances.
+          <p className="text-[16px] font-medium text-foreground-muted">
+            {subTab === "personal" ? (
+              <>
+                <b className="font-bold text-foreground">{customerSummaries.length}</b> {customerSummaries.length === 1 ? "person" : "people"} ·{" "}
+                <b className="font-bold text-[var(--good)]">{fmt(totalYouWillGet)}</b> to receive ·{" "}
+                <b className="font-bold text-[var(--bad)]">{fmt(totalYouWillGive)}</b> to pay
+              </>
+            ) : (
+              <>
+                <b className="font-bold text-foreground">{expenseGroups.length}</b> shared {expenseGroups.length === 1 ? "group" : "groups"} with{" "}
+                <b className="font-bold text-foreground">{memberTotal}</b> members
+              </>
+            )}
           </p>
         </div>
 
-        {/* Header Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           {subTab === "personal" ? (
             <>
-              {/* You Gave Shortcut (Maine Diye - Red) */}
-              <button
-                type="button"
-                onClick={() => handleOpenAdd("gave")}
-                className="flex items-center gap-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-[#EF4444] border border-rose-500/30 px-3.5 py-2 text-xs font-bold transition hover:scale-[1.02]"
-                title="Record money you gave to someone"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m18 15-6-6-6 6" />
+              <button type="button" onClick={() => handleOpenAdd("took")} className={btnGhost} title="Record money you took or received">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M6 13l6 6 6-6" />
                 </svg>
-                <span>You Gave</span>
+                You got
               </button>
-
-              {/* You Got Shortcut (Maine Liye - Green) */}
-              <button
-                type="button"
-                onClick={() => handleOpenAdd("took")}
-                className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-[#059669] dark:text-emerald-400 border border-emerald-500/30 px-3.5 py-2 text-xs font-bold transition hover:scale-[1.02]"
-                title="Record money you took or received"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m6 9 6 6 6-6" />
+              <button type="button" onClick={() => handleOpenAdd("gave")} className={btnGhost} title="Record money you gave to someone">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 19V5M6 11l6-6 6 6" />
                 </svg>
-                <span>You Got</span>
+                You gave
               </button>
-
-              {/* Add Entry Pill Button */}
-              <button
-                type="button"
-                onClick={() => handleOpenAdd("gave")}
-                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-strong text-white px-5 py-2 text-xs sm:text-[13px] font-bold shadow-xs transition hover:scale-[1.02]"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <button type="button" onClick={() => handleOpenAdd("gave")} className={btnDark}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                <span>+ Add Entry</span>
+                New entry
               </button>
             </>
           ) : (
             <>
-              {/* Join with Code */}
-              <button
-                type="button"
-                onClick={() => setShowJoinGroupModal(true)}
-                className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold text-foreground hover:bg-surface-muted transition"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m21 2-2 2m-1.5 1.5L14 9l-1.5-1.5 3.5-3.5M3 21l9-9m3.5-3.5L14 7" />
+              <button type="button" onClick={() => setShowJoinGroupModal(true)} className={btnGhost}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
                 </svg>
-                <span>Join with Code</span>
+                Join with code
               </button>
-
-              {/* Create Group */}
-              <button
-                type="button"
-                onClick={() => setShowCreateGroupModal(true)}
-                className="flex items-center gap-2 rounded-full bg-primary hover:bg-primary-strong text-white px-5 py-2 text-xs sm:text-[13px] font-bold shadow-xs transition hover:scale-[1.02]"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <button type="button" onClick={() => setShowCreateGroupModal(true)} className={btnDark}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
-                <span>+ Create Group</span>
+                New group
               </button>
             </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* 2. Sub-Tab Switcher: Personal Khata vs Shared Groups */}
-      <div className="flex items-center gap-2 p-1.5 rounded-full border border-border/80 bg-surface/90 w-fit card-shadow">
-        <button
-          type="button"
-          onClick={() => setSubTab("personal")}
-          className={`flex items-center gap-2 rounded-full px-5 py-2 text-xs sm:text-[13px] font-bold transition select-none ${
-            subTab === "personal"
-              ? "bg-[#0E1F16] text-white shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-              : "text-foreground-sub hover:text-foreground"
-          }`}
-        >
-          <span>Personal Khata</span>
-          <span className="rounded-full bg-white/20 dark:bg-black/20 px-2 py-0.5 text-[10px]">
-            {customerSummaries.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setSubTab("groups")}
-          className={`flex items-center gap-2 rounded-full px-5 py-2 text-xs sm:text-[13px] font-bold transition select-none ${
-            subTab === "groups"
-              ? "bg-[#0E1F16] text-white shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-              : "text-foreground-sub hover:text-foreground"
-          }`}
-        >
-          <span>Shared Groups</span>
-          <span className="rounded-full bg-white/20 dark:bg-black/20 px-2 py-0.5 text-[10px]">
-            {expenseGroups.length}
-          </span>
-        </button>
+      {/* Underlined tabs with counts */}
+      <div role="tablist" aria-label="Khata views" className="flex gap-1 border-b border-border">
+        {TABS.map((tab) => {
+          const on = subTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setSubTab(tab.id)}
+              className={`relative inline-flex items-center gap-[7px] rounded-t-[10px] px-3.5 pt-2.5 pb-3 text-[16px] font-bold transition ${
+                on ? "text-foreground" : "text-foreground-muted hover:text-foreground"
+              }`}
+            >
+              {tab.label} · {tab.n}
+              {on && <span className="absolute inset-x-2 -bottom-px h-[3px] rounded-t-[3px] bg-foreground" aria-hidden="true" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* ============================================================== */}
-      {/* PERSONAL KHATA TAB CONTENT */}
+      {/* PEOPLE TAB */}
       {/* ============================================================== */}
       {subTab === "personal" && (
-        <div className="space-y-6">
-          {/* Top Summary KPI Cards (You Will Get vs You Will Give) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* You Will Get (Maine Diye - Green) */}
-            <div className="p-5 rounded-[28px] bg-emerald-500/10 border border-emerald-500/25 card-shadow space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#059669] dark:text-emerald-400 tracking-wide uppercase">
-                  You Will Get
-                </span>
-                <span className="h-7 w-7 rounded-full bg-[#059669] text-white flex items-center justify-center text-xs font-bold">
-                  ↓
-                </span>
-              </div>
-              <div className="font-display font-medium text-2xl sm:text-3xl text-[#059669] dark:text-emerald-400">
-                {loadingKhata ? <Skeleton className="h-8 w-24" /> : fmt(totalYouWillGet)}
-              </div>
-              <p className="text-[11px] text-foreground-muted">
-                Pending receivables you gave to friends / customers.
-              </p>
-            </div>
-
-            {/* You Will Give (Maine Liye - Red) */}
-            <div className="p-5 rounded-[28px] bg-rose-500/10 border border-rose-500/25 card-shadow space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#EF4444] tracking-wide uppercase">
-                  You Will Give
-                </span>
-                <span className="h-7 w-7 rounded-full bg-[#EF4444] text-white flex items-center justify-center text-xs font-bold">
-                  ↑
-                </span>
-              </div>
-              <div className="font-display font-medium text-2xl sm:text-3xl text-[#EF4444]">
-                {loadingKhata ? <Skeleton className="h-8 w-24" /> : fmt(totalYouWillGive)}
-              </div>
-              <p className="text-[11px] text-foreground-muted">
-                Pending payables you took from friends or vendors.
-              </p>
-            </div>
-
-            {/* Net Baaki (Surplus / Deficit) */}
-            <div className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground-muted tracking-wide uppercase">
-                  Net Ledger Balance
-                </span>
-                <span className="rounded-full bg-border/60 px-2.5 py-0.5 text-[10px] font-semibold text-foreground-sub">
-                  {customerSummaries.filter((c) => c.pendingCount > 0).length} Open
-                </span>
-              </div>
-              <div
-                className={`font-display font-medium text-2xl sm:text-3xl ${
-                  netOverallBalance > 0
-                    ? "text-[#059669] dark:text-emerald-400"
-                    : netOverallBalance < 0
-                    ? "text-[#EF4444]"
-                    : "text-foreground"
-                }`}
-              >
-                {loadingKhata ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  `${netOverallBalance >= 0 ? "+" : "-"}${fmt(netOverallBalance)}`
-                )}
-              </div>
-              <p className="text-[11px] text-foreground-muted">
-                {netOverallBalance > 0
-                  ? "Overall surplus: You are owed more than you owe."
-                  : netOverallBalance < 0
-                  ? "Overall debt: You owe more than you are owed."
-                  : "All accounts are balanced & settled."}
-              </p>
-            </div>
-          </div>
-
-          {/* Search & Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-[24px] bg-surface/90 border border-border/80 card-shadow">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground-muted"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
+        <div className="space-y-4">
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <label className="relative min-w-[220px] max-w-[380px] flex-[1_1_260px]">
+              <span className="sr-only">Search people</span>
+              <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground-muted" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
               </svg>
               <input
-                type="text"
-                placeholder="Search by customer name, phone, or notes..."
+                type="search"
+                placeholder="Name, phone or note"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 w-full rounded-full border border-border/70 bg-surface-muted pl-10 pr-4 text-xs sm:text-sm font-medium text-foreground placeholder:text-foreground-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
+                className="h-[42px] w-full rounded-[12px] border border-border bg-surface pl-10 pr-3 text-[15px] text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-foreground"
               />
-            </div>
-
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            </label>
+            <span className="flex-1" />
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Show">
               {(
                 [
-                  { id: "all", label: "All" },
-                  { id: "gave", label: "You Will Get" },
-                  { id: "took", label: "You Will Give" },
+                  { id: "all", label: "Everyone" },
+                  { id: "gave", label: "You will get" },
+                  { id: "took", label: "You will give" },
                   { id: "settled", label: "Settled" },
                 ] as const
-              ).map((f) => {
-                const isActive = filter === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFilter(f.id)}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition whitespace-nowrap ${
-                      isActive
-                        ? "bg-[#0E1F16] text-white dark:bg-emerald-400 dark:text-emerald-950 shadow-xs"
-                        : "border border-border/70 text-foreground-sub hover:text-foreground hover:bg-surface-muted"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
+              ).map((f) => (
+                <button key={f.id} type="button" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)} className={chipCls(filter === f.id)}>
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Customer Cards Grid */}
-          {loadingKhata ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-11 w-11 rounded-2xl" />
-                    <div className="space-y-1.5 flex-1">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-3 w-16" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-6 w-32" />
-                </div>
-              ))}
+          {/* Summary tiles */}
+          <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className={tile}>
+              <dt className={tileLabel}>You will get</dt>
+              <dd className={`${tileValue} text-[var(--good)]`}>{loadingKhata ? <Skeleton className="mt-1 h-7 w-24" /> : fmt(totalYouWillGet)}</dd>
             </div>
-          ) : filteredCustomers.length === 0 ? (
-            <div className="rounded-[28px] bg-surface/90 border border-border/80 card-shadow p-12 text-center space-y-3">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto text-2xl font-bold">
-                📖
-              </div>
-              <h3 className="font-display font-medium text-lg text-foreground">
-                No Khata Entries Found
-              </h3>
-              <p className="text-xs text-foreground-muted max-w-sm mx-auto">
-                {searchQuery || filter !== "all"
-                  ? "Try clearing your search query or switching filters."
-                  : "Start recording your daily credits, udhar given, and borrowings."}
-              </p>
-              <button
-                type="button"
-                onClick={() => handleOpenAdd("gave")}
-                className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary text-white px-5 py-2 text-xs font-bold shadow-xs hover:bg-primary-strong transition"
+            <div className={tile}>
+              <dt className={tileLabel}>You will give</dt>
+              <dd className={`${tileValue} text-[var(--bad)]`}>{loadingKhata ? <Skeleton className="mt-1 h-7 w-24" /> : fmt(totalYouWillGive)}</dd>
+            </div>
+            <div className={`${tile} col-span-2 lg:col-span-1`}>
+              <dt className={tileLabel}>Net · {openCount} open</dt>
+              <dd
+                className={`${tileValue} ${
+                  netOverallBalance > 0 ? "text-[var(--good)]" : netOverallBalance < 0 ? "text-[var(--bad)]" : "text-foreground"
+                }`}
               >
-                + Record First Entry
-              </button>
+                {loadingKhata ? <Skeleton className="mt-1 h-7 w-24" /> : `${netOverallBalance > 0 ? "+" : netOverallBalance < 0 ? "−" : ""}${fmt(netOverallBalance)}`}
+              </dd>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCustomers.map((cust) => {
-                const isPositive = cust.netBalance > 0;
-                const isNegative = cust.netBalance < 0;
-                const isSettled = cust.netBalance === 0;
+          </dl>
 
-                const initials = cust.personName
-                  .split(" ")
-                  .map((w) => w[0])
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase();
+          {/* People table */}
+          <section className={card} aria-labelledby="khata-people-title">
+            <header className="mb-2">
+              <h2 id="khata-people-title" className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">
+                People
+              </h2>
+              <p className="mt-0.5 text-[14px] font-medium text-foreground-muted">Most recent first · open a row for the full ledger</p>
+            </header>
 
-                return (
-                  <div
-                    key={cust.personName}
-                    onClick={() => setSelectedCustomer(cust.personName)}
-                    className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow hover:border-primary/40 transition flex flex-col justify-between gap-4 group cursor-pointer"
-                  >
-                    <div>
-                      {/* Customer Head: Avatar, Name, Phone */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-11 w-11 rounded-2xl bg-emerald-500/15 text-[#059669] dark:text-emerald-400 font-display font-bold text-sm flex items-center justify-center shrink-0">
-                            {initials || "👤"}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="font-display font-medium text-sm sm:text-base text-foreground truncate group-hover:text-primary transition">
-                              {cust.personName}
-                            </h4>
-                            {cust.phone ? (
-                              <p className="text-[11px] text-foreground-muted font-mono truncate">
-                                {cust.phone}
-                              </p>
-                            ) : (
-                              <p className="text-[11px] text-foreground-muted italic">
-                                No phone saved
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* WhatsApp Action */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSendWhatsApp(cust);
-                          }}
-                          className="h-8 w-8 rounded-full border border-border hover:border-emerald-500/50 bg-surface flex items-center justify-center text-foreground-muted hover:text-[#059669] transition shrink-0"
-                          title="Send WhatsApp Reminder"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                          </svg>
-                        </button>
-                      </div>
-
-                      {/* Net Balance Status */}
-                      <div className="mt-4 pt-3 border-t border-border/70 flex items-baseline justify-between">
-                        <div>
-                          <div className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
-                            {isPositive
-                              ? "You Will Get"
-                              : isNegative
-                              ? "You Will Give"
-                              : "Settled"}
-                          </div>
-                          <div
-                            className={`font-display font-medium text-xl sm:text-2xl mt-0.5 ${
-                              isPositive
-                                ? "text-[#059669] dark:text-emerald-400"
-                                : isNegative
-                                ? "text-[#EF4444]"
-                                : "text-foreground-muted"
-                            }`}
-                          >
-                            {fmt(cust.netBalance)}
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[10px] font-semibold text-foreground-muted block">
-                            {cust.pendingCount} pending • {cust.totalCount} total
-                          </span>
-                          {cust.latestNote && (
-                            <span className="text-[11px] text-foreground-sub truncate max-w-[130px] block italic mt-0.5">
-                              &ldquo;{cust.latestNote}&rdquo;
+            {loadingKhata ? (
+              <div className="space-y-3 py-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : filteredCustomers.length === 0 ? (
+              <div className="flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="9" cy="8.5" r="3.5" />
+                  <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c1.8.6 3 2.2 3.5 4.7" />
+                </svg>
+                <p className="font-bold text-foreground">{searchQuery || filter !== "all" ? "No one matches" : "No khata entries yet"}</p>
+                <p className="text-[15px]">
+                  {searchQuery || filter !== "all"
+                    ? "Try a different name or phone, or switch the filter."
+                    : "Record money you gave or got, and each person shows up here."}
+                </p>
+                <button type="button" onClick={() => handleOpenAdd("gave")} className="mt-2 inline-flex h-[38px] items-center rounded-[12px] border border-border bg-surface px-3.5 text-[14px] font-bold text-foreground hover:bg-surface-muted">
+                  New entry
+                </button>
+              </div>
+            ) : (
+              <table className="w-full border-separate border-spacing-0 text-[15px]">
+                <thead className="hidden md:table-header-group">
+                  <tr className="text-left text-[13px] font-[750] tracking-[0.04em] text-foreground-muted">
+                    <th scope="col" className="border-b border-border px-3 py-2.5">Name</th>
+                    <th scope="col" className="hidden lg:table-cell border-b border-border px-3 py-2.5">Status</th>
+                    <th scope="col" className="hidden lg:table-cell border-b border-border px-3 py-2.5">Entries</th>
+                    <th scope="col" className="border-b border-border px-3 py-2.5 text-right">Balance</th>
+                    <th scope="col" className="hidden md:table-cell border-b border-border px-3 py-2.5 text-right">Last entry</th>
+                    <th scope="col" className="w-[150px] border-b border-border px-1 py-2.5">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCustomers.map((cust) => {
+                    const isPositive = cust.netBalance > 0;
+                    const isNegative = cust.netBalance < 0;
+                    const statusLabel = isPositive ? "You will get" : isNegative ? "You will give" : "Settled";
+                    const pillTone = isPositive ? "pill--good" : isNegative ? "pill--bad" : "pill--faint";
+                    return (
+                      <tr
+                        key={cust.personName}
+                        tabIndex={0}
+                        onClick={() => setSelectedCustomer(cust.personName)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") setSelectedCustomer(cust.personName);
+                        }}
+                        className="group cursor-pointer hover:bg-[var(--surface-2)] focus:outline-none focus-visible:bg-[var(--surface-2)]"
+                      >
+                        <td className="border-b border-border px-3 py-[11px]">
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span
+                              className="inline-grid h-10 w-10 shrink-0 place-items-center rounded-full text-[14px] font-extrabold tracking-[0.02em] text-[#1e1724]"
+                              style={{ background: avatarTint(cust.personName) }}
+                              aria-hidden="true"
+                            >
+                              {initialsOf(cust.personName)}
                             </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Actions: View Ledger & + Record */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/70">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCustomer(cust.personName);
-                        }}
-                        className="h-8 rounded-full border border-border bg-surface hover:bg-surface-muted text-foreground text-xs font-semibold transition flex items-center justify-center gap-1.5"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                        </svg>
-                        <span>Ledger</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenAdd("gave", cust.personName);
-                        }}
-                        className="h-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition flex items-center justify-center gap-1"
-                      >
-                        <span>+ Record</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                            <span className="min-w-0">
+                              <b className="block max-w-[260px] truncate font-bold text-foreground">{cust.personName}</b>
+                              <small className="block truncate text-[14px] text-foreground-muted">
+                                {cust.phone || "No phone saved"}
+                                {cust.latestNote ? ` · ${cust.latestNote}` : ""}
+                              </small>
+                            </span>
+                          </span>
+                        </td>
+                        <td className="hidden lg:table-cell border-b border-border px-3 py-[11px]">
+                          <span className={`pill ${pillTone}`}>
+                            <i />
+                            {statusLabel}
+                          </span>
+                        </td>
+                        <td className="hidden lg:table-cell border-b border-border px-3 py-[11px] whitespace-nowrap font-[650] text-foreground-sub">
+                          {cust.pendingCount} pending · {cust.totalCount} total
+                        </td>
+                        <td
+                          className={`border-b border-border px-3 py-[11px] text-right font-extrabold whitespace-nowrap num ${
+                            isPositive ? "text-[var(--good)]" : isNegative ? "text-[var(--bad)]" : "text-foreground-muted"
+                          }`}
+                        >
+                          {isPositive ? "+" : isNegative ? "−" : ""}
+                          {fmt(cust.netBalance)}
+                        </td>
+                        <td className="hidden md:table-cell border-b border-border px-3 py-[11px] text-right whitespace-nowrap text-foreground-muted">
+                          {shortDate(cust.lastDate)}
+                        </td>
+                        <td className="border-b border-border px-1 py-[11px]">
+                          <span className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSendWhatsApp(cust);
+                              }}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-foreground-muted transition hover:bg-[color-mix(in_srgb,var(--good)_14%,transparent)] hover:text-[var(--good)]"
+                              title="Send WhatsApp reminder"
+                              aria-label={`Send WhatsApp reminder to ${cust.personName}`}
+                            >
+                              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M4.5 19.5 5.6 16A8 8 0 1 1 8.4 18.6z" />
+                                <path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-1.8-1-1 .7a3.6 3.6 0 0 1-1.9-1.9l.7-1-1-1.8z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenAdd("gave", cust.personName);
+                              }}
+                              className={btnXs}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" />
+                              </svg>
+                              Record
+                            </button>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </section>
         </div>
       )}
 
       {/* ============================================================== */}
-      {/* SHARED GROUPS TAB CONTENT */}
+      {/* SHARED GROUPS TAB */}
       {/* ============================================================== */}
       {subTab === "groups" && (
-        <div className="space-y-6">
-          {/* Groups KPI Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-1">
-              <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
-                Total Shared Groups
-              </span>
-              <div className="font-display font-medium text-2xl sm:text-3xl text-foreground">
-                {expenseGroups.length}
-              </div>
-              <p className="text-[11px] text-foreground-muted">Roommates, trips, office teams.</p>
+        <div className="space-y-4">
+          <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className={tile}>
+              <dt className={tileLabel}>Groups</dt>
+              <dd className={`${tileValue} text-foreground`}>{loadingGroups ? <Skeleton className="mt-1 h-7 w-12" /> : expenseGroups.length}</dd>
             </div>
-
-            <div className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-1">
-              <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
-                Total Connected Friends
-              </span>
-              <div className="font-display font-medium text-2xl sm:text-3xl text-primary">
-                {expenseGroups.reduce((acc, g) => acc + (g.members?.length || 0), 0)}
-              </div>
-              <p className="text-[11px] text-foreground-muted">Members split across all your groups.</p>
+            <div className={tile}>
+              <dt className={tileLabel}>Members</dt>
+              <dd className={`${tileValue} text-foreground`}>{loadingGroups ? <Skeleton className="mt-1 h-7 w-12" /> : memberTotal}</dd>
             </div>
-
-            <div className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-1">
-              <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
-                Instant Settlement
-              </span>
-              <div className="font-display font-medium text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
-                100% UPI Ready
-              </div>
-              <p className="text-[11px] text-foreground-muted">Zero math, automatic balance solver.</p>
+            <div className={`${tile} col-span-2 lg:col-span-1`}>
+              <dt className={tileLabel}>Created by you</dt>
+              <dd className={`${tileValue} text-foreground`}>{loadingGroups ? <Skeleton className="mt-1 h-7 w-12" /> : ownedGroups}</dd>
             </div>
-          </div>
+          </dl>
 
-          {/* Groups Cards Grid */}
           {loadingGroups ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow space-y-4">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
+                <Skeleton key={i} className="h-44 rounded-[22px]" />
               ))}
             </div>
           ) : expenseGroups.length === 0 ? (
-            <div className="rounded-[28px] bg-surface/90 border border-border/80 card-shadow p-12 text-center space-y-3">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto text-2xl font-bold">
-                👥
-              </div>
-              <h3 className="font-display font-medium text-lg text-foreground">
-                No Shared Groups Yet
-              </h3>
-              <p className="text-xs text-foreground-muted max-w-sm mx-auto">
-                Create a group for your apartment, holiday trip, or office lunch and invite friends with a code.
-              </p>
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowJoinGroupModal(true)}
-                  className="rounded-full border border-border bg-surface px-5 py-2 text-xs font-semibold text-foreground hover:bg-surface-muted transition"
-                >
-                  Join with Code
+            <section className={`${card} flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted`}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="9" cy="8.5" r="3.5" />
+                <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c1.8.6 3 2.2 3.5 4.7" />
+              </svg>
+              <p className="font-bold text-foreground">No shared groups yet</p>
+              <p className="text-[15px]">Create a group for your flat, a trip or office lunches, then invite friends with the code.</p>
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={() => setShowJoinGroupModal(true)} className="inline-flex h-[38px] items-center rounded-[12px] border border-border bg-surface px-3.5 text-[14px] font-bold text-foreground hover:bg-surface-muted">
+                  Join with code
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateGroupModal(true)}
-                  className="rounded-full bg-primary text-white px-5 py-2 text-xs font-bold shadow-xs hover:bg-primary-strong transition"
-                >
-                  + Create Group
+                <button type="button" onClick={() => setShowCreateGroupModal(true)} className="inline-flex h-[38px] items-center rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]">
+                  New group
                 </button>
               </div>
-            </div>
+            </section>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {expenseGroups.map((group) => {
+                const code = group.inviteCode || "TK-" + group.id.slice(0, 4).toUpperCase();
                 return (
-                  <div
+                  <article
                     key={group.id}
+                    tabIndex={0}
                     onClick={() => setSelectedGroup(group)}
-                    className="p-5 rounded-[28px] bg-surface/90 border border-border/80 card-shadow hover:border-primary/40 transition flex flex-col justify-between gap-4 cursor-pointer group"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") setSelectedGroup(group);
+                    }}
+                    className={`${card} group flex cursor-pointer flex-col justify-between gap-4 transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <span className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-[10px] font-bold">
+                        <div className="min-w-0">
+                          <span className="pill pill--teal">
+                            <i />
                             {group.category || "General"}
                           </span>
-                          <h4 className="font-display font-medium text-lg text-foreground mt-1.5 group-hover:text-primary transition">
-                            {group.name}
-                          </h4>
+                          <h3 className="mt-2 truncate text-[17px] font-extrabold tracking-[-0.015em] text-foreground">{group.name}</h3>
+                          <p className="text-[14px] font-medium text-foreground-muted">
+                            {group.members?.length || 1} {(group.members?.length || 1) === 1 ? "member" : "members"}
+                          </p>
                         </div>
-
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setGroupToDeleteId(group.id);
                           }}
-                          className="p-1 rounded-full text-foreground-muted hover:text-red-500 hover:bg-red-500/10 transition"
-                          title="Delete Group"
+                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-foreground-muted transition hover:bg-[color-mix(in_srgb,var(--rose)_14%,transparent)] hover:text-[var(--bad)]"
+                          title="Delete group"
+                          aria-label={`Delete ${group.name}`}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
                           </svg>
                         </button>
                       </div>
 
-                      {/* Members Avatars */}
-                      <div className="mt-4 flex items-center gap-1.5 flex-wrap">
-                        {group.members && group.members.length > 0 ? (
-                          group.members.map((m) => (
-                            <span
-                              key={m.id || m.name}
-                              className="rounded-full bg-surface-muted border border-border px-2.5 py-0.5 text-[11px] font-semibold text-foreground-sub"
-                            >
-                              {m.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-foreground-muted italic">1 Member (You)</span>
+                      {/* Member avatars (Kesta avatar stack) */}
+                      <div className="mt-3 flex items-center">
+                        {(group.members?.length ? group.members : [{ id: "you", name: "You" }]).slice(0, 6).map((m, i) => (
+                          <span
+                            key={m.id || m.name}
+                            title={m.name}
+                            className={`inline-grid h-8 w-8 place-items-center rounded-full text-[12px] font-extrabold text-[#1e1724] shadow-[0_0_0_2px_var(--surface)] ${i > 0 ? "-ml-2" : ""}`}
+                            style={{ background: avatarTint(m.name) }}
+                          >
+                            {initialsOf(m.name)}
+                          </span>
+                        ))}
+                        {(group.members?.length || 0) > 6 && (
+                          <span className="-ml-2 inline-grid h-8 w-8 place-items-center rounded-full bg-[var(--well)] text-[12px] font-extrabold text-foreground shadow-[0_0_0_2px_var(--surface)]">
+                            +{group.members.length - 6}
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Invite Code & Action */}
-                    <div className="pt-3 border-t border-border/70 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-foreground-muted">Code:</span>
-                        <code className="font-mono text-xs font-bold text-foreground px-2 py-0.5 rounded bg-surface-muted">
-                          {group.inviteCode || "TK-" + group.id.slice(0, 4).toUpperCase()}
-                        </code>
-                      </div>
-
+                    <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                      <span className="flex items-center gap-2 text-[14px] text-foreground-muted">
+                        Code
+                        <code className="rounded-[8px] bg-[var(--well)] px-2 py-0.5 font-mono text-[13px] font-bold text-foreground">{code}</code>
+                      </span>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCopyCode(group.inviteCode || "TK-" + group.id.slice(0, 4).toUpperCase());
+                          handleCopyCode(code);
                         }}
-                        className="rounded-full px-3 py-1 text-xs font-semibold bg-surface-muted hover:bg-border transition text-foreground"
+                        className={btnXs}
                       >
-                        {copiedCode === (group.inviteCode || "TK-" + group.id.slice(0, 4).toUpperCase())
-                          ? "Copied!"
-                          : "Copy Invite"}
+                        {copiedCode === code ? "Copied!" : "Copy invite"}
                       </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
@@ -1154,145 +1034,39 @@ export default function KhataPage() {
       {/* ============================================================== */}
       {/* MODAL 5: DELETE ENTRY CONFIRMATION */}
       {/* ============================================================== */}
-      <Modal
+      <ConfirmDialog
         isOpen={Boolean(deleteTargetId)}
-        onClose={() => setDeleteTargetId(null)}
-        title="Delete Khata Record?"
-        description="Are you sure you want to permanently remove this transaction from the ledger?"
-        maxWidth="sm"
-      >
-        <div className="space-y-4">
-          <div className="h-12 w-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </div>
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setDeleteTargetId(null)}
-              className="rounded-full px-5 py-2 text-xs sm:text-[13px] font-semibold border border-border bg-surface text-foreground hover:bg-surface-muted transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteConfirm}
-              disabled={isDeletingKhata}
-              className="rounded-full px-6 py-2 text-xs sm:text-[13px] font-bold bg-red-600 hover:bg-red-700 text-white transition shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
-            >
-              {isDeletingKhata && (
-                <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              )}
-              <span>Delete</span>
-            </button>
-          </div>
-        </div>
-      </Modal>
+        onCancel={() => setDeleteTargetId(null)}
+        onConfirm={handleDeleteConfirm}
+        isWorking={isDeletingKhata}
+        title="Delete this khata entry?"
+        description="It's removed from this person's ledger for good."
+      />
 
       {/* ============================================================== */}
       {/* MODAL 6: DELETE GROUP CONFIRMATION */}
       {/* ============================================================== */}
-      <Modal
+      <ConfirmDialog
         isOpen={Boolean(groupToDeleteId)}
-        onClose={() => setGroupToDeleteId(null)}
-        title="Delete Shared Group?"
-        description="Are you sure you want to delete this group? All shared expenses inside this group will be deleted."
-        maxWidth="sm"
-      >
-        <div className="space-y-4">
-          <div className="h-12 w-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </div>
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setGroupToDeleteId(null)}
-              className="rounded-full px-5 py-2 text-xs sm:text-[13px] font-semibold border border-border bg-surface text-foreground hover:bg-surface-muted transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteGroupConfirm}
-              disabled={isDeletingGroup}
-              className="rounded-full px-6 py-2 text-xs sm:text-[13px] font-bold bg-red-600 hover:bg-red-700 text-white transition shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
-            >
-              {isDeletingGroup && (
-                <span className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              )}
-              <span>Delete Group</span>
-            </button>
-          </div>
-        </div>
-      </Modal>
-      {/* MODAL 7: VIEW GROUP DETAILS */}
-      <Modal
-        isOpen={Boolean(selectedGroup)}
+        onCancel={() => setGroupToDeleteId(null)}
+        onConfirm={handleDeleteGroupConfirm}
+        isWorking={isDeletingGroup}
+        title="Delete this shared group?"
+        description="All expenses and settlements in it are deleted too. This can't be undone."
+        confirmLabel="Delete group"
+      />
+      {/* DRAWER: GROUP DETAILS (Kesta contact-style, animated) */}
+      <GroupDrawer
+        group={selectedGroup}
+        open={Boolean(selectedGroup)}
         onClose={() => setSelectedGroup(null)}
-        title={selectedGroup?.name || "Group Details"}
-        description={`Category: ${selectedGroup?.category || "General"} • ${selectedGroup?.members?.length || 1} members`}
-        maxWidth="md"
-      >
-        {selectedGroup && (
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-surface-muted border border-border flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-foreground-muted uppercase">Invite Code</span>
-                <div className="font-mono font-bold text-lg text-foreground mt-0.5">
-                  {selectedGroup.inviteCode || "TK-" + selectedGroup.id.slice(0, 4).toUpperCase()}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCopyCode(selectedGroup.inviteCode || "TK-" + selectedGroup.id.slice(0, 4).toUpperCase())}
-                className="rounded-full px-4 py-1.5 text-xs font-bold bg-[#0E1F16] text-white hover:bg-black transition shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-              >
-                {copiedCode === (selectedGroup.inviteCode || "TK-" + selectedGroup.id.slice(0, 4).toUpperCase()) ? "Copied!" : "Copy Code"}
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-foreground-muted uppercase">Group Members</span>
-              <div className="divide-y divide-border/60 border border-border rounded-2xl p-2 bg-surface">
-                {selectedGroup.members && selectedGroup.members.length > 0 ? (
-                  selectedGroup.members.map((m) => (
-                    <div key={m.id || m.name} className="py-2 px-2 flex items-center justify-between text-xs">
-                      <span className="font-semibold text-foreground">{m.name}</span>
-                      <span className="text-foreground-muted font-mono">{m.phone || "Joined"}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-2 px-2 text-xs text-foreground-muted italic">You are the only member. Share the invite code to add friends!</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => {
-                  const id = selectedGroup.id;
-                  setSelectedGroup(null);
-                  setGroupToDeleteId(id);
-                }}
-                className="text-xs font-semibold text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-full transition"
-              >
-                Delete Group
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedGroup(null)}
-                className="rounded-full px-5 py-2 text-xs font-bold bg-[#0E1F16] text-white hover:bg-black transition shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+        onCopyCode={handleCopyCode}
+        copiedCode={copiedCode}
+        onDelete={(id) => {
+          setSelectedGroup(null);
+          setGroupToDeleteId(id);
+        }}
+      />
     </div>
   );
 }

@@ -14,6 +14,22 @@ export const budgetsApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: { limit },
       }),
+      // Show the new limit straight away; roll back if the save fails. The server copy
+      // replaces it once the request settles (invalidatesTags refetches the list).
+      async onQueryStarted({ category, limit }, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          budgetsApi.util.updateQueryData("getBudgets", undefined, (draft) => {
+            const existing = draft.find((b) => b.category === category);
+            if (existing) existing.limit = limit;
+            else draft.push({ category, limit });
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patch.undo();
+        }
+      },
       invalidatesTags: ["Budgets"],
     }),
   }),

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Segmented } from "@/components/ui/segmented";
 import {
-  CATEGORY_HEX,
   CategoryDonut,
   CategoryLegend,
   DailyChart,
@@ -16,19 +15,27 @@ import {
   dayKey,
   dayLabel,
   fmt,
-  fmtShort,
   monthKey,
-  niceMax,
   pctChange,
 } from "@/components/insights/spending-charts";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
-import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
+import { useGetBudgetsQuery, useSetBudgetMutation } from "@/store/api/budgetsApi";
+import { BudgetLimitModal } from "@/components/expenses/budget-limit-modal";
+import { apiErrorMessage } from "@/lib/form";
+import { CATEGORIES } from "@/lib/finance";
 import { useGetKhataEntriesQuery } from "@/store/api/khataApi";
 import type { CategoryName } from "@/store/types";
+import { CategoryTile } from "@/components/ui/category-icon";
+import { avatarTint, initialsOf } from "@/lib/avatar";
 
 type Range = "7" | "30" | "90";
 
 const DAY_MS = 86_400_000;
+
+/** Kesta-style limit step: bigger limits move in bigger steps. */
+function budgetStep(limit: number) {
+  return limit >= 10000 ? 1000 : limit >= 2000 ? 250 : 100;
+}
 
 function daysAgo(dateStr: string, today: Date) {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -57,14 +64,14 @@ function Card({
   return (
     <section
       aria-labelledby={id}
-      className={`glass glass--card glass-specular rounded-[28px] p-5 sm:p-6 min-w-0 ${className}`}
+      className={`rounded-[22px] border border-border bg-surface p-5 shadow-xs min-w-0 ${className}`}
     >
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id={id} className="font-display font-medium text-lg text-foreground">
+          <h2 id={id} className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">
             {title}
           </h2>
-          {sub && <p className="text-xs text-foreground-muted mt-0.5">{sub}</p>}
+          {sub && <p className="mt-0.5 text-[14px] font-medium text-foreground-muted">{sub}</p>}
         </div>
         {tools && <div className="flex items-center gap-2 shrink-0">{tools}</div>}
       </header>
@@ -76,10 +83,10 @@ function Card({
 
 function Stat({ label, value, extra }: { label: string; value: ReactNode; extra?: ReactNode }) {
   return (
-    <div className="glass glass--card rounded-[22px] px-4 py-3.5 min-w-0">
-      <dt className="text-[11px] font-semibold uppercase tracking-wider text-foreground-muted">{label}</dt>
+    <div className="min-w-0 rounded-[16px] border border-border bg-surface px-4 py-3">
+      <dt className="text-[14px] font-bold text-foreground-muted">{label}</dt>
       <dd className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <b className="font-display font-medium text-2xl sm:text-[28px] text-foreground tabular-nums">{value}</b>
+        <b className="text-[20px] lg:text-[24px] font-extrabold tracking-[-0.035em] text-foreground num">{value}</b>
         {extra}
       </dd>
     </div>
@@ -88,7 +95,7 @@ function Stat({ label, value, extra }: { label: string; value: ReactNode; extra?
 
 function Empty({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-[18px] bg-surface-muted/40 px-4 py-8 text-center text-xs text-foreground-muted">{children}</p>
+    <p className="rounded-[16px] bg-[var(--surface-2)] px-4 py-8 text-center text-[15px] text-foreground-muted">{children}</p>
   );
 }
 
@@ -103,6 +110,21 @@ export default function SpendingInsightsPage() {
 
   const [range, setRange] = useState<Range>("30");
   const [showTable, setShowTable] = useState(false);
+  const [limitEdit, setLimitEdit] = useState<{ open: boolean; category?: CategoryName; limit?: number; spent?: number }>({ open: false });
+  const [budgetError, setBudgetError] = useState<string | null>(null);
+  const [setBudget] = useSetBudgetMutation();
+
+  // Nudge a limit up or down by one step (saved straight away).
+  const nudgeLimit = async (category: CategoryName, limit: number, delta: number) => {
+    setBudgetError(null);
+    const next = Math.max(budgetStep(limit), limit + delta);
+    if (next === limit) return;
+    try {
+      await setBudget({ category, limit: next }).unwrap();
+    } catch (err) {
+      setBudgetError(apiErrorMessage(err, `Couldn't update the ${category} limit.`));
+    }
+  };
 
   const today = useMemo(() => {
     const d = new Date();
@@ -116,20 +138,6 @@ export default function SpendingInsightsPage() {
 
   /* Category split ------------------------------------------------------- */
   const categories = useMemo(() => buildCategorySplit(period.inRange), [period.inRange]);
-
-  /* Last six months ------------------------------------------------------ */
-  const months = useMemo(() => {
-    const list = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(today.getFullYear(), today.getMonth() - 5 + i, 1);
-      return { key: monthKey(d), label: MONTHS[d.getMonth()], total: 0 };
-    });
-    for (const t of transactions) {
-      if (t.type !== "expense") continue;
-      const m = list.find((x) => t.date?.startsWith(x.key));
-      if (m) m.total += t.amount;
-    }
-    return list;
-  }, [transactions, today]);
 
   /* Budgets this month --------------------------------------------------- */
   const budgetRows = useMemo(() => {
@@ -182,23 +190,43 @@ export default function SpendingInsightsPage() {
   const savingsRate = period.income > 0 ? Math.round((saved / period.income) * 100) : null;
   const spentChange = pctChange(period.spent, period.prevSpent);
   const overBudget = budgetRows.filter((b) => b.spent > b.limit).length;
-  const monthMax = niceMax(Math.max(...months.map((m) => m.total)));
-  const monthAvg = months.reduce((s, m) => s + m.total, 0) / months.length;
-  const budgetScale = Math.max(1, ...budgetRows.map((b) => Math.max(b.limit, b.spent))) * 1.04;
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysLeft = daysInMonth - today.getDate();
+  // How far through the month we are (today counts as half gone).
+  const monthFraction = (today.getDate() - 0.5) / daysInMonth;
+  const budgetSpent = budgetRows.reduce((sum, b) => sum + b.spent, 0);
+  const budgetLimit = budgetRows.reduce((sum, b) => sum + b.limit, 0);
+  const budgetFraction = budgetLimit > 0 ? budgetSpent / budgetLimit : 0;
+  const aheadOfPace = budgetFraction > monthFraction + 0.05;
+  const pct = (f: number) => `${Math.round(f * 100)}%`;
+  const unbudgeted = CATEGORIES.filter((c) => !budgetRows.some((b) => b.category === c));
   const settledPct = khataStats.total > 0 ? Math.round((khataStats.settled / khataStats.total) * 100) : 0;
   const catTotal = categories.reduce((s, c) => s + c.amount, 0);
 
   return (
     <div className="pb-16">
       {/* Header */}
-      <header className="mb-6 flex flex-col gap-5">
+      <header className="mb-6 flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display font-normal text-[26px] sm:text-[32px] lg:text-[38px] tracking-[-0.02em] text-foreground leading-tight mb-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[14px] font-[650] text-foreground-muted">
+              <span>Money</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m9.5 6 6 6-6 6" />
+              </svg>
+              <span className="text-foreground">Spending Analysis</span>
+            </nav>
+            <h1 className="text-[30px] lg:text-[clamp(1.875rem,2.5vw,2.375rem)] font-extrabold tracking-[-0.04em] leading-[1.08] text-foreground">
               Spending insights
             </h1>
-            <p className="text-xs sm:text-sm font-medium text-foreground-muted">
-              How your money moved over the last {n} days
+            <p className="text-[16px] font-medium text-foreground-muted">
+              <b className="font-bold text-foreground">{fmt(period.spent)}</b> spent in the last {n} days
+              {spentChange !== null && (
+                <>
+                  {" "}· {spentChange > 0 ? "up" : spentChange < 0 ? "down" : "flat"}{" "}
+                  <b className="font-bold text-foreground">{Math.abs(spentChange)}%</b> on the {n} before
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
@@ -216,9 +244,9 @@ export default function SpendingInsightsPage() {
               type="button"
               onClick={handleExport}
               disabled={period.inRange.length === 0}
-              className="glass glass--card inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-semibold text-foreground disabled:opacity-50 transition hover:-translate-y-px"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted active:brightness-[0.93] disabled:opacity-50"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 4v11.5M7 10.5l5 5 5-5M5 20h14" />
               </svg>
               Export CSV
@@ -229,7 +257,7 @@ export default function SpendingInsightsPage() {
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-[86px] rounded-[22px]" />
+              <Skeleton key={i} className="h-[78px] rounded-[16px]" />
             ))}
           </div>
         ) : (
@@ -245,7 +273,7 @@ export default function SpendingInsightsPage() {
               value={`${saved < 0 ? "−" : ""}${fmt(saved)}`}
               extra={
                 savingsRate !== null && (
-                  <small className="text-xs text-foreground-muted tabular-nums">{savingsRate}% of income</small>
+                  <small className="text-[14px] text-foreground-muted tabular-nums">{savingsRate}% of income</small>
                 )
               }
             />
@@ -256,10 +284,10 @@ export default function SpendingInsightsPage() {
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <Skeleton className="h-[380px] rounded-[28px] lg:col-span-8" />
-          <Skeleton className="h-[380px] rounded-[28px] lg:col-span-4" />
-          <Skeleton className="h-[320px] rounded-[28px] lg:col-span-4" />
-          <Skeleton className="h-[320px] rounded-[28px] lg:col-span-8" />
+          <Skeleton className="h-[380px] rounded-[22px] lg:col-span-8" />
+          <Skeleton className="h-[380px] rounded-[22px] lg:col-span-4" />
+          <Skeleton className="h-[320px] rounded-[22px] lg:col-span-4" />
+          <Skeleton className="h-[320px] rounded-[22px] lg:col-span-8" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -273,7 +301,7 @@ export default function SpendingInsightsPage() {
                 type="button"
                 aria-pressed={showTable}
                 onClick={() => setShowTable((s) => !s)}
-                className="glass glass--card inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-foreground"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground transition hover:bg-surface-muted"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   {showTable ? <path d="M4.5 19.5h15M7.5 16v-4.5M12 16V7.5M16.5 16v-6.5" /> : <path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01" />}
@@ -284,11 +312,11 @@ export default function SpendingInsightsPage() {
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <p className="flex flex-wrap items-baseline gap-2">
-                <b className="font-display font-medium text-2xl text-foreground tabular-nums">{fmt(period.spent)}</b>
-                <span className="text-xs text-foreground-muted">spent</span>
+                <b className="text-[24px] font-extrabold tracking-[-0.035em] text-foreground num">{fmt(period.spent)}</b>
+                <span className="text-[14px] text-foreground-muted">spent</span>
                 <Delta value={spentChange} goodWhenUp={false} suffix={` vs previous ${n} days`} />
               </p>
-              <ul className="flex items-center gap-4 text-[11px] text-foreground-muted" aria-label="Legend">
+              <ul className="flex items-center gap-4 text-[13px] text-foreground-muted" aria-label="Legend">
                 <li className="flex items-center gap-1.5">
                   <i className="h-0.5 w-4 rounded-full bg-primary" />
                   Last {n} days
@@ -301,10 +329,10 @@ export default function SpendingInsightsPage() {
             </div>
 
             {showTable ? (
-              <div className="max-h-[300px] overflow-auto rounded-2xl no-scrollbar">
-                <table className="w-full text-xs">
+              <div className="max-h-[300px] overflow-auto rounded-[12px] no-scrollbar">
+                <table className="w-full text-[14px]">
                   <caption className="sr-only">Amount spent each day, against the previous period</caption>
-                  <thead className="sticky top-0 bg-[var(--glass-fill-chrome)] backdrop-blur text-foreground-muted">
+                  <thead className="sticky top-0 bg-surface text-foreground-muted">
                     <tr>
                       <th scope="col" className="py-2 px-2 text-left font-semibold">Day</th>
                       <th scope="col" className="py-2 px-2 text-right font-semibold">Spent</th>
@@ -324,7 +352,7 @@ export default function SpendingInsightsPage() {
                           <td className="py-2 px-2 text-right tabular-nums text-foreground-muted">{fmt(d.prev)}</td>
                           <td
                             className={`py-2 px-2 text-right tabular-nums font-semibold ${
-                              diff > 0 ? "text-[#DC2626] dark:text-red-400" : diff < 0 ? "text-[#059669] dark:text-emerald-400" : "text-foreground-muted"
+                              diff > 0 ? "text-[var(--bad)]" : diff < 0 ? "text-[var(--good)]" : "text-foreground-muted"
                             }`}
                           >
                             {diff === 0 ? "–" : `${diff > 0 ? "+" : "−"}${fmt(diff)}`}
@@ -362,121 +390,232 @@ export default function SpendingInsightsPage() {
             )}
           </Card>
 
-          {/* Monthly spending */}
+          {/* Budgets: month pace + one ring per category (Kesta budgets) */}
           <Card
-            className="lg:col-span-4"
-            title="Monthly spending"
-            sub="Last 6 months"
-          >
-            <p className="mb-4 flex items-baseline gap-2">
-              <b className="font-display font-medium text-2xl text-foreground tabular-nums">{fmt(monthAvg)}</b>
-              <span className="text-xs text-foreground-muted">a month on average</span>
-            </p>
-            <div className="relative h-[180px]">
-              <div className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between" aria-hidden="true">
-                {[1, 0.5, 0].map((f) => (
-                  <div key={f} className="relative border-t border-dashed border-foreground-muted/20">
-                    <em className="absolute -top-2.5 right-0 not-italic text-[10px] text-foreground-muted bg-transparent">
-                      {fmtShort(monthMax * f)}
-                    </em>
-                  </div>
-                ))}
-              </div>
-              <ul className="relative flex h-full items-stretch gap-2 sm:gap-3 pr-9" aria-label="Spending per month">
-                {months.map((m, i) => {
-                  const current = i === months.length - 1;
-                  return (
-                    <li key={m.key} className="flex flex-1 flex-col items-center" aria-label={`${m.label}: ${fmt(m.total)}`}>
-                      <div className="relative w-full flex-1 flex items-end justify-center pb-0">
-                        <span
-                          className={`w-full max-w-[34px] rounded-t-[10px] rounded-b-[4px] transition-[height] duration-500 ${
-                            current ? "bg-primary" : "bg-primary/35"
-                          }`}
-                          style={{ height: `${(m.total / monthMax) * 100}%` }}
-                          title={fmt(m.total)}
-                        />
-                      </div>
-                      <span className={`mt-2 h-4 text-[11px] ${current ? "font-bold text-foreground" : "text-foreground-muted"}`}>
-                        {m.label}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </Card>
-
-          {/* Budgets */}
-          <Card
-            className="lg:col-span-8"
-            title="Budgets"
-            sub={`Spent against each category's limit, ${MONTHS[today.getMonth()]} ${today.getFullYear()}`}
+            className="lg:col-span-12"
+            title={`Budgets · ${MONTHS[today.getMonth()]} ${today.getFullYear()}`}
+            sub={`${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in the month`}
             tools={
-              budgetRows.length > 0 && (
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                    overBudget > 0
-                      ? "bg-red-500/12 text-[#DC2626] dark:text-red-400"
-                      : "bg-emerald-500/12 text-[#059669] dark:text-emerald-400"
-                  }`}
-                >
-                  {overBudget > 0 ? `${overBudget} over budget` : "All within budget"}
-                </span>
-              )
+              <>
+                {budgetRows.length > 0 && (
+                  <span className={`pill hidden sm:inline-flex ${overBudget > 0 ? "pill--bad" : "pill--good"}`}>
+                    <i />
+                    {overBudget > 0 ? `${overBudget} over budget` : "All within budget"}
+                  </span>
+                )}
+                {unbudgeted.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setLimitEdit({ open: true })}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground transition hover:bg-surface-muted"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Add budget
+                  </button>
+                )}
+              </>
             }
           >
             {budgetRows.length === 0 ? (
-              <Empty>
-                No budgets set yet.{" "}
-                <Link href="/dashboard/expenses" className="font-semibold text-primary underline">
-                  Set one on the Expenses page
-                </Link>
-              </Empty>
+              <div className="flex flex-col items-center gap-2 rounded-[16px] bg-[var(--surface-2)] px-4 py-8 text-center">
+                <p className="text-[15px] text-foreground-muted">No budgets set yet. Give a category a monthly limit to track it here.</p>
+                <button
+                  type="button"
+                  onClick={() => setLimitEdit({ open: true })}
+                  className="inline-flex h-[38px] items-center rounded-[12px] bg-[#161614] px-3.5 text-[14px] font-bold text-white dark:bg-[#f0c35a] dark:text-[#161614]"
+                >
+                  Set a budget
+                </button>
+              </div>
             ) : (
               <>
-                <ul className="mb-3 flex flex-wrap gap-4 text-[11px] text-foreground-muted" aria-label="Legend">
-                  <li className="flex items-center gap-1.5"><i className="h-2 w-4 rounded-full bg-primary" />Spent</li>
-                  <li className="flex items-center gap-1.5"><i className="h-3 w-0.5 rounded-full bg-foreground" />Limit</li>
-                  <li className="flex items-center gap-1.5"><i className="h-2 w-4 rounded-full bg-[#EF4444]" />Over limit</li>
-                </ul>
-                <ul className="divide-y divide-border/50">
-                  {budgetRows.map((b) => {
-                    const over = b.spent > b.limit;
+                {/* Pace: everything spent against every limit, with a "Today" marker */}
+                <div className="mb-5">
+                  <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+                    <p className="flex flex-wrap items-baseline gap-x-2.5">
+                      <b className="text-[clamp(1.75rem,2.5vw,2.5rem)] font-extrabold tracking-[-0.045em] num text-foreground">{fmt(budgetSpent)}</b>
+                      <span className="font-bold text-foreground-muted">of {fmt(budgetLimit)}</span>
+                    </p>
+                    <p className="flex max-w-[520px] items-start gap-2 text-[15px] text-foreground-muted">
+                      <svg
+                        className="mt-0.5 shrink-0"
+                        style={{ color: aheadOfPace ? "var(--warn)" : "var(--good)" }}
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d={aheadOfPace ? "M12 8v5M12 16.5h.01M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" : "m5 12.5 4.5 4.5L19 7.5"} />
+                      </svg>
+                      {aheadOfPace ? (
+                        <span>
+                          Spending is <b className="text-foreground">ahead</b> of the month: {pct(budgetFraction)} gone with {pct(1 - monthFraction)} of the month to run.
+                        </span>
+                      ) : (
+                        <span>
+                          On pace: <b className="text-foreground">{pct(budgetFraction)}</b> spent, {pct(monthFraction)} of the month gone.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="relative h-[18px] rounded-full bg-[var(--well)]" role="img" aria-label={`${pct(budgetFraction)} of all budgets spent, ${pct(monthFraction)} of the month gone`}>
+                    <span
+                      className="tk-grow-x absolute inset-0 rounded-full"
+                      style={{
+                        transform: `scaleX(${Math.min(1, budgetFraction)})`,
+                        background:
+                          budgetFraction > 1
+                            ? "var(--bad)"
+                            : "linear-gradient(90deg, var(--pine), color-mix(in srgb, var(--pine) 60%, var(--amber)))",
+                      }}
+                    />
+                    <span className="absolute -top-1.5 -bottom-1.5 w-0.5 -ml-px rounded-[1px] bg-foreground" style={{ left: `${monthFraction * 100}%` }}>
+                      <i
+                        className="absolute -top-6 whitespace-nowrap text-[12px] font-extrabold not-italic text-foreground"
+                        style={{
+                          // Keep the label inside the bar near the month's start or end.
+                          left: monthFraction < 0.08 ? 0 : monthFraction > 0.92 ? "auto" : "50%",
+                          right: monthFraction > 0.92 ? 0 : "auto",
+                          transform: monthFraction >= 0.08 && monthFraction <= 0.92 ? "translateX(-50%)" : undefined,
+                        }}
+                      >
+                        Today
+                      </i>
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex justify-between text-[13px] font-[650] text-foreground-muted" aria-hidden="true">
+                    <span>1 {MONTHS[today.getMonth()]}</span>
+                    <span>
+                      {daysInMonth} {MONTHS[today.getMonth()]}
+                    </span>
+                  </div>
+                </div>
+
+                {/* One card per category: ring, numbers, and limit controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {budgetRows.map((b, i) => {
+                    const ratio = b.spent / b.limit;
+                    const over = ratio > 1;
+                    const frac = Math.min(1, ratio);
+                    const R = 40;
+                    const C = 2 * Math.PI * R;
+                    const tone = over ? "var(--bad)" : ratio >= 0.7 ? "var(--amber)" : "var(--pine)";
+                    const paceAngle = monthFraction * 2 * Math.PI;
+                    const tick = (r: number) => [50 + r * Math.cos(paceAngle), 50 + r * Math.sin(paceAngle)];
+                    const [x1, y1] = tick(R - 7);
+                    const [x2, y2] = tick(R + 7);
+                    const left = b.limit - b.spent;
+                    const step = budgetStep(b.limit);
                     return (
-                      <li key={b.category} className="grid grid-cols-[minmax(0,7.5rem)_1fr_auto] items-center gap-3 py-2.5">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CATEGORY_HEX[b.category] }} />
-                          <b className="truncate text-[13px] font-semibold text-foreground">{b.category}</b>
+                      <article
+                        key={b.category}
+                        className="relative grid grid-cols-[64px_minmax(0,1fr)] sm:grid-cols-[80px_minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-[18px] border border-border bg-surface p-3.5 transition hover:border-[var(--line-2)]"
+                      >
+                        {/* Whole card opens the editor; the controls below sit above this layer. */}
+                        <button
+                          type="button"
+                          onClick={() => setLimitEdit({ open: true, category: b.category, limit: b.limit, spent: b.spent })}
+                          className="absolute inset-0 z-0 rounded-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+                          aria-label={`Edit ${b.category} budget`}
+                        />
+                        <span className="pointer-events-none relative h-16 w-16 sm:h-20 sm:w-20">
+                          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90 overflow-visible" aria-hidden="true">
+                            <circle cx="50" cy="50" r={R} fill="none" stroke="var(--well)" strokeWidth="9" />
+                            <circle
+                              className="tk-ring"
+                              cx="50"
+                              cy="50"
+                              r={R}
+                              fill="none"
+                              stroke={tone}
+                              strokeWidth="9"
+                              strokeLinecap="round"
+                              strokeDasharray={C}
+                              strokeDashoffset={C * (1 - frac)}
+                              style={{ ["--c" as string]: C, animationDelay: `${0.15 + i * 0.06}s` } as React.CSSProperties}
+                            />
+                            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round" />
+                          </svg>
+                          <span className="absolute inset-0 grid place-content-center justify-items-center gap-0.5">
+                            <CategoryTile name={b.category} size={24} />
+                            <b className="text-[14px] font-extrabold num text-foreground">{Math.round(ratio * 100)}%</b>
+                          </span>
                         </span>
-                        <span
-                          className="relative h-2.5 rounded-full bg-surface-muted/80"
-                          role="meter"
-                          aria-valuemin={0}
-                          aria-valuemax={b.limit}
-                          aria-valuenow={Math.round(b.spent)}
-                          aria-label={`${b.category}: ${fmt(b.spent)} of ${fmt(b.limit)}`}
-                        >
-                          <i
-                            className={`absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ${over ? "bg-[#EF4444]" : "bg-primary"}`}
-                            style={{ width: `${(b.spent / budgetScale) * 100}%` }}
-                          />
-                          <i
-                            className="absolute -top-1 -bottom-1 w-0.5 rounded-full bg-foreground"
-                            style={{ left: `${(b.limit / budgetScale) * 100}%` }}
-                            title={`Limit ${fmt(b.limit)}`}
-                          />
+                        <span className="pointer-events-none grid min-w-0 justify-items-start gap-0.5">
+                          <b className="max-w-full truncate text-[17px] font-extrabold tracking-[-0.015em] text-foreground">{b.category}</b>
+                          <span className="font-[650] text-foreground-muted">
+                            <b className="font-extrabold num" style={{ color: over ? "var(--bad)" : "var(--text)" }}>
+                              {fmt(b.spent)}
+                            </b>{" "}
+                            of {fmt(b.limit)}
+                          </span>
+                          <small className="text-[14px]" style={{ color: over ? "var(--bad)" : "var(--muted)" }}>
+                            {over ? `${fmt(-left)} over the limit` : `${fmt(left)} left`}
+                          </small>
                         </span>
-                        <span className="text-right tabular-nums text-xs whitespace-nowrap">
-                          <b className={over ? "text-[#DC2626] dark:text-red-400" : "text-foreground"}>{fmt(b.spent)}</b>
-                          <small className="text-foreground-muted"> / {fmt(b.limit)}</small>
-                        </span>
-                      </li>
+                        {/* Limit controls (Kesta: nudge the limit up or down by a sensible step) */}
+                        <div className="relative z-10 col-span-2 mt-2 flex items-center justify-between gap-2 border-t border-border pt-2.5 text-[14px] font-[650] text-foreground-muted">
+                          <span>Limit</span>
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => nudgeLimit(b.category, b.limit, -step)}
+                              disabled={b.limit <= step}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-surface text-foreground transition hover:bg-surface-muted disabled:opacity-40"
+                              aria-label={`Lower ${b.category} limit by ${fmt(step)}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                                <path d="M5 12h14" />
+                              </svg>
+                            </button>
+                            <b className="min-w-[72px] text-center font-extrabold num text-foreground">{fmt(b.limit)}</b>
+                            <button
+                              type="button"
+                              onClick={() => nudgeLimit(b.category, b.limit, step)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-border bg-surface text-foreground transition hover:bg-surface-muted disabled:opacity-40"
+                              aria-label={`Raise ${b.category} limit by ${fmt(step)}`}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLimitEdit({ open: true, category: b.category, limit: b.limit, spent: b.spent })}
+                              className="ml-1 inline-flex h-8 items-center rounded-[10px] px-2 text-[14px] font-bold text-foreground hover:bg-surface-muted"
+                            >
+                              Edit
+                            </button>
+                          </span>
+                        </div>
+                      </article>
                     );
                   })}
-                </ul>
+                </div>
+                {budgetError && (
+                  <p role="alert" className="mt-3 text-[15px] font-[650] text-[var(--bad)]">
+                    {budgetError}
+                  </p>
+                )}
               </>
             )}
           </Card>
+
+          <BudgetLimitModal
+            isOpen={limitEdit.open}
+            onClose={() => setLimitEdit({ open: false })}
+            category={limitEdit.category}
+            currentLimit={limitEdit.limit}
+            spent={limitEdit.spent}
+            available={unbudgeted}
+          />
 
           {/* Khata */}
           <Card className="lg:col-span-12" title="Khata" sub="Money you lent and borrowed, all time">
@@ -491,9 +630,9 @@ export default function SpendingInsightsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div>
                   <p className="flex flex-wrap items-baseline gap-x-2">
-                    <b className="font-display font-medium text-5xl text-foreground tabular-nums">{settledPct}</b>
-                    <span className="font-display text-2xl text-foreground">%</span>
-                    <span className="text-xs text-foreground-muted">of the amount is settled</span>
+                    <b className="text-[44px] font-extrabold tracking-[-0.045em] text-foreground num">{settledPct}</b>
+                    <span className="text-[24px] font-extrabold text-foreground">%</span>
+                    <span className="text-[14px] text-foreground-muted">of the amount is settled</span>
                   </p>
                   <div
                     className="mt-4 flex h-3 gap-0.5 overflow-hidden rounded-full"
@@ -501,53 +640,50 @@ export default function SpendingInsightsPage() {
                     aria-label={`${fmt(khataStats.settled)} settled, ${fmt(khataStats.pending)} pending`}
                   >
                     <i className="h-full rounded-full bg-primary" style={{ width: `${settledPct}%` }} />
-                    <i className="h-full flex-1 rounded-full bg-[#F59E0B]" />
+                    <i className="h-full flex-1 rounded-full bg-[var(--amber)]" />
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-foreground-sub">
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[14px] text-foreground-sub">
                     <span className="flex items-center gap-1.5">
                       <i className="h-2 w-2 rounded-full bg-primary" />
                       <b className="tabular-nums text-foreground">{fmt(khataStats.settled)}</b> settled
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <i className="h-2 w-2 rounded-full bg-[#F59E0B]" />
+                      <i className="h-2 w-2 rounded-full bg-[var(--amber)]" />
                       <b className="tabular-nums text-foreground">{fmt(khataStats.pending)}</b> pending
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-[13px] font-semibold text-foreground">Oldest dues owed to you</h3>
+                  <h3 className="mb-2 text-[15px] font-bold text-foreground">Oldest dues owed to you</h3>
                   {khataStats.oldest.length === 0 ? (
                     <Empty>Nobody owes you anything right now.</Empty>
                   ) : (
                     <ul className="divide-y divide-border/50">
                       {khataStats.oldest.map((k) => {
-                        const initials = k.personName
-                          .split(" ")
-                          .map((w) => w[0])
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .join("")
-                          .toUpperCase();
                         return (
                           <li key={k.id}>
                             <Link
                               href="/dashboard/khata"
-                              className="flex items-center gap-3 rounded-2xl px-1 py-2.5 transition hover:bg-surface-muted/50"
+                              className="flex items-center gap-3 rounded-[12px] px-1.5 py-2.5 transition hover:bg-[var(--surface-2)]"
                             >
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-xs font-bold text-white">
-                                {initials || "?"}
+                              <span
+                                className="inline-grid h-10 w-10 shrink-0 place-items-center rounded-full text-[14px] font-extrabold text-[#1e1724]"
+                                style={{ background: avatarTint(k.personName) }}
+                                aria-hidden="true"
+                              >
+                                {initialsOf(k.personName)}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <b className="block truncate text-[13px] font-semibold text-foreground">{k.personName}</b>
-                                <small className="block truncate text-[11px] text-foreground-muted">
+                                <b className="block truncate text-[15px] font-bold text-foreground">{k.personName}</b>
+                                <small className="block truncate text-[13px] text-foreground-muted">
                                   {fmt(k.amount)}
                                   {k.notes ? ` · ${k.notes}` : ""}
                                 </small>
                               </span>
                               <span className="text-right">
-                                <b className="block tabular-nums text-sm text-foreground">{daysAgo(k.date, today)}d</b>
-                                <small className="block text-[10px] text-foreground-muted">pending</small>
+                                <b className="block text-[15px] font-extrabold num text-foreground">{daysAgo(k.date, today)}d</b>
+                                <small className="block text-[12px] text-foreground-muted">pending</small>
                               </span>
                             </Link>
                           </li>

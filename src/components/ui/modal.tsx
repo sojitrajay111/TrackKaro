@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface ModalProps {
@@ -14,12 +14,17 @@ interface ModalProps {
 }
 
 const MAX_WIDTHS = {
-  sm: "max-w-[380px]",
-  md: "max-w-[440px]",
-  lg: "max-w-[480px]",
+  sm: "max-w-[400px]",
+  md: "max-w-[460px]",
+  lg: "max-w-[500px]",
   xl: "max-w-[560px]",
 };
 
+/**
+ * Kesta-style dialog: raised surface, 24px radius, rises in with a small overshoot.
+ * On phones it becomes a bottom sheet. Inputs inside pick up the shared field style
+ * from globals.css (.tk-modal …).
+ */
 export function Modal({
   isOpen,
   onClose,
@@ -29,28 +34,29 @@ export function Modal({
   maxWidth = "lg",
   position = "center",
 }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // Move focus into the dialog unless something inside already has it (e.g. autoFocus).
+    if (panelRef.current && !panelRef.current.contains(document.activeElement)) {
+      panelRef.current.focus({ preventScroll: true });
     }
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prev;
     };
   }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+      if (e.key === "Escape" && isOpen) onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -62,64 +68,41 @@ export function Modal({
 
   return createPortal(
     <div
-      role="dialog"
-      aria-modal="true"
-      className={`fixed inset-0 z-[200] flex items-center ${
-        isRight
-          ? "justify-end p-3 sm:p-6 sm:pr-8 animate-in fade-in duration-200"
-          : "justify-center p-4 animate-in fade-in duration-150"
+      className={`tk-modal-wrap fixed inset-0 z-[200] flex ${
+        isRight ? "items-stretch justify-end p-3" : "items-center justify-center p-4"
       }`}
     >
-      {/* Crisp Backdrop Scrim (No blur, matching Pane) */}
-      <div
-        className="fixed inset-0 bg-black/25 dark:bg-black/45 transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="tk-modal-scrim fixed inset-0" onClick={onClose} aria-hidden="true" />
 
-      {/* Liquid Glass Modal Surface Card */}
       <div
-        className={`w-full ${MAX_WIDTHS[maxWidth]} ${
-          isRight
-            ? "h-[calc(100vh-2rem)] sm:h-[calc(100vh-3rem)] animate-in slide-in-from-right duration-250 flex flex-col overflow-hidden p-5 sm:p-6"
-            : "max-h-[92vh] animate-in zoom-in-95 duration-150 space-y-4 overflow-y-auto p-6 sm:p-7"
-        } rounded-[32px] bg-white/95 dark:bg-[#121c16]/95 backdrop-blur-2xl text-foreground relative shadow-[0_30px_90px_rgba(0,0,0,0.35)] border border-white/60 dark:border-white/10 z-10 no-scrollbar`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className={`tk-modal ${isRight ? "tk-modal--right" : ""} relative z-10 w-full ${MAX_WIDTHS[maxWidth]} outline-none ${
+          isRight ? "flex flex-col overflow-hidden" : "max-h-[92dvh] overflow-y-auto"
+        } no-scrollbar`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Head (Always pinned at top) */}
-        <div className={`flex items-start justify-between gap-4 shrink-0 ${isRight ? "pb-3" : ""}`}>
-          <div>
-            <h3 className="font-display font-bold text-xl sm:text-2xl tracking-tight text-foreground leading-snug">
-              {title}
-            </h3>
-            {description && (
-              <p className="mt-0.5 text-xs text-foreground-muted">
-                {description}
-              </p>
-            )}
+        <header className="flex shrink-0 items-start justify-between gap-4 mb-[18px]">
+          <div className="min-w-0">
+            <h3 className="text-[22px] font-extrabold tracking-[-0.025em] leading-tight text-foreground">{title}</h3>
+            {description && <p className="mt-1 text-[15px] text-foreground-muted">{description}</p>}
           </div>
-
-          {/* Frosted Circular Close Button */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="h-8 w-8 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-foreground-muted hover:text-foreground flex items-center justify-center transition border border-black/5 dark:border-white/10 shrink-0"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-border bg-[var(--raised)] text-foreground-muted transition hover:bg-[var(--surface-2)] hover:text-foreground"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
-        </div>
+        </header>
 
-        {/* Modal Body */}
-        {isRight ? (
-          <div className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
-            {children}
-          </div>
-        ) : (
-          children
-        )}
+        {isRight ? <div className="flex min-h-0 flex-1 flex-col justify-between overflow-hidden">{children}</div> : <div className="space-y-4">{children}</div>}
       </div>
     </div>,
     document.body
@@ -134,16 +117,10 @@ interface ModalFieldProps {
 
 export function ModalField({ label, description, children }: ModalFieldProps) {
   return (
-    <div className="space-y-1">
-      <label className="block text-xs font-semibold text-foreground-sub">
-        {label}
-      </label>
+    <div className="grid min-w-0 content-start gap-1.5">
+      <label className="block text-[14px] font-bold text-foreground-muted">{label}</label>
       {children}
-      {description && (
-        <p className="text-[11px] text-foreground-muted leading-relaxed">
-          {description}
-        </p>
-      )}
+      {description && <p className="text-[14px] leading-relaxed text-[var(--faint)]">{description}</p>}
     </div>
   );
 }
@@ -165,18 +142,17 @@ export function ModalSegmentedPicker<T extends string | number>({
   onChange,
 }: ModalSegmentedPickerProps<T>) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <div className="inline-flex w-full rounded-[12px] bg-[var(--well)] p-[3px]" role="group">
       {options.map((opt) => {
         const isSelected = opt.value === selected;
         return (
           <button
             key={String(opt.value)}
             type="button"
+            aria-pressed={isSelected}
             onClick={() => onChange(opt.value)}
-            className={`h-9 rounded-xl text-xs font-medium transition-all flex items-center justify-center select-none ${
-              isSelected
-                ? "bg-foreground text-background font-bold shadow-xs dark:bg-emerald-400 dark:text-emerald-950"
-                : "bg-black/[0.03] dark:bg-white/[0.04] text-foreground-muted hover:text-foreground border border-black/[0.04] dark:border-white/10"
+            className={`flex-1 rounded-[9px] px-[13px] py-1.5 text-[14px] font-bold transition select-none ${
+              isSelected ? "bg-[var(--raised)] text-foreground shadow-[0_1px_4px_#12322a24]" : "text-foreground-muted hover:text-foreground"
             }`}
           >
             {opt.label}
@@ -203,12 +179,12 @@ export function ModalFooter({
   onConfirm,
 }: ModalFooterProps) {
   return (
-    <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/[0.05] dark:border-white/10">
+    <div className="mt-2 flex items-center justify-end gap-2.5">
       <button
         type="button"
         onClick={onCancel}
         disabled={isSubmitting}
-        className="px-3.5 py-2 text-xs font-semibold text-foreground-muted hover:text-foreground transition disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-[14px] border border-border bg-surface px-[18px] text-[16px] font-bold text-foreground transition hover:bg-surface-muted active:brightness-[0.93] disabled:opacity-50"
       >
         {cancelLabel}
       </button>
@@ -216,11 +192,9 @@ export function ModalFooter({
         type={onConfirm ? "button" : "submit"}
         onClick={onConfirm}
         disabled={isSubmitting}
-        className="rounded-full px-5 py-2 text-xs font-bold bg-foreground text-background hover:opacity-90 dark:bg-emerald-400 dark:text-emerald-950 transition shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
+        className="inline-flex h-11 items-center gap-2 rounded-[14px] bg-[#161614] px-[18px] text-[16px] font-bold text-white shadow-xs transition hover:bg-black active:brightness-[0.93] disabled:opacity-50 dark:bg-[#f0c35a] dark:text-[#161614] dark:hover:bg-[#e0b445]"
       >
-        {isSubmitting && (
-          <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-        )}
+        {isSubmitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
         <span>{confirmLabel}</span>
       </button>
     </div>

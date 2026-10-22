@@ -77,10 +77,10 @@ export function Delta({ value, goodWhenUp, suffix = "" }: { value: number | null
     good === null
       ? "bg-surface-muted text-foreground-muted"
       : good
-        ? "bg-emerald-500/12 text-[#059669] dark:text-emerald-400"
-        : "bg-red-500/12 text-[#DC2626] dark:text-red-400";
+        ? "bg-[color-mix(in_srgb,var(--good)_14%,transparent)] text-[var(--good)]"
+        : "bg-[color-mix(in_srgb,var(--bad)_14%,transparent)] text-[var(--bad)]";
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${tone}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-bold tabular-nums ${tone}`}>
       {value > 0 ? "+" : value < 0 ? "−" : ""}
       {Math.abs(value)}%{suffix}
     </span>
@@ -157,8 +157,8 @@ export function DailyChart({ days }: { days: DayPoint[] }) {
       >
         <defs>
           <linearGradient id={`g-${gid}`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="var(--color-primary)" stopOpacity="0.28" />
-            <stop offset="1" stopColor="var(--color-primary)" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--pine)" stopOpacity="0.28" />
+            <stop offset="1" stopColor="var(--pine)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -188,13 +188,13 @@ export function DailyChart({ days }: { days: DayPoint[] }) {
 
         <path d={smoothPath(prevPts)} fill="none" stroke="var(--color-foreground-muted)" strokeOpacity="0.55" strokeWidth="1.75" strokeDasharray="5 5" />
         <path d={area} fill={`url(#g-${gid})`} />
-        <path d={curPath} fill="none" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round" />
+        <path d={curPath} fill="none" stroke="var(--pine)" strokeWidth="2.5" strokeLinecap="round" />
 
         {h && hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={T} y2={H - B} stroke="var(--color-foreground-muted)" strokeOpacity="0.4" />
             <circle cx={x(hover)} cy={y(h.prev)} r="3.5" fill="var(--color-surface)" stroke="var(--color-foreground-muted)" strokeWidth="1.5" />
-            <circle cx={x(hover)} cy={y(h.cur)} r="4.5" fill="var(--color-surface)" stroke="var(--color-primary)" strokeWidth="2.5" />
+            <circle cx={x(hover)} cy={y(h.cur)} r="4.5" fill="var(--color-surface)" stroke="var(--pine)" strokeWidth="2.5" />
           </g>
         )}
       </svg>
@@ -202,7 +202,7 @@ export function DailyChart({ days }: { days: DayPoint[] }) {
       {h && hover !== null && (
         <div
           role="status"
-          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl glass glass--chrome px-3 py-2 text-xs whitespace-nowrap"
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-xl glass glass--chrome px-3 py-2 text-[14px] whitespace-nowrap"
           style={{ left: `clamp(70px, ${(x(hover) / W) * 100}%, calc(100% - 70px))` }}
         >
           <b className="block text-foreground">{dayLabel(h.date)}</b>
@@ -321,7 +321,7 @@ export function CategoryDonut({ slices, size = 150 }: { slices: CategorySlice[];
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <b className="font-display font-medium text-xl text-foreground tabular-nums">{fmtShort(total)}</b>
-        <span className="text-[11px] text-foreground-muted">spent</span>
+        <span className="text-[13px] text-foreground-muted">spent</span>
       </div>
     </div>
   );
@@ -331,19 +331,19 @@ export function CategoryDonut({ slices, size = 150 }: { slices: CategorySlice[];
 export function CategoryLegend({ slices }: { slices: CategorySlice[] }) {
   const total = slices.reduce((s, c) => s + c.amount, 0);
   return (
-    <table className="w-full text-xs">
+    <table className="w-full table-fixed text-[14px]">
       <caption className="sr-only">Spending by category</caption>
       <tbody>
         {slices.map((c) => (
           <tr key={c.name}>
             <th scope="row" className="py-1.5 text-left font-medium text-foreground">
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-2">
                 <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
                 <span className="truncate">{c.name}</span>
               </span>
             </th>
-            <td className="py-1.5 text-right tabular-nums text-foreground">{fmt(c.amount)}</td>
-            <td className="py-1.5 pl-3 text-right tabular-nums text-foreground-muted w-10">
+            <td className="w-[6.5rem] truncate py-1.5 text-right tabular-nums text-foreground">{fmt(c.amount)}</td>
+            <td className="py-1.5 pl-2 text-right tabular-nums text-foreground-muted w-11">
               {Math.round((c.amount / total) * 100)}%
             </td>
           </tr>

@@ -9,6 +9,7 @@ interface BentoCardProps {
   actionHref?: string;
   actionLabel?: string;
   onAction?: () => void;
+  headerTools?: ReactNode;
   dark?: boolean;
 }
 
@@ -20,42 +21,45 @@ export function BentoCard({
   actionHref,
   actionLabel,
   onAction,
+  headerTools,
   dark = false,
 }: BentoCardProps) {
+  // Same surface as the Overview's Cash bridge and Budgets cards (Kesta card: 22px radius, 20px padding).
   const cardStyle = dark
-    ? "glass glass--card glass-specular bg-[#091811]/85 text-emerald-50 border-emerald-500/20 shadow-xl"
-    : "glass glass--card glass-specular text-foreground shadow-sm hover:shadow-md";
+    ? "bg-[#181a18] text-foreground border border-border shadow-xs"
+    : "bg-surface text-foreground border border-border shadow-xs";
 
   const renderAction = () => {
+    if (headerTools) {
+      return <div className="flex shrink-0 items-center gap-2">{headerTools}</div>;
+    }
+
     if (!actionHref && !onAction) return null;
 
     const actionContent = (
       <div
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${
-          dark
-            ? "bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/60"
-            : "bg-surface-muted text-foreground-sub hover:bg-primary-soft hover:text-primary"
-        }`}
-        title={actionLabel || "Open"}
+        className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[14px] font-bold text-foreground hover:opacity-80 transition-opacity group cursor-pointer"
+        title={actionLabel || "View all"}
       >
+        <span>{actionLabel || "View"}</span>
         <svg
-          width="15"
-          height="15"
+          width="13"
+          height="13"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="transition-transform group-hover:translate-x-0.5"
         >
-          <line x1="7" y1="17" x2="17" y2="7" />
-          <polyline points="7 7 17 7 17 17" />
+          <path d="M5 12h14M13 6l6 6-6 6" />
         </svg>
       </div>
     );
 
     if (actionHref) {
-      return <Link href={actionHref}>{actionContent}</Link>;
+      return <Link href={actionHref} className="shrink-0">{actionContent}</Link>;
     }
 
     return (
@@ -66,35 +70,27 @@ export function BentoCard({
   };
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-[2rem] p-6 sm:p-7 transition-all ${cardStyle} ${className}`}
+    <section
+      className={`relative overflow-hidden rounded-[22px] p-5 transition-all ${cardStyle} ${className}`}
     >
-      {(title || subtitle || actionHref || onAction) && (
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
+      {(title || subtitle || actionHref || onAction || headerTools) && (
+        <header className="mb-5 flex items-start justify-between gap-3">
+          <div className="min-w-0">
             {title && (
-              <h3
-                className={`text-base font-bold tracking-tight ${
-                  dark ? "text-white" : "text-foreground"
-                }`}
-              >
+              <h2 className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">
                 {title}
-              </h3>
+              </h2>
             )}
             {subtitle && (
-              <p
-                className={`mt-0.5 text-xs ${
-                  dark ? "text-emerald-400/80" : "text-foreground-muted"
-                }`}
-              >
+              <p className="mt-0.5 text-[14px] font-medium text-foreground-muted truncate">
                 {subtitle}
               </p>
             )}
           </div>
           {renderAction()}
-        </div>
+        </header>
       )}
       {children}
-    </div>
+    </section>
   );
 }
