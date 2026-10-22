@@ -507,10 +507,6 @@ export default function SpendingInsightsPage() {
                     const R = 40;
                     const C = 2 * Math.PI * R;
                     const tone = over ? "var(--bad)" : ratio >= 0.7 ? "var(--amber)" : "var(--pine)";
-                    const paceAngle = monthFraction * 2 * Math.PI;
-                    const tick = (r: number) => [50 + r * Math.cos(paceAngle), 50 + r * Math.sin(paceAngle)];
-                    const [x1, y1] = tick(R - 7);
-                    const [x2, y2] = tick(R + 7);
                     const left = b.limit - b.spent;
                     const step = budgetStep(b.limit);
                     return (
@@ -540,9 +536,7 @@ export default function SpendingInsightsPage() {
                               strokeDasharray={C}
                               strokeDashoffset={C * (1 - frac)}
                               style={{ ["--c" as string]: C, animationDelay: `${0.15 + i * 0.06}s` } as React.CSSProperties}
-                            />
-                            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round" />
-                          </svg>
+                            />                          </svg>
                           <span className="absolute inset-0 grid place-content-center justify-items-center gap-0.5">
                             <CategoryTile name={b.category} size={24} />
                             <b className="text-[14px] font-extrabold num text-foreground">{Math.round(ratio * 100)}%</b>

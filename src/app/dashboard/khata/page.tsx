@@ -565,7 +565,7 @@ export default function KhataPage() {
                     <th scope="col" className="hidden lg:table-cell border-b border-border px-3 py-2.5">Entries</th>
                     <th scope="col" className="border-b border-border px-3 py-2.5 text-right">Balance</th>
                     <th scope="col" className="hidden md:table-cell border-b border-border px-3 py-2.5 text-right">Last entry</th>
-                    <th scope="col" className="w-[150px] border-b border-border px-1 py-2.5">
+                    <th scope="col" className="border-b border-border px-1 py-2.5">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -586,7 +586,9 @@ export default function KhataPage() {
                         }}
                         className="group cursor-pointer hover:bg-[var(--surface-2)] focus:outline-none focus-visible:bg-[var(--surface-2)]"
                       >
-                        <td className="border-b border-border px-3 py-[11px]">
+                        {/* w-full + max-w-0: the name column takes the leftover width and truncates,
+                            instead of its full text pushing the table past the card edge. */}
+                        <td className="w-full max-w-0 border-b border-border px-3 py-[11px]">
                           <span className="flex min-w-0 items-center gap-3">
                             <span
                               className="inline-grid h-10 w-10 shrink-0 place-items-center rounded-full text-[14px] font-extrabold tracking-[0.02em] text-[#1e1724]"
@@ -595,8 +597,8 @@ export default function KhataPage() {
                             >
                               {initialsOf(cust.personName)}
                             </span>
-                            <span className="min-w-0">
-                              <b className="block max-w-[260px] truncate font-bold text-foreground">{cust.personName}</b>
+                            <span className="min-w-0 flex-1">
+                              <b className="block truncate font-bold text-foreground">{cust.personName}</b>
                               <small className="block truncate text-[14px] text-foreground-muted">
                                 {cust.phone || "No phone saved"}
                                 {cust.latestNote ? ` · ${cust.latestNote}` : ""}
@@ -624,7 +626,7 @@ export default function KhataPage() {
                         <td className="hidden md:table-cell border-b border-border px-3 py-[11px] text-right whitespace-nowrap text-foreground-muted">
                           {shortDate(cust.lastDate)}
                         </td>
-                        <td className="border-b border-border px-1 py-[11px]">
+                        <td className="border-b border-border px-1 py-[11px] whitespace-nowrap">
                           <span className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
