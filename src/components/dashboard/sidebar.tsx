@@ -12,6 +12,12 @@ import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 import { useGetRemindersQuery } from "@/store/api/remindersApi";
 import { daysUntil } from "@/lib/finance";
 
+/** Badge text: 8, 207, 1.2k, 12k — stays narrow so labels keep their room. */
+export function compactCount(n: number) {
+  if (n < 1000) return String(n);
+  return `${(n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, "")}k`;
+}
+
 /** Menu sections (with live counts) shared by the desktop sidebar and the phone menu. */
 export function useNavSections() {
   const { user } = useAppSelector((state) => state.auth);
@@ -79,7 +85,7 @@ export function useNavSections() {
   const manageNav = [
     {
       id: "budgets",
-      label: "Budgets & Limits",
+      label: "Budgets",
       href: "/dashboard/spending",
       count: budgets.length > 0 ? budgets.length : undefined,
       icon: (
@@ -243,7 +249,7 @@ export function DashboardSidebar() {
               const inner = (
                 <>
                   <span className="shrink-0 opacity-90">{item.icon}</span>
-                  {!isCollapsed && <span className="tk-side-text flex-1 truncate">{item.label}</span>}
+                  {!isCollapsed && <span className="tk-side-text min-w-0 flex-1 truncate">{item.label}</span>}
                   {/* Expanded: count pill. Collapsed: a small dot on the icon (count is in the tooltip),
                       since a number can't fit beside a 20px icon in the narrow rail. */}
                   {item.count !== undefined &&
@@ -256,11 +262,11 @@ export function DashboardSidebar() {
                       />
                     ) : (
                       <span
-                        className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-[7px] text-[13px] font-extrabold num ${
+                        className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full px-[7px] text-[13px] font-extrabold num ${
                           variant === "pill" ? "bg-[var(--on-side-pill)] text-[var(--side-pill)]" : "bg-[var(--side-soft)] text-foreground"
                         }`}
                       >
-                        {item.count > 999 ? "999+" : item.count}
+                        {compactCount(item.count)}
                       </span>
                     ))}
                 </>

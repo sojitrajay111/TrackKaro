@@ -8,13 +8,26 @@ interface PaginatedTransactions {
   limit: number;
 }
 
+/** Backend max page size (@Max(500)) and a safety cap of 20k transactions. */
+const PAGE_SIZE = 500;
+const MAX_PAGES = 40;
+
 export const transactionsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // Every transaction, not just the newest page: totals (balance, runway, reports, counts) are
+    // built from this list, so it pages through /transactions until it has them all.
     getTransactions: builder.query<Transaction[], void>({
-      query: () => "/transactions?limit=200",
-      transformResponse: (response: PaginatedTransactions | Transaction[]) => {
-        if (Array.isArray(response)) return response;
-        return response?.items || [];
+      async queryFn(_arg, _api, _extra, baseQuery) {
+        const all: Transaction[] = [];
+        for (let page = 1; page <= MAX_PAGES; page++) {
+          const res = await baseQuery(`/transactions?limit=${PAGE_SIZE}&page=${page}`);
+          if (res.error) return { error: res.error };
+          const data = res.data as PaginatedTransactions | Transaction[];
+          if (Array.isArray(data)) return { data };
+          all.push(...(data?.items ?? []));
+          if (!data?.items?.length || all.length >= (data.total ?? 0)) break;
+        }
+        return { data: all };
       },
       providesTags: (result) =>
         result

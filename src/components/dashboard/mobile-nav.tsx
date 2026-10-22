@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSignOut } from "@/store/api/authApi";
-import { useNavSections } from "./sidebar";
+import { compactCount, useNavSections } from "./sidebar";
 
 /**
  * Phone / tablet navigation (below lg the sidebar is hidden): a menu button that slides the
@@ -92,7 +92,7 @@ export function MobileNav() {
                             active ? "bg-[var(--on-side-pill)] text-[var(--side-pill)]" : "bg-[var(--side-soft)] text-foreground"
                           }`}
                         >
-                          {item.count > 999 ? "999+" : item.count}
+                          {compactCount(item.count)}
                         </span>
                       )}
                     </Link>

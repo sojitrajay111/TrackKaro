@@ -17,7 +17,7 @@ const PAGES = [
   { label: "Expenses", href: "/dashboard/expenses" },
   { label: "Khata Ledger", href: "/dashboard/khata" },
   { label: "Split Groups", href: "/dashboard/groups" },
-  { label: "Budgets & Limits", href: "/dashboard/spending" },
+  { label: "Budgets", href: "/dashboard/spending" },
   { label: "Live Deals", href: "/dashboard/deals" },
   { label: "Bills", href: "/dashboard/reminders" },
   { label: "Subscriptions", href: "/dashboard/subscriptions" },
