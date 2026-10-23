@@ -318,6 +318,9 @@ export type DealSearchResponse = {
   engine: 'provider' | 'legacy';
   message?: string;
   deals: MerchantDeal[];
+  /** Page this response covers, and whether the next page may have more. */
+  page?: number;
+  hasMore?: boolean;
 };
 
 export type GroupInvitePreview = {

@@ -41,7 +41,7 @@ export function unpackDirectDealUrl(rawUrl?: string): string {
   return rawUrl;
 }
 
-export function mapSearchResponseToDeals(result: DealSearchResponse, searchQuery?: string): Deal[] {
+export function mapSearchResponseToDeals(result: DealSearchResponse, searchQuery?: string, strict = false): Deal[] {
   if (result.status !== "success" || !result.deals?.length) return [];
   const mapped: Deal[] = result.deals.map((md) => ({
     id: md.offerId,
@@ -73,7 +73,7 @@ export function mapSearchResponseToDeals(result: DealSearchResponse, searchQuery
     verifiedAt: md.observedAt,
   }));
   const q = searchQuery?.trim();
-  return q ? filterDealsBySearchQuery(mapped, q) : mapped;
+  return q ? filterDealsBySearchQuery(mapped, q, strict) : mapped;
 }
 
 // Personalised suggestions — same pools and order as the app (TrackKaro/src/lib/deal-suggestions.ts):

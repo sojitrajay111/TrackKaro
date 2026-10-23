@@ -115,12 +115,13 @@ export function titleMatchesSearchQuery(title: string, query: string): boolean {
   return genericHits >= minHits;
 }
 
-export function filterDealsBySearchQuery<T extends { title: string }>(deals: T[], query: string): T[] {
+export function filterDealsBySearchQuery<T extends { title: string }>(deals: T[], query: string, strict = false): T[] {
   const q = query.trim();
   if (!q || deals.length === 0) return deals;
 
   const filtered = deals.filter((d) => titleMatchesSearchQuery(d.title, q));
-  if (filtered.length > 0) return filtered;
+  // strict (lazy-loaded pages): only real matches, never the "show everything" fallback.
+  if (filtered.length > 0 || strict) return filtered;
 
   const blockedOnly = deals.filter((d) => !isTitleBlockedForQuery(d.title, q));
   return blockedOnly.length > 0 ? blockedOnly : deals;

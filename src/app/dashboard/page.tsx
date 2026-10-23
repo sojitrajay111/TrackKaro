@@ -17,7 +17,9 @@ import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 import { useGetRemindersQuery, useUpdateReminderMutation } from "@/store/api/remindersApi";
 import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
-import { useGetDealsQuery } from "@/store/api/dealsApi";
+import { useRecordDealClickMutation, useSearchDealsQuery } from "@/store/api/dealsApi";
+import { CATEGORY_DEAL_SEARCH, DEAL_CATEGORIES, mapSearchResponseToDeals, type DealCategory } from "@/lib/deal-search";
+import { resolveDealProductImage } from "@/lib/deal-images";
 import { Illustration } from "@/components/ui/illustration";
 
 interface CustomerSummary {
@@ -77,7 +79,12 @@ export default function DashboardOverviewPage() {
   const { data: khataEntries = [] } = useGetKhataEntriesQuery();
   const { data: budgets = [] } = useGetBudgetsQuery();
   const { data: reminders = [] } = useGetRemindersQuery();
-  const { data: deals = [] } = useGetDealsQuery();
+  // Live deals by category (same searches as the Deals page's category chips).
+  const [dealCategory, setDealCategory] = useState<DealCategory>("Electronics");
+  const dealQuery = CATEGORY_DEAL_SEARCH[dealCategory];
+  const { currentData: dealSearch, isFetching: dealsLoading } = useSearchDealsQuery(dealQuery);
+  const deals = useMemo(() => (dealSearch ? mapSearchResponseToDeals(dealSearch, dealQuery) : []), [dealSearch, dealQuery]);
+  const [recordDealClick] = useRecordDealClickMutation();
   const [updateReminder] = useUpdateReminderMutation();
   const { data: subscriptions = [] } = useGetSubscriptionsQuery();
   // Tasks from 30 days back (overdue ones still show) to two weeks ahead.
@@ -289,7 +296,8 @@ export default function DashboardOverviewPage() {
   }, [transactions]);
 
   // Featured Deal
-  const featuredDeal = deals.length > 0 ? deals[0] : null;
+  // Best 3 by discount for the Overview card.
+  const topDeals = useMemo(() => [...deals].sort((a, b) => b.discountPercent - a.discountPercent).slice(0, 3), [deals]);
 
   const topSpentBudget = useMemo(() => {
     if (budgetList.length === 0) return null;
@@ -681,35 +689,78 @@ export default function DashboardOverviewPage() {
           className="col-span-12 lg:col-span-6"
           title="Deals & Offers"
           subtitle="Cashback & savings discounts"
-          actionHref="/dashboard/deals"
+          actionHref={`/dashboard/deals?q=${encodeURIComponent(dealQuery)}`}
           actionLabel="All Deals"
         >
-          {featuredDeal ? (
-            <div className="p-4 rounded-2xl bg-surface-muted/50 border border-border/50">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="pill pill--amber text-[12px] uppercase font-bold">
-                    {featuredDeal.category || "Featured Deal"}
-                  </span>
-                  <h3 className="text-base font-bold text-foreground mt-1.5">
-                    {featuredDeal.title}
-                  </h3>
-                  <p className="text-[14px] text-foreground-muted mt-0.5">
-                    {featuredDeal.platform} · {featuredDeal.category}
-                  </p>
-                </div>
-                <div className="text-2xl">🏷️</div>
-              </div>
-
-              {featuredDeal.couponCode && (
-                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-border font-mono text-[14px] font-bold text-foreground">
-                  <span>Code: {featuredDeal.couponCode}</span>
-                </div>
-              )}
+          <div className="-mt-1 mb-3 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar" role="group" aria-label="Deal category">
+            {DEAL_CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setDealCategory(c)}
+                aria-pressed={dealCategory === c}
+                className={`inline-flex h-[30px] shrink-0 items-center rounded-full px-3 text-[13px] font-bold transition ${
+                  dealCategory === c ? "bg-[var(--primary)] text-[var(--on-primary)]" : "border border-border bg-surface text-foreground-muted hover:text-foreground"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          {dealsLoading && topDeals.length === 0 ? (
+            <div className="grid gap-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-[72px] animate-pulse rounded-[14px] bg-[var(--surface-2)]" />
+              ))}
             </div>
+          ) : topDeals.length > 0 ? (
+            <ul className="grid gap-2">
+              {topDeals.map((d, i) => {
+                const price = d.finalPrice || d.currentPrice;
+                const url = d.dealUrl || d.sourceUrl;
+                return (
+                  <li key={d.id} className="tk-cal-agenda" style={{ animationDelay: `${i * 0.05}s` }}>
+                    <a
+                      href={url || "/dashboard/deals"}
+                      target={url ? "_blank" : undefined}
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        if (d.sourceEngine === "provider") recordDealClick(d.id).catch(() => {});
+                      }}
+                      className="flex min-w-0 items-center gap-3 rounded-[14px] border border-border bg-[var(--surface-2)] p-2 transition hover:border-[var(--line-2)] hover:bg-surface"
+                    >
+                      <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[10px] border border-border bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- merchant CDN images */}
+                        <img
+                          src={resolveDealProductImage(d.title, d.category, d.imageUrl)}
+                          alt=""
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-contain p-1"
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <b className="line-clamp-1 text-[14px] font-bold text-foreground" title={d.title}>
+                          {d.title}
+                        </b>
+                        <span className="mt-0.5 flex items-baseline gap-2 text-[13px]">
+                          <b className="text-[15px] font-extrabold text-foreground num">₹{Math.round(price).toLocaleString("en-IN")}</b>
+                          {d.originalPrice > price && <span className="text-foreground-muted line-through num">₹{Math.round(d.originalPrice).toLocaleString("en-IN")}</span>}
+                          <span className="truncate text-foreground-muted">{d.platform}</span>
+                        </span>
+                      </span>
+                      {d.discountPercent > 0 && (
+                        <span className="shrink-0 rounded-full bg-[var(--primary)] px-2 py-0.5 text-[12px] font-extrabold text-[var(--on-primary)]">{d.discountPercent}% OFF</span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
-            <div className="py-8 text-center text-[14px] text-foreground-muted">
-              Live deals synced from merchant partners.
+            <div className="flex flex-col items-center gap-2 rounded-[16px] bg-[var(--surface-2)] px-4 py-6 text-center">
+              <Illustration name="person-searching-torch" height={80} />
+              <p className="text-[14px] text-foreground-muted">No live deals right now. Search for a product on the Deals page.</p>
             </div>
           )}
         </BentoCard>

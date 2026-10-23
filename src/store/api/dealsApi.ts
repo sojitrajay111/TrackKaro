@@ -59,8 +59,12 @@ export const dealsApi = apiSlice.injectEndpoints({
 
     // Same endpoint as a cached query, for the website's Deals page: each search term is kept
     // for the backend's offer-cache window (~6h), so going back to a term is instant.
-    searchDeals: builder.query<DealSearchResponse, string>({
-      query: (q) => `/deals/search?q=${encodeURIComponent(q)}`,
+    // Cached per search term (and page): page 1 for the first screen, later pages on scroll.
+    searchDeals: builder.query<DealSearchResponse, string | { q: string; page?: number }>({
+      query: (arg) => {
+        const { q, page = 1 } = typeof arg === "string" ? { q: arg } : arg;
+        return `/deals/search?q=${encodeURIComponent(q)}${page > 1 ? `&page=${page}` : ""}`;
+      },
       keepUnusedDataFor: 6 * 60 * 60,
     }),
   }),
@@ -74,4 +78,5 @@ export const {
   useRecordDealClickMutation,
   useSearchRealDealsMutation,
   useSearchDealsQuery,
+  useLazySearchDealsQuery,
 } = dealsApi;

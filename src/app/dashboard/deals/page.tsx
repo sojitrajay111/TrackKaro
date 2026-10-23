@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OnQueryParam } from "@/components/ui/query-param";
 import { DealDetailDrawer } from "@/components/deals/deal-detail";
@@ -13,9 +13,9 @@ import {
   mapSearchResponseToDeals,
   type DealCategory,
 } from "@/lib/deal-search";
-import { useRecordDealClickMutation, useSearchDealsQuery } from "@/store/api/dealsApi";
+import { dealsApi, useLazySearchDealsQuery, useRecordDealClickMutation, useSearchDealsQuery } from "@/store/api/dealsApi";
 import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
-import { useAppSelector } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { useWishlist } from "@/lib/use-wishlist";
 
 type SortBy = "best" | "price_low" | "discount_high" | "newest";
@@ -62,8 +62,75 @@ export default function DealsPage() {
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [selected, setSelected] = useState<Deal | null>(null);
 
-  const { data, isFetching, isError, refetch } = useSearchDealsQuery(query);
-  const deals = useMemo(() => (data ? mapSearchResponseToDeals(data, query) : []), [data, query]);
+  // currentData (not data): while a new search loads, show skeletons instead of the previous
+  // search's products dimmed underneath.
+  const { currentData: data, isFetching, isError, refetch } = useSearchDealsQuery(query);
+  const dispatch = useAppDispatch();
+  const firstPage = useMemo(() => (data ? mapSearchResponseToDeals(data, query) : []), [data, query]);
+
+  // Lazy loading: further result pages are fetched as the user scrolls near the end of the list.
+  const [fetchPage] = useLazySearchDealsQuery();
+  const [more, setMore] = useState<Deal[]>([]);
+  const [nextPage, setNextPage] = useState(2);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFor, setMoreFor] = useState(query);
+  if (moreFor !== query) {
+    // New search: start over from page 1.
+    setMoreFor(query);
+    setMore([]);
+    setNextPage(2);
+    setHasMore(true);
+  }
+  const deals = useMemo(() => {
+    const seen = new Set(firstPage.map((d) => d.id));
+    return [...firstPage, ...more.filter((d) => !seen.has(d.id) && seen.add(d.id))];
+  }, [firstPage, more]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || !data || data.status !== "success") return;
+    setLoadingMore(true);
+    const forQuery = query;
+    try {
+      // Later pages drift off-topic, so only real matches are kept; a page with none is skipped
+      // (up to 3 pages per scroll) before deciding there's nothing more.
+      const known = new Set(deals.map((d) => d.id));
+      let page = nextPage;
+      let fresh: Deal[] = [];
+      let more = true;
+      for (let tries = 0; tries < 3 && fresh.length === 0 && more && page <= 10; tries++, page++) {
+        const res = await fetchPage({ q: forQuery, page }, true).unwrap();
+        fresh = mapSearchResponseToDeals(res, forQuery, true).filter((d) => !known.has(d.id));
+        more = res.hasMore !== false;
+      }
+      if (forQuery !== query) return;
+      setMore((m) => [...m, ...fresh]);
+      setNextPage(page);
+      if (fresh.length === 0 || !more || page > 10) setHasMore(false);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+  const loadMoreRef = useRef(loadMore);
+  useEffect(() => {
+    loadMoreRef.current = loadMore;
+  });
+  // Amazon takes a few seconds per page, so the next page is fetched in the background as soon
+  // as the current ones show; scrolling down then appends it from cache, instantly.
+  useEffect(() => {
+    if (!data || data.status !== "success" || !hasMore || loadingMore || nextPage > 10) return;
+    dispatch(dealsApi.util.prefetch("searchDeals", { q: query, page: nextPage }, { ifOlderThan: 6 * 60 * 60 }));
+  }, [dispatch, data, query, nextPage, hasMore, loadingMore]);
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && void loadMoreRef.current(), { rootMargin: "1200px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [deals.length, showSaved]);
   const [recordDealClick] = useRecordDealClickMutation();
 
   const search = (q: string, cat: DealCategory | null = null) => {
@@ -330,6 +397,35 @@ export default function DealsPage() {
           ))}
           {visible.length === 0 && (
             <p className="col-span-full rounded-[22px] border border-border bg-surface p-10 text-center text-[15px] text-foreground-muted">No deals match these filters.</p>
+          )}
+        </div>
+      )}
+
+      {/* Lazy-load trigger: scrolling near here fetches the next page of live deals. */}
+      {!showSaved && deals.length > 0 && (
+        <div ref={sentinel} className="flex flex-col items-center gap-2 py-2">
+          {loadingMore ? (
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="overflow-hidden rounded-[22px] border border-border bg-surface">
+                  <Skeleton className="h-[180px] rounded-none" />
+                  <div className="space-y-2 p-4">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-6 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : hasMore ? (
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              className="inline-flex h-11 items-center rounded-[14px] border border-border bg-surface px-[18px] text-[15px] font-bold text-foreground shadow-xs transition hover:bg-surface-muted"
+            >
+              Load more deals
+            </button>
+          ) : (
+            <p className="text-[14px] font-semibold text-foreground-muted">That&apos;s everything for “{query}”.</p>
           )}
         </div>
       )}
