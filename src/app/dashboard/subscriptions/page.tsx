@@ -11,6 +11,7 @@ import { daysUntil, shortDate } from "@/lib/finance";
 import { useDeleteSubscriptionMutation, useGetSubscriptionStatsQuery, useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import type { Subscription } from "@/store/types";
 import { SubscriptionForm } from "@/components/planner/subscription-form";
+import { Illustration } from "@/components/ui/illustration";
 
 function renewLabel(date: string) {
   const n = daysUntil(date);
@@ -107,7 +108,10 @@ export default function SubscriptionsPage() {
         {isLoading ? (
           <Skeleton className="h-48 rounded-[16px]" />
         ) : sorted.length === 0 ? (
-          <p className="rounded-[16px] bg-[var(--surface-2)] px-4 py-10 text-center text-[15px] text-foreground-muted">No subscriptions yet. Add Netflix, Spotify, cloud storage and the like.</p>
+          <div className="flex flex-col items-center gap-3 rounded-[16px] bg-[var(--surface-2)] px-4 py-8 text-center">
+            <Illustration name="person-subscribing" height={110} />
+            <p className="text-[15px] text-foreground-muted">No subscriptions yet. Add Netflix, Spotify, cloud storage and the like.</p>
+          </div>
         ) : (
           <ul>
             {sorted.map((s, i) => {

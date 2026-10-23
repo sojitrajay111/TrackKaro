@@ -4,7 +4,6 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BentoCard } from "@/components/ui/bento-card";
-import { RunwayDial } from "@/components/ui/runway-dial";
 import { CashBridgeChart, type MonthData } from "@/components/ui/cash-bridge-chart";
 import { CategoryDonut, CategoryLegend, buildCategorySplit } from "@/components/insights/spending-charts";
 import { RecordExpenseModal } from "@/components/ui/record-expense-modal";
@@ -16,7 +15,10 @@ import { useGetTransactionsQuery } from "@/store/api/transactionsApi";
 import { useGetKhataEntriesQuery } from "@/store/api/khataApi";
 import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 import { useGetRemindersQuery, useUpdateReminderMutation } from "@/store/api/remindersApi";
+import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
+import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
 import { useGetDealsQuery } from "@/store/api/dealsApi";
+import { Illustration } from "@/components/ui/illustration";
 
 interface CustomerSummary {
   id: string;
@@ -25,6 +27,17 @@ interface CustomerSummary {
   net: number;
   note?: string;
 }
+
+/** Items shown in "Next two weeks" before the "more in calendar" button. */
+const UPCOMING_SHOWN = 4;
+
+const UPCOMING_META = {
+  bill: { label: "Bill", color: "var(--amber)" },
+  sub: { label: "Renewal", color: "var(--rose)" },
+  task: { label: "Task", color: "var(--violet)" },
+  "khata-in": { label: "Khata · owed to you", color: "var(--good)" },
+  "khata-out": { label: "Khata · you owe", color: "var(--bad)" },
+} as const;
 
 export default function DashboardOverviewPage() {
   const router = useRouter();
@@ -66,6 +79,15 @@ export default function DashboardOverviewPage() {
   const { data: reminders = [] } = useGetRemindersQuery();
   const { data: deals = [] } = useGetDealsQuery();
   const [updateReminder] = useUpdateReminderMutation();
+  const { data: subscriptions = [] } = useGetSubscriptionsQuery();
+  // Tasks from 30 days back (overdue ones still show) to two weeks ahead.
+  const taskRange = useMemo(() => {
+    const d = new Date();
+    const k = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+    return { from: k(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 30)), to: k(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 14)) };
+  }, []);
+  const { data: tasks = [] } = useGetTasksQuery(taskRange);
+  const [updateTask] = useUpdateTaskMutation();
 
   // 1. Calculate Real Financial Metrics
   const { totalBalance, monthlySpent, monthlyIncome, categoryTotals } = useMemo(() => {
@@ -147,7 +169,7 @@ export default function DashboardOverviewPage() {
 
   // 3. Cash bridge: real month-by-month balance from recorded transactions.
   // Balance = everything recorded before the 12-month window, then each month's in/out on top.
-  const { monthSeries, avgMonthlySpend } = useMemo(() => {
+  const { monthSeries } = useMemo(() => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const now = new Date();
     const windowStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
@@ -181,18 +203,9 @@ export default function DashboardOverviewPage() {
       series.push({ month: monthNames[d.getMonth()], year: d.getFullYear(), open, inflow, outflow, net: inflow - outflow, close });
     }
 
-    // Average spend over the last three full months (the current month is still in progress).
-    const lastThree = series.slice(-4, -1);
-    const avg = lastThree.reduce((acc, m) => acc + m.outflow, 0) / Math.max(1, lastThree.length);
-
-    return { monthSeries: series, avgMonthlySpend: Math.round(avg) };
+    return { monthSeries: series };
   }, [transactions]);
 
-  // 4. Runway: how many months the recorded balance lasts at the average spend.
-  const runwayMonths = avgMonthlySpend > 0 && totalBalance > 0 ? totalBalance / avgMonthlySpend : 0;
-  // Kesta's "+ Reserve" equivalent: also count money people owe you (pending khata you gave).
-  const runwayWithOwed = avgMonthlySpend > 0 && totalBalance + willGet > 0 ? (totalBalance + willGet) / avgMonthlySpend : 0;
-  const [runwayMode, setRunwayMode] = useState<"cash" | "owed">("cash");
 
   // 5. Budgets: only categories you actually set a limit for, against what you actually spent.
   const budgetList = useMemo(() => {
@@ -236,6 +249,37 @@ export default function DashboardOverviewPage() {
     const weekAhead = today.getTime() + 7 * 86_400_000;
     return { upcomingReminders: list, dueThisWeekCount: list.filter((r) => r.dueTime <= weekAhead).length };
   }, [reminders]);
+
+  // 6b. Everything coming up in the next 14 days (overdue included): bills, renewals, tasks and
+  // khata repayments, soonest first. Feeds the "Next two weeks" card.
+  type UpcomingKind = "bill" | "sub" | "task" | "khata-in" | "khata-out";
+  const upcoming = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const horizon = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14).getTime();
+    const at = (s: string) => {
+      const [y, m, d] = s.slice(0, 10).split("-").map(Number);
+      return new Date(y, m - 1, d).getTime();
+    };
+    const items: { key: string; kind: UpcomingKind; time: number; title: string; amount?: number; refId: string }[] = [];
+    for (const r of reminders) if (r.status === "pending" && r.dueDate && at(r.dueDate) <= horizon) items.push({ key: `b-${r.id}`, kind: "bill", time: at(r.dueDate), title: r.title, amount: r.amount, refId: r.id });
+    for (const s of subscriptions) {
+      if (!s.nextBillingDate) continue;
+      const t = at(s.nextBillingDate);
+      if (t >= today.getTime() && t <= horizon) items.push({ key: `s-${s.id}`, kind: "sub", time: t, title: s.name, amount: s.amount, refId: s.id });
+    }
+    for (const t of tasks) if (t.status !== "done" && at(t.dueDate) <= horizon) items.push({ key: `t-${t.id}`, kind: "task", time: at(t.dueDate), title: t.title, refId: t.id });
+    for (const k of khataEntries) {
+      if (k.status !== "pending" || !k.dueDate || at(k.dueDate) > horizon) continue;
+      const gave = k.type === "gave";
+      items.push({ key: `k-${k.id}`, kind: gave ? "khata-in" : "khata-out", time: at(k.dueDate), title: gave ? `Collect from ${k.personName}` : `Pay back ${k.personName}`, amount: k.amount, refId: k.personName });
+    }
+    return items.sort((a, b) => a.time - b.time).map((it) => {
+      const days = Math.round((it.time - today.getTime()) / 86_400_000);
+      const d = new Date(it.time);
+      return { ...it, day: d.getDate(), month: d.toLocaleDateString("en-US", { month: "short" }), days };
+    });
+  }, [reminders, subscriptions, tasks, khataEntries]);
 
   // 7. This month by category (real), replacing the old invented "wallets" breakdown.
   const monthCategories = useMemo(() => {
@@ -435,7 +479,7 @@ export default function DashboardOverviewPage() {
 
         {/* ROW 2 CARD 1: This month, by category (from recorded transactions) */}
         <BentoCard
-          className="col-span-12 lg:col-span-4"
+          className="col-span-12 md:col-span-6"
           title="This month"
           subtitle="Where your spending went"
           actionHref="/dashboard/spending"
@@ -453,9 +497,10 @@ export default function DashboardOverviewPage() {
               </div>
             </div>
             {monthCategories.length === 0 ? (
-              <p className="rounded-[16px] bg-surface-muted/40 px-4 py-8 text-center text-[14px] text-foreground-muted">
-                No spending recorded this month yet.
-              </p>
+              <div className="flex flex-col items-center gap-2 rounded-[16px] bg-[var(--surface-2)] px-4 py-6 text-center">
+                <Illustration name="person-empty-desk" height={80} />
+                <p className="text-[14px] text-foreground-muted">No spending recorded this month yet.</p>
+              </div>
             ) : (
               // Container query: side by side only when the card itself is wide enough.
               <div className="@container pt-1">
@@ -470,103 +515,101 @@ export default function DashboardOverviewPage() {
           </div>
         </BentoCard>
 
-        {/* ROW 2 CARD 2: Runway (Kesta ov-run: dial + two facts, Cash / + Owed toggle) */}
+        {/* ROW 2 CARD 2: Next two weeks — bills, renewals, tasks and khata dues */}
         <BentoCard
-          className="col-span-12 md:col-span-6 lg:col-span-4"
-          title="Runway"
-          subtitle="At the last three months' average spend"
-          headerTools={
-            <div className="seg" role="group" aria-label="Count">
-              {(
-                [
-                  ["cash", "Cash"],
-                  ["owed", "+ Owed"],
-                ] as const
-              ).map(([v, label]) => (
-                <button key={v} type="button" className="seg__btn" aria-pressed={runwayMode === v} onClick={() => setRunwayMode(v)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          }
-        >
-          {avgMonthlySpend > 0 ? (
-            <>
-              <RunwayDial value={runwayMode === "cash" ? runwayMonths : runwayWithOwed} max={12} />
-              <dl className="mt-3.5 grid grid-cols-2 gap-2.5">
-                <div className="min-w-0 rounded-[14px] border border-border bg-[var(--surface-2)] px-3 py-2.5">
-                  <dt className="text-[13px] font-bold text-foreground-muted">Monthly burn</dt>
-                  <dd className="truncate text-[17px] font-extrabold tracking-[-0.02em] text-foreground num">₹{avgMonthlySpend.toLocaleString("en-IN")}</dd>
-                </div>
-                <div className="min-w-0 rounded-[14px] border border-border bg-[var(--surface-2)] px-3 py-2.5">
-                  <dt className="text-[13px] font-bold text-foreground-muted">{runwayMode === "cash" ? "With money owed" : "Cash only"}</dt>
-                  <dd className="truncate text-[17px] font-extrabold tracking-[-0.02em] text-foreground num">
-                    {(runwayMode === "cash" ? runwayWithOwed : runwayMonths).toFixed(1)} mo
-                  </dd>
-                </div>
-              </dl>
-            </>
-          ) : (
-            <p className="rounded-[16px] bg-[var(--surface-2)] px-4 py-10 text-center text-[15px] text-foreground-muted">
-              Runway needs spending from at least one full month. Record expenses and it appears here.
-            </p>
-          )}
-        </BentoCard>
-
-        {/* ROW 2 CARD 3: Next Two Weeks (`ov-up` - 4 cols) */}
-        <BentoCard
-          className="col-span-12 md:col-span-6 lg:col-span-4"
+          className="col-span-12 flex flex-col md:col-span-6"
           title="Next two weeks"
-          subtitle={`${upcomingReminders.length} upcoming payments`}
+          subtitle={upcoming.length ? `${upcoming.length} coming up${upcoming.some((u) => u.days < 0) ? ` · ${upcoming.filter((u) => u.days < 0).length} overdue` : ""}` : "Bills, renewals, tasks and khata dues"}
           actionHref="/dashboard/calendar"
           actionLabel="Calendar"
         >
-          {upcomingReminders.length > 0 ? (
-            <ul className="space-y-2.5">
-              {upcomingReminders.map((r) => (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between p-2 rounded-xl bg-surface-muted/40 hover:bg-surface-muted/70 transition border border-border/40 text-[14px]"
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    {/* Date badge */}
-                    <div className="flex flex-col items-center justify-center w-8 h-8 rounded-lg bg-surface border border-border/60 text-foreground shrink-0 leading-none">
-                      <span className="text-[13px] font-extrabold num">{r.day}</span>
-                      <span className="text-[12px] font-bold uppercase text-foreground-muted">
-                        {r.month}
-                      </span>
-                    </div>
-
-                    <div className="truncate">
-                      <div className="font-bold text-foreground truncate">{r.title}</div>
-                      <div className="text-[12px] text-foreground-muted truncate">
-                        {r.merchant}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="font-bold text-coral num">
-                      −₹{r.amount.toLocaleString("en-IN")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await updateReminder({ id: r.id, patch: { status: "paid" } }).unwrap();
-                        } catch {}
-                      }}
-                      className="inline-flex items-center justify-center px-3 py-1 rounded-full text-[14px] font-bold bg-[var(--well)] hover:bg-surface border border-border text-foreground transition-all cursor-pointer select-none"
+          {upcoming.length > 0 ? (
+            <>
+              <ul className="mb-3 space-y-2">
+                {upcoming.slice(0, UPCOMING_SHOWN).map((u, i) => {
+                  const meta = UPCOMING_META[u.kind];
+                  const when = u.days < 0 ? `${-u.days}d overdue` : u.days === 0 ? "Today" : u.days === 1 ? "Tomorrow" : `In ${u.days} days`;
+                  return (
+                    <li
+                      key={u.key}
+                      className="tk-cal-agenda flex min-w-0 items-center gap-3 rounded-[14px] border border-border bg-[var(--surface-2)] p-2.5 text-[14px]"
+                      style={{ animationDelay: `${i * 0.04}s` }}
                     >
-                      Pay
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] border border-border bg-surface leading-none text-foreground">
+                        <span className="text-[14px] font-extrabold num">{u.day}</span>
+                        <span className="text-[11px] font-bold uppercase text-foreground-muted">{u.month}</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <b className="block truncate text-[15px] font-bold text-foreground">{u.title}</b>
+                        <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-foreground-muted">
+                          <i className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: meta.color }} />
+                          <span className="truncate">
+                            {meta.label} · <span className={u.days < 0 ? "font-bold text-[var(--bad)]" : u.days <= 2 ? "font-bold text-[var(--warn)]" : ""}>{when}</span>
+                          </span>
+                        </span>
+                      </span>
+                      {u.amount != null && (
+                        <span className={`shrink-0 font-extrabold num ${u.kind === "khata-in" ? "text-[var(--good)]" : "text-foreground"}`}>
+                          {u.kind === "khata-in" ? "+" : "−"}₹{Math.round(u.amount).toLocaleString("en-IN")}
+                        </span>
+                      )}
+                      {u.kind === "bill" ? (
+                        <button
+                          type="button"
+                          onClick={() => updateReminder({ id: u.refId, patch: { status: "paid" } }).unwrap().catch(() => {})}
+                          className="inline-flex h-8 shrink-0 items-center rounded-[10px] bg-[var(--good)] px-2.5 text-[13px] font-bold text-white transition hover:brightness-110"
+                        >
+                          Pay
+                        </button>
+                      ) : u.kind === "task" ? (
+                        <button
+                          type="button"
+                          onClick={() => updateTask({ id: u.refId, patch: { status: "done" } })}
+                          className="inline-flex h-8 shrink-0 items-center rounded-[10px] bg-[var(--violet)] px-2.5 text-[13px] font-bold text-white transition hover:brightness-110"
+                        >
+                          Done
+                        </button>
+                      ) : (
+                        <Link
+                          href={u.kind === "sub" ? "/dashboard/subscriptions" : `/dashboard/khata?person=${encodeURIComponent(u.refId)}`}
+                          aria-label={`Open ${u.title}`}
+                          className="inline-grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-foreground-muted transition hover:bg-surface hover:text-foreground"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="m9.5 6 6 6-6 6" />
+                          </svg>
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {upcoming.length > UPCOMING_SHOWN && (
+                <Link
+                  href="/dashboard/calendar"
+                  className="mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-border bg-surface text-[15px] font-bold text-foreground transition hover:bg-[var(--surface-2)]"
+                >
+                  <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[var(--primary-soft)] px-1.5 text-[13px] font-extrabold text-[var(--primary)] num">
+                    +{upcoming.length - UPCOMING_SHOWN}
+                  </span>
+                  more in calendar
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </Link>
+              )}
+            </>
           ) : (
-            <div className="text-center py-8 text-foreground-muted text-[14px]">
-              No bills due in the next 14 days.
+            // Fills the card's height (the row's tallest card sets it), content centred.
+            <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-3 rounded-[16px] bg-[var(--surface-2)] px-4 py-6 text-center">
+              <Illustration name="person-paid-receipt" height={110} />
+              <div>
+                <p className="text-[15px] font-bold text-foreground">You&apos;re all clear</p>
+                <p className="text-[14px] text-foreground-muted">No bills, renewals, tasks or khata dues in the next 14 days.</p>
+              </div>
+              <Link href="/dashboard/calendar" className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border bg-surface px-3 text-[14px] font-bold text-foreground transition hover:bg-surface-muted">
+                Open calendar
+              </Link>
             </div>
           )}
         </BentoCard>

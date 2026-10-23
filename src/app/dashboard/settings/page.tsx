@@ -200,7 +200,7 @@ function Cell({
           <b className="block text-[16px] font-[750] text-foreground">{label}</b>
           {hint && <small className="block text-[14px] text-foreground-muted mt-0.5">{hint}</small>}
         </Text>
-        {children && <div className="shrink-0">{children}</div>}
+        {children && <div className="min-w-0 max-w-full">{children}</div>}
       </div>
     </li>
   );
@@ -518,7 +518,7 @@ export default function SettingsPage() {
         {/* Section nav */}
         <nav
           aria-label="Settings sections"
-          className="rounded-[22px] border border-border bg-surface p-3 shadow-xs lg:sticky lg:top-24"
+          className="rounded-[22px] border border-border bg-surface p-3 shadow-xs lg:sticky lg:top-0 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto no-scrollbar"
         >
           <button
             type="button"
@@ -776,10 +776,10 @@ export default function SettingsPage() {
                 onClick={handleExportData}
                 disabled={exportStatus === "working"}
               />
-              <Cell hue="indigo" icon={ICONS.doc} label="PDF report" hint={repStatus ?? "Totals, spending by category and every transaction"}>
-                <span className="flex flex-wrap items-center justify-end gap-1.5">
-                  <input type="date" value={repFrom} max={repTo} onChange={(e) => setRepFrom(e.target.value)} aria-label="From" className={`${inputCls} !h-9 !min-h-0 w-[150px] !text-[14px]`} />
-                  <input type="date" value={repTo} min={repFrom} onChange={(e) => setRepTo(e.target.value)} aria-label="To" className={`${inputCls} !h-9 !min-h-0 w-[150px] !text-[14px]`} />
+              <Cell hue="indigo" icon={ICONS.doc} label="PDF report" hint={repStatus ?? "Totals, spending by category and every transaction"} block>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <input type="date" value={repFrom} max={repTo} onChange={(e) => setRepFrom(e.target.value)} aria-label="From" className={`${inputCls} !h-9 !min-h-0 min-w-0 flex-1 basis-[140px] !text-[14px]`} />
+                  <input type="date" value={repTo} min={repFrom} onChange={(e) => setRepTo(e.target.value)} aria-label="To" className={`${inputCls} !h-9 !min-h-0 min-w-0 flex-1 basis-[140px] !text-[14px]`} />
                   <button
                     type="button"
                     onClick={() => void handlePdfReport()}

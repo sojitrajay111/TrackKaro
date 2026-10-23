@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import Image from "next/image";
 import { Modal } from "@/components/ui/modal";
+import { Illustration, type SceneName } from "@/components/ui/illustration";
 
 /**
  * First-run welcome tour (the app's onboarding + guided tour, on the web). Shows once per
@@ -14,27 +14,27 @@ const STEPS = [
   {
     title: "Welcome to TrackKaro",
     body: "Your spending, ledgers, shared bills and savings in one place — the same account as the phone app, always in sync.",
-    icon: "logo",
+    scene: "person-launching-rocket" as SceneName,
   },
   {
     title: "Add anything with + New",
     body: "Expenses, money in, bills, subscriptions, tasks, khata entries and groups. Press E, I, B, S, T, K or G once the menu is open — or just describe it, speak it, or scan a bill.",
-    icon: "M12 5v14M5 12h14",
+    scene: "person-adding-basket" as SceneName,
   },
   {
     title: "Find it with ⌘K",
     body: "Search transactions, bills, people, groups and products from the box at the top. Ctrl+K works on Windows.",
-    icon: "M11 4.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM16 16l4 4",
+    scene: "person-finding-shortcut" as SceneName,
   },
   {
     title: "Money you lend and split",
     body: "Khata keeps track of who owes whom, with WhatsApp reminders and statements. Split Groups handles trips and flatmates, down to settling up.",
-    icon: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 20a6 6 0 0 1 12 0M16 4.5a3.5 3.5 0 0 1 0 6.5M21 20a6 6 0 0 0-4-5.6",
+    scene: "buddy-pair" as SceneName,
   },
   {
     title: "Spend smarter",
     body: "Budgets warn you before you overspend, Deals checks if a purchase fits your budget, and the AI Assistant answers questions about your money.",
-    icon: "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z",
+    scene: "person-raising-trophy" as SceneName,
   },
 ];
 
@@ -82,14 +82,8 @@ export function WelcomeTour() {
   return (
     <Modal isOpen={open} onClose={close} title={s.title} maxWidth="md">
       <div key={step} className="tk-pop grid justify-items-center gap-4 text-center">
-        <span className="grid h-20 w-20 place-items-center overflow-hidden rounded-[22px] bg-[var(--primary-soft)] text-[var(--primary)]">
-          {s.icon === "logo" ? (
-            <Image src="/logo.png" alt="" width={80} height={80} className="h-full w-full scale-[1.16] object-contain" />
-          ) : (
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d={s.icon} />
-            </svg>
-          )}
+        <span className="grid h-[150px] w-full place-items-center rounded-[20px] bg-[var(--primary-soft)]">
+          <Illustration name={s.scene} height={124} />
         </span>
         <p className="text-[16px] leading-relaxed text-foreground-muted">{s.body}</p>
       </div>

@@ -16,6 +16,7 @@ import {
   useGetGroupsQuery,
 } from "@/store/api/groupsApi";
 import type { ExpenseGroup, GroupExpense } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 type Tab = "activity" | "balances";
 
@@ -368,10 +369,7 @@ export default function GroupDetailPage() {
             </header>
             {activity.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="6.5" />
-                  <path d="m16 16 4 4" />
-                </svg>
+                <Illustration name={group.expenses.length === 0 ? "team-celebrating" : "person-lost-map"} height={104} />
                 <p className="font-bold text-foreground">{group.expenses.length === 0 ? "No expenses yet" : "Nothing matches"}</p>
                 <p className="text-[15px]">{group.expenses.length === 0 ? "Add the first one to start splitting." : "Try a different search or member."}</p>
               </div>

@@ -26,6 +26,7 @@ const SORTS: { value: SortBy; label: string }[] = [
   { value: "newest", label: "Newest first" },
 ];
 import type { Deal } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
@@ -278,6 +279,7 @@ export default function DealsPage() {
 
       {showSaved && visible.length === 0 ? (
         <div className="rounded-[22px] border border-border bg-surface p-12 text-center">
+          <Illustration name={wishlist.list.length ? "person-lost-map" : "person-adding-basket"} height={120} className="mx-auto mb-3" />
           <p className="text-[17px] font-extrabold text-foreground">{wishlist.list.length ? "No saved deals match these filters" : "Nothing saved yet"}</p>
           <p className="mt-1 text-[15px] text-foreground-muted">Tap the heart on any deal to keep it here.</p>
         </div>
@@ -296,7 +298,7 @@ export default function DealsPage() {
         </div>
       ) : !showSaved && (isError || unavailable || deals.length === 0) ? (
         <div className="space-y-3 rounded-[22px] border border-border bg-surface p-12 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[16px] bg-[var(--primary-soft)] text-2xl">🏷️</div>
+          <Illustration name={isError ? "person-no-signal" : "person-searching-torch"} height={120} className="mx-auto" />
           <h3 className="text-[17px] font-extrabold text-foreground">{isError ? "Couldn’t reach the deal service" : "No live deals found"}</h3>
           <p className="mx-auto max-w-md text-[15px] text-foreground-muted">
             {isError

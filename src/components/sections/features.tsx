@@ -1,4 +1,5 @@
 import { SectionHeading } from "@/components/section-heading";
+import { Illustration, type SceneName } from "@/components/ui/illustration";
 
 type Feature = {
   title: string;
@@ -9,6 +10,7 @@ type FeatureGroup = {
   id: string;
   label: string;
   summary: string;
+  scene: SceneName;
   features: Feature[];
 };
 
@@ -16,6 +18,7 @@ const GROUPS: FeatureGroup[] = [
   {
     id: "track",
     label: "Track",
+    scene: "person-invoice",
     summary: "Capture every rupee without spreadsheets.",
     features: [
       {
@@ -36,6 +39,7 @@ const GROUPS: FeatureGroup[] = [
   {
     id: "split",
     label: "Split & settle",
+    scene: "buddy-pair",
     summary: "Digital bahi khata and trips with friends.",
     features: [
       {
@@ -55,6 +59,7 @@ const GROUPS: FeatureGroup[] = [
   {
     id: "save",
     label: "Save & plan",
+    scene: "person-raising-trophy",
     summary: "Deals, conscience, and bills in one place.",
     features: [
       {
@@ -95,6 +100,7 @@ export function Features() {
                     {group.summary}
                   </h3>
                 </div>
+                <Illustration name={group.scene} height={110} className="hidden md:inline-block" />
               </div>
 
               <ul className="mt-6 grid gap-4 md:grid-cols-3">

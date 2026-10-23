@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StoreProvider } from "@/store/provider";
@@ -46,11 +47,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Geist+Mono:wght@400..700&display=swap"
           rel="stylesheet"
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',d);}catch(e){}})();`,
-          }}
-        />
+        {/* Sets light/dark before first paint (no theme flash). next/script instead of a raw
+            <script>, which React 19 warns about inside components. */}
+        <Script id="tk-theme-init" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',d);}catch(e){}})();`}
+        </Script>
       </head>
       <body className={`${manrope.className} flex min-h-full flex-col antialiased`}>
         <ThemeProvider>

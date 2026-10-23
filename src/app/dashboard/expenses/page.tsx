@@ -18,6 +18,7 @@ import {
 import { useGetBudgetsQuery } from "@/store/api/budgetsApi";
 import { BudgetLimitModal } from "@/components/expenses/budget-limit-modal";
 import type { CategoryName, PaymentMethod, Transaction, TransactionScope } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 type SpendingTab = "activity" | "budgets" | "analytics";
 
@@ -544,10 +545,7 @@ export default function ExpensesPage() {
               </div>
             ) : filteredTransactions.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="6.5" />
-                  <path d="m16 16 4 4" />
-                </svg>
+                <Illustration name={hasFilters ? "person-lost-map" : "person-empty-basket"} height={110} />
                 <p className="font-bold text-foreground">{hasFilters ? "No payments match" : "No payments yet"}</p>
                 <p className="text-[15px]">
                   {hasFilters ? "Try a different search, or clear the filters." : `Nothing recorded in ${periodLabel}.`}

@@ -13,6 +13,7 @@ import { useGetRemindersQuery, useUndoReminderPaymentMutation, useUpdateReminder
 import { paidRows, upcomingRepeats } from "@/lib/reminders";
 import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import type { BillReminder, PlannerTask, Subscription } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 type Kind = "spend" | "task" | "bill" | "sub";
 type Filter = "all" | Kind;
@@ -514,10 +515,7 @@ export default function CalendarPage() {
 
           {dayEvents.length === 0 ? (
             <div className="my-3 flex flex-col items-center gap-1.5 rounded-[16px] bg-[var(--surface-2)] px-4 py-8 text-center">
-              <svg className="text-foreground-muted" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3.5" y="5" width="17" height="15.5" rx="3.5" />
-                <path d="M3.5 10h17M8 3v4M16 3v4" />
-              </svg>
+              <Illustration name="person-checking-wristwatch" height={92} />
               <p className="font-bold text-foreground">Nothing planned</p>
               <p className="text-[14px] text-foreground-muted">Add a payment, bill, renewal or task for this day.</p>
             </div>

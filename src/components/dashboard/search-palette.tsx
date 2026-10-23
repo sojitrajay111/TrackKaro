@@ -9,6 +9,7 @@ import { useGetRemindersQuery } from "@/store/api/remindersApi";
 import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import { useGetKhataEntriesQuery } from "@/store/api/khataApi";
 import { useGetGroupsQuery } from "@/store/api/groupsApi";
+import { Illustration } from "@/components/ui/illustration";
 
 const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
@@ -187,7 +188,12 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
               </div>
             );
           })}
-          {q.trim() && hits.length <= 1 && <p className="px-3 py-6 text-center text-[14px] text-foreground-muted">Nothing in your records matches “{q.trim()}”.</p>}
+          {q.trim() && hits.length <= 1 && (
+            <div className="flex flex-col items-center gap-2 px-3 py-5 text-center">
+              <Illustration name="person-lost-map" height={76} />
+              <p className="text-[14px] text-foreground-muted">Nothing in your records matches “{q.trim()}”.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>,

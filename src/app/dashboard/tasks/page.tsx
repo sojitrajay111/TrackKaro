@@ -9,6 +9,7 @@ import { addDays, dueLabel } from "@/lib/finance";
 import { todayKey } from "@/lib/form";
 import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
 import type { PlannerTask } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 type View = "todo" | "done" | "all";
 
@@ -110,6 +111,7 @@ export default function TasksPage() {
         <Skeleton className="h-64 rounded-[22px]" />
       ) : groups.length === 0 ? (
         <div className="tk-pop rounded-[22px] border border-border bg-surface p-12 text-center shadow-xs">
+          <Illustration name={view === "done" ? "person-empty-desk" : "person-completing-checklist"} height={120} className="mx-auto mb-3" />
           <p className="text-[17px] font-extrabold text-foreground">{view === "done" ? "Nothing finished yet" : "Nothing to do"}</p>
           <p className="mt-1 text-[15px] text-foreground-muted">Add a task to plan payments, renewals or anything else.</p>
         </div>

@@ -25,6 +25,7 @@ import {
   useDeleteGroupMutation,
 } from "@/store/api/groupsApi";
 import type { ExpenseGroup, KhataEntry, KhataType } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 type KhataSubTab = "personal" | "groups";
 type KhataFilter = "all" | "gave" | "took" | "settled";
@@ -537,10 +538,7 @@ export default function KhataPage() {
               </div>
             ) : filteredCustomers.length === 0 ? (
               <div className="flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="9" cy="8.5" r="3.5" />
-                  <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c1.8.6 3 2.2 3.5 4.7" />
-                </svg>
+                <Illustration name={searchQuery || filter !== "all" ? "person-lost-map" : "person-receiving-money"} height={110} />
                 <p className="font-bold text-foreground">{searchQuery || filter !== "all" ? "No one matches" : "No khata entries yet"}</p>
                 <p className="text-[15px]">
                   {searchQuery || filter !== "all"
@@ -691,10 +689,7 @@ export default function KhataPage() {
             </div>
           ) : expenseGroups.length === 0 ? (
             <section className={`${card} flex flex-col items-center gap-1.5 px-4 py-9 text-center text-foreground-muted`}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="9" cy="8.5" r="3.5" />
-                <path d="M3 19.5c.6-3.2 3-5 6-5s5.4 1.8 6 5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c1.8.6 3 2.2 3.5 4.7" />
-              </svg>
+              <Illustration name="buddy-pair" height={104} />
               <p className="font-bold text-foreground">No shared groups yet</p>
               <p className="text-[15px]">Create a group for your flat, a trip or office lunches, then invite friends with the code.</p>
               <div className="mt-2 flex gap-2">

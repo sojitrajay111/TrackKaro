@@ -18,6 +18,7 @@ import {
 import type { BillReminder } from "@/store/types";
 import { paidRows, type PaidRow } from "@/lib/reminders";
 import { ReminderForm } from "@/components/planner/reminder-form";
+import { Illustration } from "@/components/ui/illustration";
 
 type Tab = "pending" | "urgent" | "paid";
 type Sort = "due" | "amount" | "title";
@@ -176,9 +177,12 @@ export default function RemindersPage() {
         {isLoading ? (
           <Skeleton className="h-48 rounded-[16px]" />
         ) : list.length === 0 ? (
-          <p className="rounded-[16px] bg-[var(--surface-2)] px-4 py-10 text-center text-[15px] text-foreground-muted">
-            {tab === "paid" ? "No paid bills yet." : tab === "urgent" ? "Nothing urgent. 🎉" : "No unpaid bills. Add one to get reminded before it's due."}
-          </p>
+          <div className="flex flex-col items-center gap-3 rounded-[16px] bg-[var(--surface-2)] px-4 py-8 text-center">
+            <Illustration name={tab === "paid" ? "person-invoice" : tab === "urgent" ? "person-celebrating-confetti" : "person-paid-receipt"} height={110} />
+            <p className="text-[15px] text-foreground-muted">
+              {tab === "paid" ? "No paid bills yet." : tab === "urgent" ? "Nothing urgent." : "No unpaid bills. Add one to get reminded before it's due."}
+            </p>
+          </div>
         ) : (
           <ul key={tab}>
             {list.map((r, i) => {

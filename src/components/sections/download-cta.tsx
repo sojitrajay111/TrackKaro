@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Illustration } from "@/components/ui/illustration";
 import { SITE } from "@/lib/site";
 
 function StoreLink({
@@ -76,6 +77,7 @@ export function DownloadCta() {
         />
 
         <div className="relative">
+          <Illustration name="team-celebrating" height={120} color="rgba(255,255,255,0.92)" className="mx-auto mb-4" />
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-soft">Launch</p>
           <h2 className="mt-2 text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-tight">
             {SITE.isPlayStoreLive || SITE.isAppStoreLive ? "Get TrackKaro" : "Coming soon to your phone"}

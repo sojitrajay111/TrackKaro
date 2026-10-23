@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Illustration } from "@/components/ui/illustration";
 import { SITE } from "@/lib/site";
 import { useAppSelector } from "@/store";
 
@@ -62,6 +63,7 @@ export function Hero() {
             className="absolute -inset-6 rounded-[2rem] bg-primary/10 blur-2xl"
             aria-hidden
           />
+          <Illustration name="person-receiving-money" height={150} className="absolute -bottom-6 -left-28 z-10 hidden lg:inline-block" />
           <div className="relative rounded-[2rem] border border-border bg-surface p-3 shadow-[0_24px_64px_-24px_rgba(15,23,42,0.18)]">
             <div className="overflow-hidden rounded-[1.35rem] bg-background">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">

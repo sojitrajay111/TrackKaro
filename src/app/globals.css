@@ -989,6 +989,18 @@ body {
 .tk-cal-agenda { animation: tkRise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes tkCalNext { from { opacity: 0; transform: translateX(28px); } }
 @keyframes tkCalPrev { from { opacity: 0; transform: translateX(-28px); } }
+/* Dashboard content ends 16px above the window bottom, level with the sidebar (my-4): the
+   main area supplies that gap, so each page's own bottom padding is dropped. */
+.tk-main > * { padding-bottom: 0; }
+
+/* Illustrations (Koboyo scenes): rise in, then a slow idle float. */
+.tk-illus--float {
+  animation: tkIllusIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both, tkIllusFloat 5s 0.6s ease-in-out infinite;
+}
+@keyframes tkIllusIn { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
+@keyframes tkIllusFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { .tk-illus--float { animation: none; } }
+
 /* Notifications popover: drops from the bell; rows rise in. */
 .tk-notif { transform-origin: top right; animation: tkNotifIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .tk-notif__row { animation: tkNewItem 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }

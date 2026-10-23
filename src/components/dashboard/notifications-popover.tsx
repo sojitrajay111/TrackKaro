@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Illustration } from "@/components/ui/illustration";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -167,11 +168,7 @@ export function NotificationsPopover({ isOpen, onClose }: { isOpen: boolean; onC
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-4 py-10 text-center">
-            <span className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-[14px] bg-[var(--primary-soft)] text-[var(--primary)]" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m5 12.5 4.5 4.5L19 7.5" />
-              </svg>
-            </span>
+            <Illustration name={activeFilter === "all" ? "person-celebrating-confetti" : "person-lost-map"} height={92} className="mx-auto mb-2" />
             <p className="text-[15px] font-extrabold text-foreground">All caught up</p>
             <p className="mt-0.5 text-[14px] text-foreground-muted">{activeFilter === "all" ? "No notifications yet." : "Nothing here for this filter."}</p>
           </div>

@@ -79,6 +79,17 @@ export function CashBridgeChart({
   const endBalance = visibleMonths[visibleMonths.length - 1]?.close || 0;
   const totalChange = endBalance - startBalance;
 
+  // Tile/tooltip money: sign before the symbol ("−₹840"), whole rupees on screen (paise only in
+  // the hover title), Indian grouping. `signed` adds "+" for gains.
+  const money = (val: number, exact = false, signed = false) => {
+    const abs = Math.abs(val);
+    const num = exact
+      ? abs.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+      : Math.round(abs).toLocaleString("en-IN");
+    const sign = val < 0 ? "−" : signed && val > 0 ? "+" : "";
+    return `${sign}${currencySymbol}${num}`;
+  };
+
   const formatY = (val: number) => {
     const sign = val < 0 ? "−" : "";
     const abs = Math.abs(val);
@@ -153,42 +164,40 @@ export function CashBridgeChart({
       </div>
 
       {/* 3 Summary Blocks (`dl.ov-sum`) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
+      {/* Stack when the card itself is narrow; figure size follows each tile's width. */}
+      <div className="@container">
+      <div className="grid grid-cols-1 gap-3.5 @[34rem]:grid-cols-3">
+        <div className="@container min-w-0 px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
           <div className="text-[14px] font-bold text-foreground-muted">
             Cash on {visibleMonths[0]?.month || "Nov"} 1
           </div>
-          <div className="text-[clamp(1.25rem,1.9vw,1.75rem)] font-extrabold text-foreground tracking-[-0.035em] leading-[1.2] mt-1 num">
-            {currencySymbol}
-            {startBalance.toLocaleString("en-IN")}
+          <div className="whitespace-nowrap text-[clamp(1.05rem,10cqw,1.75rem)] font-extrabold tracking-[-0.035em] leading-[1.2] mt-1 num text-foreground" title={money(startBalance, true)}>
+            {money(startBalance)}
           </div>
         </div>
 
-        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
+        <div className="@container min-w-0 px-3.5 py-3 rounded-[16px] bg-[var(--surface-2)] border border-border">
           <div className="text-[14px] font-bold text-foreground-muted">
             {totalChange >= 0 ? "Up over" : "Down over"} {range === "6M" ? "6 months" : "12 months"}
           </div>
           <div
-            className={`text-[clamp(1.25rem,1.9vw,1.75rem)] font-extrabold tracking-[-0.035em] leading-[1.2] mt-1 num ${
-              totalChange >= 0 ? "text-[#1f8366]" : "text-[#e2683f]"
-            }`}
+            className={`whitespace-nowrap text-[clamp(1.05rem,10cqw,1.75rem)] font-extrabold tracking-[-0.035em] leading-[1.2] mt-1 num ${totalChange >= 0 ? "text-[var(--good)]" : "text-[var(--bad)]"}`}
+            title={money(totalChange, true, true)}
           >
-            {totalChange >= 0 ? "+" : "−"}
-            {currencySymbol}
-            {Math.abs(totalChange).toLocaleString("en-IN")}
+            {money(totalChange, false, true)}
           </div>
         </div>
 
-        <div className="px-3.5 py-3 rounded-[16px] bg-[var(--primary-soft)] border border-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
+        <div className="@container min-w-0 px-3.5 py-3 rounded-[16px] bg-[var(--primary-soft)] border border-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
           <div className="text-[14px] font-semibold text-[var(--primary)] flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1f8366] inline-block" />
             Cash today
           </div>
-          <div className="text-[clamp(1.25rem,1.9vw,1.75rem)] font-extrabold text-foreground tracking-[-0.035em] leading-[1.2] mt-1 num">
-            {currencySymbol}
-            {endBalance.toLocaleString("en-IN")}
+          <div className="whitespace-nowrap text-[clamp(1.05rem,10cqw,1.75rem)] font-extrabold tracking-[-0.035em] leading-[1.2] mt-1 num text-foreground" title={money(endBalance, true)}>
+            {money(endBalance)}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Waterfall Chart SVG */}
@@ -337,19 +346,19 @@ export function CashBridgeChart({
         {activeMonth && (
           <div className="mt-2 p-2.5 rounded-xl bg-surface-muted border border-border flex flex-wrap items-center justify-between text-[14px] font-semibold">
             <span className="text-foreground">
-              <strong>{activeMonth.month} {activeMonth.year}</strong>: Opened <strong>{currencySymbol}{activeMonth.open.toLocaleString("en-IN")}</strong>
+              <strong>{activeMonth.month} {activeMonth.year}</strong>: Opened <strong>{money(activeMonth.open)}</strong>
             </span>
             <div className="flex items-center gap-3">
               <span className="text-[#1f8366] flex items-center gap-1">
                 <i className="w-2 h-2 rounded-full bg-[#1f8366] inline-block" />
-                +{currencySymbol}{activeMonth.inflow.toLocaleString("en-IN")} in
+                +{money(activeMonth.inflow)} in
               </span>
               <span className="text-[#e2683f] flex items-center gap-1">
                 <i className="w-2 h-2 rounded-full bg-[#e2683f] inline-block" />
-                −{currencySymbol}{activeMonth.outflow.toLocaleString("en-IN")} out
+                −{money(activeMonth.outflow)} out
               </span>
               <span className="text-foreground border-l border-border pl-3">
-                Closed <strong>{currencySymbol}{activeMonth.close.toLocaleString("en-IN")}</strong>
+                Closed <strong>{money(activeMonth.close)}</strong>
               </span>
             </div>
           </div>

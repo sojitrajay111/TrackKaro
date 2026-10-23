@@ -16,7 +16,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Main Content Area - scrolls independently while sidebar and header remain static */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden transition-all">
           <DashboardHeader />
-          <main className="flex-1 w-full px-4 sm:px-8 pt-2 pb-16 overflow-y-auto relative z-10">
+          <main className="tk-main flex-1 w-full min-w-0 px-4 sm:px-8 pt-2 pb-4 overflow-y-auto overflow-x-hidden relative z-10">
             {children}
           </main>
         </div>

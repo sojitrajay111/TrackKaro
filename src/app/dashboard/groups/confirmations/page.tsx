@@ -8,6 +8,7 @@ import { apiErrorMessage, fmtINR } from "@/lib/form";
 import { shortDate } from "@/lib/finance";
 import { useConfirmGroupExpenseMutation, useGetPendingGroupConfirmationsQuery } from "@/store/api/groupsApi";
 import type { CategoryName, PendingGroupConfirmation } from "@/store/types";
+import { Illustration } from "@/components/ui/illustration";
 
 const CATEGORIES: CategoryName[] = ["Food", "Shopping", "Groceries", "Bills", "Travel", "Fuel", "Entertainment", "Health", "Subscriptions", "Rent", "EMI", "Education", "Other"];
 
@@ -233,11 +234,7 @@ export default function GroupConfirmationsPage() {
         </div>
       ) : shown.length === 0 ? (
         <div className="tk-pop rounded-[22px] border border-border bg-surface px-6 py-14 text-center shadow-xs">
-          <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-[16px] bg-[var(--primary-soft)] text-[var(--primary)]" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path className="tk-cf__check" d="m5 12.5 4.5 4.5L19 7.5" />
-            </svg>
-          </span>
+          <Illustration name="person-celebrating-confetti" height={130} className="mx-auto mb-3" />
           <p className="text-[17px] font-extrabold text-foreground">All caught up</p>
           <p className="mt-1 text-[15px] text-foreground-muted">Nothing waiting. New group bills you&apos;re part of will show up here.</p>
           <Link
