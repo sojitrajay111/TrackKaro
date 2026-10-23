@@ -425,7 +425,12 @@ export default function DashboardOverviewPage() {
                 const barFill = isOver ? "bg-[#e2683f]" : isWarn ? "bg-[#cb9233]" : "bg-[#1f8366]";
 
                 return (
-                  <div key={b.category} className="space-y-2">
+                  <Link
+                    key={b.category}
+                    href={`/dashboard/expenses?category=${encodeURIComponent(b.category)}`}
+                    title={`See ${b.category} payments this month`}
+                    className="-mx-2 block space-y-2 rounded-[12px] px-2 py-1.5 transition hover:bg-[var(--surface-2)]"
+                  >
                     <div className="flex items-center justify-between text-[14px]">
                       <span className="font-extrabold text-foreground">{b.category}</span>
                       <span className={`px-2.5 py-0.5 rounded-full text-[14px] font-bold flex items-center gap-1.5 ${pillBg}`}>
@@ -445,7 +450,7 @@ export default function DashboardOverviewPage() {
                       </span>
                       <span className="font-bold text-foreground">{b.pct}%</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

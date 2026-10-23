@@ -30,6 +30,8 @@ export type GroupBalances = {
   totalGroupSpendMinor: number;
   members: { name: string; netMinor: number }[];
   settlements: { from: string; to: string; amountMinor: number }[];
+  /** true: fewest payments ("Simplify debts" on); false: pairwise debts. */
+  simplified?: boolean;
 };
 
 type UpdateGroupRequest = {
@@ -37,6 +39,7 @@ type UpdateGroupRequest = {
   name?: string;
   category?: ExpenseGroup['category'];
   members?: { name: string; phone?: string }[];
+  simplifyDebts?: boolean;
 };
 
 export const groupsApi = apiSlice.injectEndpoints({
@@ -56,7 +59,12 @@ export const groupsApi = apiSlice.injectEndpoints({
 
     updateGroup: builder.mutation<ExpenseGroup, UpdateGroupRequest>({
       query: ({ groupId, ...body }) => ({ url: `/groups/${groupId}`, method: 'PATCH', body }),
-      invalidatesTags: (_result, _error, { groupId }) => [{ type: 'Groups', id: groupId }, { type: 'Groups', id: 'LIST' }],
+      // Balances depend on the "Simplify debts" setting, so refresh them too.
+      invalidatesTags: (_result, _error, { groupId }) => [
+        { type: 'Groups', id: groupId },
+        { type: 'Groups', id: 'LIST' },
+        { type: 'Groups', id: `${groupId}-balances` },
+      ],
     }),
 
     deleteGroup: builder.mutation<void, string>({

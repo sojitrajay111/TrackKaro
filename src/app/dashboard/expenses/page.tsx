@@ -379,6 +379,16 @@ export default function ExpensesPage() {
     <div className="space-y-6 pb-16">
       {/* From the search palette: /dashboard/expenses?q=… */}
       <OnQueryParam name="q" onValue={setSearchQuery} />
+      {/* From a budget card: /dashboard/expenses?category=Food → this month's Food payments */}
+      <OnQueryParam
+        name="category"
+        onValue={(c) => {
+          if (!CATEGORIES.includes(c as CategoryName)) return;
+          setSelectedCategory(c);
+          setPeriod(thisMonthKey);
+          setActiveTab("activity");
+        }}
+      />
       {/* Header: breadcrumb, title, summary line, actions */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-x-6 gap-y-4">
         <div className="flex flex-col gap-1.5 min-w-0">
@@ -681,8 +691,21 @@ export default function ExpensesPage() {
             {categoryBreakdown.map((item) => {
               const color = item.isOver ? "var(--bad)" : item.percent >= 80 ? "var(--amber)" : (CATEGORY_TINT[item.category] ?? CATEGORY_TINT.Other).dot;
               return (
-                <div key={item.category} className={`${card} space-y-4`}>
-                  <div className="flex items-center justify-between gap-2">
+                <div key={item.category} className={`${card} relative space-y-4 transition hover:border-[var(--line-2)]`}>
+                  {/* Whole card shows this month's payments in the category; "Edit limit" sits above it. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(item.category);
+                      setSelectedType("all");
+                      setPeriod(thisMonthKey);
+                      setActiveTab("activity");
+                    }}
+                    className="absolute inset-0 z-0 rounded-[inherit] focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
+                    aria-label={`See ${item.category} payments`}
+                    title={`See ${item.category} payments`}
+                  />
+                  <div className="pointer-events-none relative flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
                       <CategoryTile name={item.category} size={36} />
                       <div className="min-w-0">
@@ -698,12 +721,12 @@ export default function ExpensesPage() {
                         setEditingCategory(item.category);
                         setShowEditBudgetModal(true);
                       }}
-                      className="inline-flex h-8 shrink-0 items-center rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground hover:bg-surface-muted"
+                      className="pointer-events-auto relative z-10 inline-flex h-8 shrink-0 items-center rounded-[10px] border border-border bg-surface px-[11px] text-[14px] font-bold text-foreground hover:bg-surface-muted"
                     >
                       {item.limit > 0 ? "Edit limit" : "Set limit"}
                     </button>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="pointer-events-none relative space-y-1.5">
                     <div className="flex justify-between text-[14px] font-bold">
                       <span className="text-foreground num">{fmt(item.spent)} spent</span>
                       <span className="num" style={{ color: item.limit > 0 ? color : undefined }}>

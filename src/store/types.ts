@@ -265,6 +265,8 @@ export type ExpenseGroup = {
   members: GroupMember[];
   expenses: GroupExpense[];
   createdAt: string;
+  /** Splitwise-style "Simplify group debts" (on unless switched off). */
+  simplifyDebts?: boolean;
 };
 
 export type DealSearchStatus = 'success' | 'unavailable' | 'error';

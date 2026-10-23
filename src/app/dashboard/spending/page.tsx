@@ -541,12 +541,12 @@ export default function SpendingInsightsPage() {
                         key={b.category}
                         className="relative grid grid-cols-[64px_minmax(0,1fr)] sm:grid-cols-[80px_minmax(0,1fr)] items-center gap-x-4 gap-y-1 rounded-[18px] border border-border bg-surface p-3.5 transition hover:border-[var(--line-2)]"
                       >
-                        {/* Whole card opens the editor; the controls below sit above this layer. */}
-                        <button
-                          type="button"
-                          onClick={() => setLimitEdit({ open: true, category: b.category, limit: b.limit, spent: b.spent })}
+                        {/* Whole card opens this month's payments in the category; the controls below sit above this layer. */}
+                        <Link
+                          href={`/dashboard/expenses?category=${encodeURIComponent(b.category)}`}
                           className="absolute inset-0 z-0 rounded-[18px] focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
-                          aria-label={`Edit ${b.category} budget`}
+                          aria-label={`See ${b.category} payments this month`}
+                          title={`See ${b.category} payments`}
                         />
                         <span className="pointer-events-none relative h-16 w-16 sm:h-20 sm:w-20">
                           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90 overflow-visible" aria-hidden="true">

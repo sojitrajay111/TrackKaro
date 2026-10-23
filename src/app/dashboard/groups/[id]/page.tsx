@@ -13,6 +13,7 @@ import {
   useDeleteGroupExpenseMutation,
   useDeleteGroupMutation,
   useGetGroupBalancesQuery,
+  useUpdateGroupMutation,
   useGetGroupsQuery,
 } from "@/store/api/groupsApi";
 import type { ExpenseGroup, GroupExpense } from "@/store/types";
@@ -88,6 +89,9 @@ export default function GroupDetailPage() {
     () => balancesRaw?.members.map((m) => ({ name: m.name, net: m.netMinor / 100 })) ?? [],
     [balancesRaw]
   );
+  // "Simplify debts" (on by default): what the backend used for these balances.
+  const simplified = balancesRaw?.simplified ?? group?.simplifyDebts !== false;
+  const [updateGroup, { isLoading: savingSimplify }] = useUpdateGroupMutation();
   const settlements = useMemo(
     () => balancesRaw?.settlements.map((s) => ({ from: s.from, to: s.to, amount: s.amountMinor / 100 })) ?? [],
     [balancesRaw]
@@ -479,8 +483,29 @@ export default function GroupDetailPage() {
             )}
           </section>
           <section className={card}>
-            <h2 className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">Suggested payments</h2>
-            <p className="mt-0.5 mb-3 text-[14px] font-medium text-foreground-muted">The fewest payments that settle everyone</p>
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-[17px] font-extrabold tracking-[-0.015em] text-foreground">Suggested payments</h2>
+                <p className="mt-0.5 text-[14px] font-medium text-foreground-muted">
+                  {simplified ? "The fewest payments that settle everyone" : "Each person pays back whoever paid for them, pair by pair"}
+                </p>
+              </div>
+              {/* Splitwise's "Simplify group debts". Same totals either way; only the payments differ. */}
+              <label
+                className={`flex shrink-0 items-center gap-2 text-[14px] font-bold text-foreground ${group.isOwner ? "cursor-pointer" : "opacity-70"}`}
+                title={group.isOwner ? "Fewest payments vs. pairwise debts" : "Only the group owner can change this"}
+              >
+                Simplify debts
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="switch"
+                  checked={simplified}
+                  disabled={!group.isOwner || savingSimplify}
+                  onChange={(e) => void updateGroup({ groupId: group.id, simplifyDebts: e.target.checked })}
+                />
+              </label>
+            </div>
             {settlements.length === 0 ? (
               <p className="py-8 text-center text-[15px] text-foreground-muted">Everyone is settled up.</p>
             ) : (
