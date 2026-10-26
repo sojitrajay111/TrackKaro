@@ -29,7 +29,7 @@ export const NAV_LINKS = [
   { href: "/#features", label: "Features" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#comparison", label: "Compare" },
-  { href: "/#download", label: "Launch" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 export const LEGAL_LINKS = [

@@ -42,6 +42,11 @@ const getSystemSnapshot = (): "light" | "dark" => {
 
 const getServerSnapshot = (): "light" | "dark" => "light";
 
+/** The server reads this to set data-theme on <html> before first paint (no inline script). */
+function writeThemeCookie(theme: Theme) {
+  document.cookie = `${STORAGE_KEY}=${theme}; path=/; max-age=31536000; samesite=lax`;
+}
+
 function getStoredTheme(): Theme {
   if (typeof window === "undefined") return "system";
   try {
@@ -87,6 +92,7 @@ export function ThemeProvider({
         try {
           localStorage.setItem(storageKey, newTheme);
         } catch {}
+        writeThemeCookie(newTheme);
       };
 
       const source = origin ?? (document.activeElement !== document.body ? document.activeElement : null);
@@ -117,6 +123,11 @@ export function ThemeProvider({
   useEffect(() => {
     document.documentElement.setAttribute(attribute, resolvedTheme);
   }, [attribute, resolvedTheme]);
+
+  // Keep the cookie in step (also covers users whose choice predates the cookie).
+  useEffect(() => {
+    writeThemeCookie(theme);
+  }, [theme]);
 
   // Synchronize across multiple browser tabs
   useEffect(() => {

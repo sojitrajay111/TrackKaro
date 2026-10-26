@@ -1,66 +1,34 @@
 import { SectionHeading } from "@/components/section-heading";
+import { Reveal } from "@/components/marketing/reveal";
 import { Illustration, type SceneName } from "@/components/ui/illustration";
 
-const STEPS = [
-  {
-    step: "01",
-    scene: "person-launching-rocket" as SceneName,
-    title: "Install & set your language",
-    body: "When we launch on Play and the App Store, pick Hindi, English, or Gujarati and set a monthly budget that feels realistic.",
-  },
-  {
-    step: "02",
-    scene: "person-paid-receipt" as SceneName,
-    title: "Log expenses your way",
-    body: "Tap to add, scan a bill, or speak an amount. Khata and group splits stay in sync as you go.",
-  },
-  {
-    step: "03",
-    scene: "person-searching-torch" as SceneName,
-    title: "Check deals before you buy",
-    body: "Browse live deals, run the AI conscience check, and decide with numbers — not FOMO.",
-  },
-  {
-    step: "04",
-    scene: "group-celebrating-win" as SceneName,
-    title: "Settle & stay on track",
-    body: "Use reminders for bills, nudge friends on group balances, and review trends at month end.",
-  },
-] as const;
+const STEPS: { title: string; body: string; scene: SceneName }[] = [
+  { title: "Sign up in a minute", body: "Pick English, Hindi or Gujarati and set a monthly budget that feels realistic.", scene: "person-launching-rocket" },
+  { title: "Log money your way", body: "Tap “+ New”, describe it in a sentence, speak it, or scan a bill.", scene: "person-paid-receipt" },
+  { title: "Check before you buy", body: "Search a product and see if it fits this month's budget.", scene: "person-searching-torch" },
+  { title: "Settle and stay on track", body: "Collect from friends, pay bills on time, and review the month.", scene: "group-celebrating-win" },
+];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="scroll-mt-24 py-20 md:py-24">
+    <section id="how-it-works" className="scroll-mt-24 border-y border-border bg-[var(--surface-2)] py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <SectionHeading
-          eyebrow="How it works"
-          title="From install to insight in four steps"
-          description="No setup marathon — start logging on day one and refine as you go."
-        />
+        <SectionHeading eyebrow="How it works" title="From sign-up to sorted in four steps" description="Start logging on day one; it gets smarter as you go." />
 
-        <ol className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((item, index) => (
-            <li
-              key={item.step}
-              className="relative flex flex-col rounded-2xl border border-border bg-surface p-6"
-            >
-              <span className="mb-4 grid h-[120px] place-items-center rounded-xl bg-[var(--primary-soft)]">
-                <Illustration name={item.scene} height={96} />
+        <Reveal as="ol" className="relative mt-12 grid gap-x-4 gap-y-8 md:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="tk-reveal-item relative flex flex-col items-center rounded-[22px] border border-border bg-surface p-6 pt-8 text-center shadow-xs">
+              <span className="absolute -top-4 left-1/2 grid h-8 min-w-8 -translate-x-1/2 place-items-center rounded-full bg-[var(--primary)] px-2 text-[14px] font-extrabold text-[var(--on-primary)] shadow-xs num">
+                {i + 1}
               </span>
-              <span className="text-[11px] font-bold tabular-nums tracking-widest text-primary">
-                {item.step}
+              <span className="grid h-[120px] w-full place-items-center rounded-[18px] bg-[var(--primary-soft)]">
+                <Illustration name={s.scene} height={96} float={false} />
               </span>
-              <h3 className="mt-3 text-base font-bold leading-snug text-foreground">{item.title}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-foreground-sub">{item.body}</p>
-              {index < STEPS.length - 1 ? (
-                <span
-                  className="pointer-events-none absolute -right-2 top-1/2 hidden h-px w-4 bg-border lg:block"
-                  aria-hidden
-                />
-              ) : null}
+              <h3 className="mt-5 text-[18px] font-extrabold tracking-[-0.02em] text-foreground">{s.title}</h3>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-foreground-muted">{s.body}</p>
             </li>
           ))}
-        </ol>
+        </Reveal>
       </div>
     </section>
   );

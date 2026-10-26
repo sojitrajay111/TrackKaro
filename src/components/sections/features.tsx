@@ -1,124 +1,106 @@
 import { SectionHeading } from "@/components/section-heading";
+import { Reveal } from "@/components/marketing/reveal";
 import { Illustration, type SceneName } from "@/components/ui/illustration";
 
 type Feature = {
   title: string;
-  description: string;
-};
-
-type FeatureGroup = {
-  id: string;
-  label: string;
-  summary: string;
+  body: string;
+  points: string[];
   scene: SceneName;
-  features: Feature[];
+  tint: string;
+  wide?: boolean;
 };
 
-const GROUPS: FeatureGroup[] = [
+/** Only features that exist in the app and on the web today. */
+const FEATURES: Feature[] = [
   {
-    id: "track",
-    label: "Track",
+    title: "Spending & budgets",
+    body: "Log a payment in seconds — type it, say it, or scan the bill — and see exactly where your money goes.",
+    points: ["Monthly limits per category with early warnings", "Daily and category charts", "PDF and CSV reports"],
     scene: "person-invoice",
-    summary: "Capture every rupee without spreadsheets.",
-    features: [
-      {
-        title: "Smart expense log",
-        description:
-          "Quick entries, categories, and monthly views so you always know where money went.",
-      },
-      {
-        title: "Scan bills (OCR)",
-        description: "Photograph receipts and let the app pull amounts and merchants for you.",
-      },
-      {
-        title: "Voice logging",
-        description: "Say “₹250 chai” in Hindi, English, or Gujarati — we structure it for you.",
-      },
-    ],
+    tint: "var(--primary)",
+    wide: true,
   },
   {
-    id: "split",
-    label: "Split & settle",
+    title: "Digital khata",
+    body: "A running bahi khata for friends and shops: who owes whom, with due dates.",
+    points: ["WhatsApp reminders and statements", "Settle everything in one tap"],
+    scene: "person-receiving-money",
+    tint: "var(--good)",
+  },
+  {
+    title: "Split with friends",
+    body: "Trips, flatmates, dinners — split equally, by exact amount, percentage or shares.",
+    points: ["Simplify debts to the fewest payments", "Scan a bill and split it"],
     scene: "buddy-pair",
-    summary: "Digital bahi khata and trips with friends.",
-    features: [
-      {
-        title: "Digital khata",
-        description: "Running ledger with friends and shops — who owes whom, at a glance.",
-      },
-      {
-        title: "Group expenses",
-        description: "Split trips, rent, and dinners fairly with shared balances and reminders.",
-      },
-      {
-        title: "UPI-ready flows",
-        description: "Settle up with familiar payment patterns built for how India pays.",
-      },
-    ],
+    tint: "var(--sky)",
   },
   {
-    id: "save",
-    label: "Save & plan",
-    scene: "person-raising-trophy",
-    summary: "Deals, conscience, and bills in one place.",
-    features: [
-      {
-        title: "Amazon India deals",
-        description: "Live deal feed with breakdowns so hype doesn’t beat math.",
-      },
-      {
-        title: "AI purchase conscience",
-        description: "Ask if a buy fits your budget and habits before you tap pay.",
-      },
-      {
-        title: "Bills & subscriptions",
-        description: "Reminders for rent, EMI, and renewals so nothing slips through.",
-      },
-    ],
+    title: "Bills, renewals & tasks",
+    body: "Rent, EMIs, utilities and subscriptions on one calendar, with reminders before they're due.",
+    points: ["Monthly bills roll forward when paid", "Spot subscriptions you no longer use"],
+    scene: "person-paid-receipt",
+    tint: "var(--amber)",
+  },
+  {
+    title: "Deals that fit your budget",
+    body: "Live prices from Amazon India, checked against your own budget before you buy.",
+    points: ["“Safe to buy” or “wait” on every deal", "Price-drop alerts"],
+    scene: "person-searching-torch",
+    tint: "var(--coral)",
+  },
+  {
+    title: "Ask TrackKaro AI",
+    body: "“Can I afford a ₹20,000 phone this month?” Answers from your own numbers, in plain words.",
+    points: ["Type or speak in English, Hindi or Gujarati"],
+    scene: "person-finding-answer",
+    tint: "var(--violet)",
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="scroll-mt-24 border-b border-border bg-surface/40 py-20 md:py-24">
+    <section id="features" className="scroll-mt-24 py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <SectionHeading
           eyebrow="Features"
-          title="Everything you need — nothing you don’t"
-          description="Three pillars instead of a wall of icons: track daily money, split with people, and plan smarter purchases."
+          title="Everything your money needs, in one place"
+          description="No more juggling a tracker, a khata book, a split app and a reminder app."
         />
 
-        <div className="mt-14 space-y-16">
-          {GROUPS.map((group, groupIndex) => (
-            <div key={group.id}>
-              <div className="flex flex-col gap-2 border-l-2 border-primary pl-4 md:flex-row md:items-end md:justify-between md:pl-5">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-primary">
-                    {String(groupIndex + 1).padStart(2, "0")} · {group.label}
-                  </p>
-                  <h3 className="mt-1 text-xl font-bold text-foreground md:text-[1.35rem]">
-                    {group.summary}
-                  </h3>
+        <Reveal as="ul" className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => (
+            <li
+              key={f.title}
+              className={`tk-reveal-item group relative flex flex-col overflow-hidden rounded-[22px] border border-border bg-surface p-6 shadow-xs transition hover:-translate-y-1 hover:shadow-[var(--shadow-pop)] ${
+                f.wide ? "md:col-span-2" : ""
+              }`}
+            >
+              <div className={`flex gap-5 ${f.wide ? "flex-col sm:flex-row sm:items-center" : "flex-col"}`}>
+                <span
+                  className="grid h-[120px] shrink-0 place-items-center rounded-[18px]"
+                  style={{ background: `color-mix(in srgb, ${f.tint} 12%, var(--surface-2))`, minWidth: f.wide ? 200 : undefined }}
+                >
+                  <Illustration name={f.scene} height={100} color={f.tint} float={false} className="transition duration-500 group-hover:scale-105" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-foreground">{f.title}</h3>
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-foreground-muted">{f.body}</p>
+                  <ul className="mt-3 grid gap-1.5">
+                    {f.points.map((p) => (
+                      <li key={p} className="flex items-start gap-2 text-[14px] font-semibold text-foreground">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={f.tint} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0" aria-hidden>
+                          <path d="m5 12.5 4.5 4.5L19 7.5" />
+                        </svg>
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <Illustration name={group.scene} height={110} className="hidden md:inline-block" />
               </div>
-
-              <ul className="mt-6 grid gap-4 md:grid-cols-3">
-                {group.features.map((feature) => (
-                  <li
-                    key={feature.title}
-                    className="group rounded-2xl border border-border bg-background p-5 transition-colors hover:border-primary/30 hover:bg-surface"
-                  >
-                    <h4 className="text-[15px] font-bold text-foreground">{feature.title}</h4>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground-sub">
-                      {feature.description}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </li>
           ))}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

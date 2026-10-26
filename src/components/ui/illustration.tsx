@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useAppSelector } from "@/store";
+import { useMounted } from "@/lib/use-mounted";
 
 /**
  * Hand-drawn scenes from Koboyo Icons (koboyo.com/icons — free for commercial use, no
@@ -94,7 +95,10 @@ export function Illustration({
   /** Set only when the drawing adds meaning; otherwise it's decorative. */
   label?: string;
 }) {
-  const gender = useAppSelector((s) => s.auth.user?.gender);
+  // Gender comes from the signed-in user (browser storage): apply it only after hydration.
+  const mounted = useMounted();
+  const storedGender = useAppSelector((s) => s.auth.user?.gender);
+  const gender = mounted ? storedGender : undefined;
   const variant = BY_GENDER[name];
   const file: FileName = variant && (gender === "male" || gender === "female") ? variant[gender] : name;
   const [w, h] = SIZES[file];

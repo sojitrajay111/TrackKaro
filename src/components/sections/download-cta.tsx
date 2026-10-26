@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Illustration } from "@/components/ui/illustration";
+import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { Reveal } from "@/components/marketing/reveal";
 
 function StoreLink({
   href,
@@ -18,12 +20,12 @@ function StoreLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-[3.25rem] min-w-[11rem] items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 text-white transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+      className="inline-flex h-12 min-w-[10.5rem] items-center gap-3 rounded-[14px] border border-white/20 bg-white/10 px-4 text-white transition hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
       aria-label={`${bottom} — opens in a new tab`}
     >
       {icon}
       <span className="text-left leading-tight">
-        <span className="block text-[10px] font-medium uppercase tracking-wide text-white/65">{top}</span>
+        <span className="block text-[11px] font-semibold uppercase tracking-wide text-white/65">{top}</span>
         <span className="block text-sm font-bold">{bottom}</span>
       </span>
     </a>
@@ -39,12 +41,12 @@ function StoreComingSoon({
 }) {
   return (
     <div
-      className="inline-flex h-[3.25rem] min-w-[11rem] cursor-default items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 text-white/90"
+      className="inline-flex h-12 min-w-[10.5rem] cursor-default items-center gap-3 rounded-[14px] border border-white/15 bg-white/5 px-4 text-white/90"
       aria-label={`${store} — coming soon`}
     >
       {icon}
       <span className="text-left leading-tight">
-        <span className="block text-[10px] font-medium uppercase tracking-wide text-white/50">{store}</span>
+        <span className="block text-[11px] font-semibold uppercase tracking-wide text-white/50">{store}</span>
         <span className="block text-sm font-bold text-white/95">Coming soon</span>
       </span>
     </div>
@@ -64,61 +66,69 @@ const appleIcon = (
 );
 
 export function DownloadCta() {
+  const live = SITE.isPlayStoreLive || SITE.isAppStoreLive;
   return (
-    <section id="download" className="scroll-mt-24 px-5 pb-24 pt-4 md:px-8">
-      <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[1.75rem] border border-primary-strong/30 bg-primary-strong px-6 py-14 text-center text-white sm:px-12 sm:py-16">
+    <section id="download" className="scroll-mt-24 py-20 md:py-24">
+      <div className="mx-auto max-w-6xl px-5 md:px-8">
+      <Reveal className="relative overflow-hidden rounded-[28px] bg-[#064e3b] px-6 py-14 text-white shadow-[var(--shadow-pop)] sm:px-12 md:py-16">
         <div
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,223,129,0.35), transparent 70%)",
-          }}
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(60% 80% at 85% 10%, rgba(0,223,129,0.35), transparent 70%), radial-gradient(40% 60% at 0% 100%, rgba(16,185,129,0.25), transparent 70%)" }}
           aria-hidden
         />
-
-        <div className="relative">
-          <Illustration name="team-celebrating" height={120} color="rgba(255,255,255,0.92)" className="mx-auto mb-4" />
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-soft">Launch</p>
-          <h2 className="mt-2 text-[clamp(1.5rem,3.5vw,2.25rem)] font-extrabold tracking-tight">
-            {SITE.isPlayStoreLive || SITE.isAppStoreLive ? "Get TrackKaro" : "Coming soon to your phone"}
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-white/80">
-            {SITE.isPlayStoreLive || SITE.isAppStoreLive
-              ? "Expenses, khata, groups, and deals — in Hindi, English, or Gujarati."
-              : "We’re putting the finishing touches on Android and iOS. Google Play and the App Store listings aren’t live yet."}
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {SITE.isPlayStoreLive ? (
-              <StoreLink href={SITE.playStoreUrl} icon={playIcon} top="Get it on" bottom="Google Play" />
-            ) : (
-              <StoreComingSoon icon={playIcon} store="Google Play" />
-            )}
-            {SITE.isAppStoreLive ? (
-              <StoreLink href={SITE.appStoreUrl} icon={appleIcon} top="Download on the" bottom="App Store" />
-            ) : (
-              <StoreComingSoon icon={appleIcon} store="App Store" />
-            )}
+        <div className="relative grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <span className="inline-flex h-8 items-center rounded-full bg-white/10 px-3 text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#a7f3d0]">
+              {live ? "Available now" : "Mobile app · coming soon"}
+            </span>
+            <h2 className="mt-4 text-[clamp(1.9rem,3.8vw,2.75rem)] font-extrabold leading-[1.08] tracking-[-0.035em]">
+              {live ? "Take TrackKaro with you" : "Start on the web today"}
+            </h2>
+            <p className="mt-3 max-w-lg text-[17px] leading-relaxed text-white/80">
+              {live
+                ? "Expenses, khata, groups, bills and deals — in English, Hindi or Gujarati, on your phone and the web."
+                : "The full TrackKaro dashboard works in your browser now. The Android and iOS apps are getting their finishing touches."}
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link
+                href="/auth/signup"
+                className="inline-flex h-12 items-center gap-2 rounded-[14px] bg-white px-6 text-[16px] font-bold text-[#064e3b] shadow-xs transition hover:-translate-y-0.5"
+              >
+                Create free account
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </Link>
+              {SITE.isPlayStoreLive ? (
+                <StoreLink href={SITE.playStoreUrl} icon={playIcon} top="Get it on" bottom="Google Play" />
+              ) : (
+                <StoreComingSoon icon={playIcon} store="Google Play" />
+              )}
+              {SITE.isAppStoreLive ? (
+                <StoreLink href={SITE.appStoreUrl} icon={appleIcon} top="Download on the" bottom="App Store" />
+              ) : (
+                <StoreComingSoon icon={appleIcon} store="App Store" />
+              )}
+            </div>
+            <a
+              href={SITE.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex items-center gap-2 text-[15px] font-bold text-white/85 transition hover:text-white"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+              </svg>
+              Follow {SITE.instagramHandle} for launch news
+            </a>
           </div>
-
-          <p className="mt-6 text-sm font-medium text-white/75">
-            Follow us for launch updates and early access news.
-          </p>
-
-          <a
-            href={SITE.instagramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-pink-300" aria-hidden>
-              <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-            </svg>
-            Instagram {SITE.instagramHandle}
-          </a>
+          <div className="hidden justify-center lg:flex">
+            <Illustration name="team-celebrating" height={210} color="rgba(255,255,255,0.92)" />
+          </div>
         </div>
+      </Reveal>
       </div>
     </section>
   );

@@ -61,12 +61,12 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
+      <div>
+        <h1 className="text-[clamp(1.75rem,3vw,2.125rem)] font-extrabold leading-tight tracking-[-0.04em] text-foreground">
           Welcome back
         </h1>
         <p className="mt-1.5 text-[15px] text-foreground-muted">
-          Enter your credentials to access your TrackKaro account
+          Sign in to pick up where you left off.
         </p>
       </div>
 

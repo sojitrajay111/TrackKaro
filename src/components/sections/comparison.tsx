@@ -1,100 +1,80 @@
 import { SectionHeading } from "@/components/section-heading";
+import { Reveal } from "@/components/marketing/reveal";
 
-type Cell = boolean | string;
+/**
+ * "One app instead of four": which job each kind of app usually covers. Compares app categories,
+ * not named competitors, so every claim here is about TrackKaro itself.
+ */
+type Cell = "yes" | "no" | "some";
+const COLUMNS = ["Expense tracker", "Split app", "Khata app", "Deals app"] as const;
 
-const MATRIX: { feature: string; trackkaro: Cell; splitwise: Cell; khatabook: Cell; other: Cell }[] = [
-  { feature: "Income, expense & cash flow", trackkaro: true, splitwise: false, khatabook: "Partial", other: true },
-  { feature: "Receipt OCR", trackkaro: true, splitwise: false, khatabook: false, other: "Paid" },
-  { feature: "Voice log (EN / HI / GU)", trackkaro: true, splitwise: false, khatabook: false, other: false },
-  { feature: "Digital khata + reminders", trackkaro: true, splitwise: false, khatabook: true, other: false },
-  { feature: "Groups & debt simplify", trackkaro: true, splitwise: true, khatabook: false, other: false },
-  { feature: "UPI settle-up", trackkaro: true, splitwise: false, khatabook: "Partial", other: false },
-  { feature: "Amazon deals & price drops", trackkaro: true, splitwise: false, khatabook: false, other: false },
-  { feature: "AI “should I buy?” check", trackkaro: true, splitwise: false, khatabook: false, other: false },
-  { feature: "Subscriptions audit", trackkaro: true, splitwise: false, khatabook: false, other: "Paid" },
-  { feature: "PDF / CSV export", trackkaro: true, splitwise: "Paid", khatabook: true, other: "Paid" },
-  { feature: "No ads on core finance", trackkaro: true, splitwise: false, khatabook: false, other: false },
+const ROWS: { feature: string; cells: [Cell, Cell, Cell, Cell] }[] = [
+  { feature: "Expenses, income & budgets", cells: ["yes", "no", "some", "no"] },
+  { feature: "Scan bills & voice entry", cells: ["some", "no", "no", "no"] },
+  { feature: "Digital khata with reminders", cells: ["no", "no", "yes", "no"] },
+  { feature: "Group splits & simplify debts", cells: ["no", "yes", "no", "no"] },
+  { feature: "Bills, subscriptions & calendar", cells: ["some", "no", "no", "no"] },
+  { feature: "Live deals & price alerts", cells: ["no", "no", "no", "yes"] },
+  { feature: "“Can I afford it?” budget check", cells: ["no", "no", "no", "no"] },
+  { feature: "Ask in English, Hindi or Gujarati", cells: ["some", "no", "some", "no"] },
 ];
 
-function CellBadge({ value }: { value: Cell }) {
-  if (value === true) {
+function Mark({ v, strong = false }: { v: Cell | "tk"; strong?: boolean }) {
+  if (v === "tk" || v === "yes") {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <polyline points="20 6 9 17 4 12" />
+      <span className={`inline-grid h-7 w-7 place-items-center rounded-full ${strong ? "bg-[var(--primary)] text-[var(--on-primary)]" : "bg-[var(--primary-soft)] text-[var(--primary)]"}`}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-label="Yes">
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
         </svg>
       </span>
     );
   }
-  if (value === false) {
-    return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground/5 text-foreground-sub/60">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </span>
-    );
-  }
+  if (v === "some") return <span className="rounded-full bg-[color-mix(in_srgb,var(--amber)_14%,transparent)] px-2 py-0.5 text-[12px] font-bold text-[var(--warn)]">Some</span>;
   return (
-    <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-      {value}
+    <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[var(--well)] text-foreground-muted">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-label="No">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
     </span>
   );
 }
 
 export function Comparison() {
   return (
-    <section id="comparison" className="scroll-mt-24 border-y border-border bg-surface/40 py-20 md:py-24">
+    <section id="comparison" className="scroll-mt-24 py-20 md:py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <SectionHeading
-          eyebrow="Compare"
-          title="One app instead of four"
-          description="TrackKaro combines expense tracking, group splits, khata, and deal intelligence — without selling your data."
-        />
+        <SectionHeading eyebrow="Compare" title="One app instead of four" description="What a typical app in each category covers — and what TrackKaro brings together." />
 
-        <div className="mt-12 overflow-x-auto rounded-2xl border border-border bg-background shadow-[0_16px_48px_-24px_rgba(15,23,42,0.12)]">
-          <table className="w-full min-w-[640px] text-left text-sm">
+        <Reveal className="mt-12 overflow-x-auto rounded-[22px] border border-border bg-surface shadow-xs">
+          <table className="w-full min-w-[720px] text-left text-[15px]">
             <thead>
-              <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-foreground-sub">
-                <th className="sticky left-0 z-10 bg-background py-4 pl-5 pr-4 md:pl-6">Capability</th>
-                <th className="px-3 py-4 text-center text-primary">TrackKaro</th>
-                <th className="px-3 py-4 text-center">Splitwise</th>
-                <th className="px-3 py-4 text-center">Khatabook</th>
-                <th className="py-4 pl-3 pr-5 text-center md:pr-6">Others</th>
+              <tr className="border-b border-border text-[13px] font-extrabold uppercase tracking-[0.06em] text-foreground-muted">
+                <th className="sticky left-0 z-10 bg-surface py-4 pl-6 pr-4">What you need</th>
+                <th className="bg-[var(--primary-soft)] px-3 py-4 text-center text-[var(--primary)]">TrackKaro</th>
+                {COLUMNS.map((c) => (
+                  <th key={c} className="px-3 py-4 text-center">
+                    {c}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/70">
-              {MATRIX.map((row) => (
-                <tr key={row.feature} className="group hover:bg-surface/80">
-                  <td className="sticky left-0 z-10 bg-background py-3.5 pl-5 pr-4 font-medium text-foreground group-hover:bg-surface/80 md:pl-6">
-                    {row.feature}
+            <tbody>
+              {ROWS.map((r) => (
+                <tr key={r.feature} className="border-b border-border last:border-b-0 hover:bg-[var(--surface-2)]">
+                  <td className="sticky left-0 z-10 bg-surface py-3.5 pl-6 pr-4 font-semibold text-foreground">{r.feature}</td>
+                  <td className="bg-[color-mix(in_srgb,var(--primary)_6%,transparent)] px-3 py-3.5 text-center">
+                    <Mark v="tk" strong />
                   </td>
-                  <td className="bg-primary/[0.04] px-3 py-3.5 text-center">
-                    <div className="flex justify-center">
-                      <CellBadge value={row.trackkaro} />
-                    </div>
-                  </td>
-                  <td className="px-3 py-3.5 text-center">
-                    <div className="flex justify-center">
-                      <CellBadge value={row.splitwise} />
-                    </div>
-                  </td>
-                  <td className="px-3 py-3.5 text-center">
-                    <div className="flex justify-center">
-                      <CellBadge value={row.khatabook} />
-                    </div>
-                  </td>
-                  <td className="py-3.5 pl-3 pr-5 text-center md:pr-6">
-                    <div className="flex justify-center">
-                      <CellBadge value={row.other} />
-                    </div>
-                  </td>
+                  {r.cells.map((c, i) => (
+                    <td key={i} className="px-3 py-3.5 text-center">
+                      <Mark v={c} />
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

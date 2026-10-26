@@ -76,12 +76,12 @@ export default function SignupPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.035em] text-foreground">
+      <div>
+        <h1 className="text-[clamp(1.75rem,3vw,2.125rem)] font-extrabold leading-tight tracking-[-0.04em] text-foreground">
           Create your account
         </h1>
         <p className="mt-1.5 text-[15px] text-foreground-muted">
-          Start organizing finances, bahi khata, and group bills with TrackKaro
+          Free forever. Track spending, khata and group bills in one place.
         </p>
       </div>
 
@@ -160,7 +160,7 @@ export default function SignupPage() {
             >
               Phone Number
             </label>
-            <span className="text-[13px] text-foreground-muted">Optional for UPI &amp; Khata</span>
+            <span className="text-[13px] text-foreground-muted">Optional</span>
           </div>
           <div className="relative mt-1.5">
             <input

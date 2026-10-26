@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StoreProvider } from "@/store/provider";
@@ -37,9 +37,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The saved theme (cookie set by ThemeProvider) is applied on the server, so the first paint is
+  // already right without an inline script. "system" leaves it unset; CSS follows the device.
+  const saved = (await cookies()).get("theme")?.value;
+  const dataTheme = saved === "dark" || saved === "light" ? saved : undefined;
   return (
-    <html lang="en" className={`${manrope.variable} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`${manrope.variable} h-full`} data-theme={dataTheme} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -47,11 +51,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Geist+Mono:wght@400..700&display=swap"
           rel="stylesheet"
         />
-        {/* Sets light/dark before first paint (no theme flash). next/script instead of a raw
-            <script>, which React 19 warns about inside components. */}
-        <Script id="tk-theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('theme')||'system';var d=t==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',d);}catch(e){}})();`}
-        </Script>
       </head>
       <body className={`${manrope.className} flex min-h-full flex-col antialiased`}>
         <ThemeProvider>

@@ -130,6 +130,63 @@
   --soft: 20%;
 }
 
+/* System theme (no data-theme set): follow the device. An explicit choice sets data-theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) {
+    /* TrackKaro emerald (dark): obsidian green, layered emerald cards, neon emerald actions. */
+    --bg: #060d09;
+    --glow-a: #00df811a;
+    --glow-b: #10b9810d;
+    --surface: #0c1712;
+    --surface-2: #112019;
+    --raised: #162a21;
+    --well: #ffffff0d;
+    --line: #ffffff12;
+    --line-2: #ffffff26;
+    --shadow: 0 1px 0 #ffffff08 inset;
+    --shadow-pop: 0 24px 60px -18px #000000d0, 0 0 0 1px #ffffff12;
+
+    --text: #ecfff5;
+    --muted: #a6c3b5;
+    --faint: #86a596;
+    --primary: #00df81;
+    --primary-strong: #00c371;
+    --primary-soft: #00df8124;
+    --on-primary: #03140c;
+
+    --side: #09140f;
+    --on-side: #ecfff5;
+    --side-dim: #8fae9f;
+    --side-hover: #00df8112;
+    --side-soft: #00df8114;
+    --side-rim: #ffffff12;
+    --side-pill: #00df81;
+    --on-side-pill: #03140c;
+
+    --accent: #00df81;
+    --on-accent: #03140c;
+    --toast: #162a21;
+    --on-toast: #ecfff5;
+    --toast-accent: #00df81;
+
+    --pine: #34d399;
+    --coral: #ff9670;
+    --amber: #f0b44a;
+    --sky: #6eaef0;
+    --teal: #4cc0cf;
+    --rose: #f07a8c;
+    --lime: #8ccc5e;
+    --slate: #a2acb6;
+    --violet: #a493f0;
+    --ink: #ecfff5;
+    --good: #3ddc97;
+    --warn: #f1b437;
+    --bad: #f2806e;
+    --info: #7db4f2;
+    --soft: 20%;
+  }
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-surface: var(--surface);
@@ -992,6 +1049,28 @@ body {
 /* Dashboard content ends 16px above the window bottom, level with the sidebar (my-4): the
    main area supplies that gap, so each page's own bottom padding is dropped. */
 .tk-main > * { padding-bottom: 0; }
+
+/* Marketing page: sections rise in as they scroll into view; .tk-reveal-item children stagger. */
+.tk-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms); }
+.tk-reveal.is-in { opacity: 1; transform: none; }
+.tk-reveal .tk-reveal-item { opacity: 0; transform: translateY(14px); transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.tk-reveal.is-in .tk-reveal-item { opacity: 1; transform: none; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(2) { transition-delay: 0.07s; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(3) { transition-delay: 0.14s; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(4) { transition-delay: 0.21s; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(5) { transition-delay: 0.28s; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(6) { transition-delay: 0.35s; }
+.tk-reveal.is-in .tk-reveal-item:nth-child(n + 7) { transition-delay: 0.42s; }
+/* Hero preview cards drift gently. */
+.tk-drift { animation: tkDrift 7s ease-in-out infinite; }
+.tk-drift--b { animation-delay: -2.3s; }
+.tk-drift--c { animation-delay: -4.6s; }
+@keyframes tkDrift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.tk-mkt-glow { background: radial-gradient(60% 55% at 70% 20%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 70%), radial-gradient(45% 40% at 10% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%); }
+@media (prefers-reduced-motion: reduce) {
+  .tk-reveal, .tk-reveal .tk-reveal-item { opacity: 1; transform: none; transition: none; }
+  .tk-drift { animation: none; }
+}
 
 /* Illustrations (Koboyo scenes): rise in, then a slow idle float. */
 .tk-illus--float {
