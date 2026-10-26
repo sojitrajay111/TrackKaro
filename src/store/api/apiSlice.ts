@@ -7,6 +7,7 @@ import {
 } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "@/store/index";
 import { logOut, setCredentials, type User } from "@/store/slices/authSlice";
+import { enqueueWrite, isQueueableOfflineWrite, offlineResponse } from "@/lib/offline-queue";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "https://track-karo-backend.vercel.app";
@@ -88,12 +89,28 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 };
 
 /**
+ * Outermost layer: while the browser is offline, eligible writes (transactions, khata, group
+ * expenses/settlements) are queued in browser storage and "succeed" straight away; OfflineSync
+ * sends them when the connection returns. Everything else goes to the network as usual.
+ */
+const baseQueryWithOffline: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (args, api, extraOptions) => {
+  if (typeof navigator !== "undefined" && !navigator.onLine && typeof args !== "string") {
+    const method = (args.method ?? "GET").toUpperCase();
+    if (isQueueableOfflineWrite(args.url, method)) {
+      const item = enqueueWrite({ url: args.url, method: method as "POST" | "PATCH" | "PUT" | "DELETE", body: args.body });
+      return { data: offlineResponse(item) };
+    }
+  }
+  return baseQueryWithReauth(args, api, extraOptions);
+};
+
+/**
  * One shared RTK Query cache so a mutation in one domain can invalidate related domains.
  * Each domain injects its endpoints from its own file via `apiSlice.injectEndpoints`.
  */
 export const apiSlice = createApi({
   reducerPath: "api",
-  baseQuery: baseQueryWithReauth,
+  baseQuery: baseQueryWithOffline,
   tagTypes: [
     "Auth",
     "User",

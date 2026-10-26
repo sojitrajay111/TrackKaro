@@ -1,5 +1,6 @@
 import { apiSlice } from "./apiSlice";
 import type { Transaction } from "@/store/types";
+import { isOfflineId } from "@/lib/offline-queue";
 
 interface PaginatedTransactions {
   items: Transaction[];
@@ -44,6 +45,17 @@ export const transactionsApi = apiSlice.injectEndpoints({
         method: "POST",
         body,
       }),
+      // Saved offline: show it in the list now (the refetch can't run until we're back online).
+      async onQueryStarted(_body, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (isOfflineId(data?.id)) {
+            dispatch(transactionsApi.util.updateQueryData("getTransactions", undefined, (list) => void list.unshift(data)));
+          }
+        } catch {
+          // the form shows the error
+        }
+      },
       invalidatesTags: [{ type: "Transactions", id: "LIST" }, "Budgets"],
     }),
 
@@ -53,6 +65,16 @@ export const transactionsApi = apiSlice.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
+      // Optimistic: the edit shows at once (and stays visible while offline); undone on failure.
+      async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          transactionsApi.util.updateQueryData("getTransactions", undefined, (list) => {
+            const tx = list.find((t) => t.id === id);
+            if (tx) Object.assign(tx, data);
+          })
+        );
+        queryFulfilled.catch(patch.undo);
+      },
       invalidatesTags: [{ type: "Transactions", id: "LIST" }, "Budgets"],
     }),
 
@@ -61,6 +83,12 @@ export const transactionsApi = apiSlice.injectEndpoints({
         url: `/transactions/${id}`,
         method: "DELETE",
       }),
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          transactionsApi.util.updateQueryData("getTransactions", undefined, (list) => list.filter((t) => t.id !== id))
+        );
+        queryFulfilled.catch(patch.undo);
+      },
       invalidatesTags: [{ type: "Transactions", id: "LIST" }, "Budgets"],
     }),
   }),

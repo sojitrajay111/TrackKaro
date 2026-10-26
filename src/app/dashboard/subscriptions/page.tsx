@@ -33,7 +33,7 @@ export default function SubscriptionsPage() {
   const redundant = subs.filter((s) => s.isRedundant);
   const monthly = subs.reduce((s, x) => s + (x.billingCycle === "Yearly" ? x.amount / 12 : x.amount), 0);
   const yearly = subs.reduce((s, x) => s + (x.annualCost || (x.billingCycle === "Yearly" ? x.amount : x.amount * 12)), 0);
-  const redundantYearly = redundant.reduce((s, x) => s + (x.annualCost || x.amount * 12), 0);
+  const redundantYearly = redundant.reduce((s, x) => s + (x.annualCost || (x.billingCycle === "Yearly" ? x.amount : x.amount * 12)), 0);
   const change = stats?.monthlyChangePercent;
   const nextUp = sorted.find((s) => daysUntil(s.nextBillingDate) >= 0);
 

@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { useDeleteAllDataMutation, useLogoutAllMutation, useSignOut, useUpdateProfileMutation } from "@/store/api/authApi";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { openPdfReport } from "@/lib/report";
+import { SITE } from "@/lib/site";
 import { DESKTOP_ALERTS_KEY, desktopAlertsOn } from "@/components/dashboard/desktop-notifications";
 import { tasksApi } from "@/store/api/tasksApi";
 import { subscriptionsApi } from "@/store/api/subscriptionsApi";
@@ -795,6 +796,13 @@ export default function SettingsPage() {
                 label="Replay the welcome tour"
                 hint="A quick walk through the main screens"
                 onClick={() => window.dispatchEvent(new Event("tk:replay-tour"))}
+              />
+              <LinkCell
+                hue="teal"
+                icon={ICONS.mail}
+                label="Contact support"
+                hint={SITE.supportEmail}
+                href={`mailto:${SITE.supportEmail}?subject=${encodeURIComponent("TrackKaro help (web)")}`}
               />
               <LinkCell hue="indigo" icon={ICONS.doc} label="Privacy policy" href="/privacy" />
               <LinkCell hue="purple" icon={ICONS.doc} label="Terms of service" href="/terms" />
