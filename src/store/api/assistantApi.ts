@@ -1,4 +1,5 @@
 import type { ChatMessage } from '@/store/types';
+import { todayKey } from '@/lib/form';
 import { apiSlice } from './apiSlice';
 
 export interface ScannedBillResult {
@@ -23,8 +24,11 @@ export interface BackendSmartParseResult {
 export const assistantApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     sendAssistantMessage: builder.mutation<ChatMessage, string>({
-      query: (text) => ({ url: '/assistant/messages', method: 'POST', body: { text } }),
-      invalidatesTags: ['Assistant'],
+      // `today` = the browser's date, so "remind me tomorrow…" means the user's tomorrow.
+      query: (text) => ({ url: '/assistant/messages', method: 'POST', body: { text, today: todayKey() } }),
+      // A "remind me…" message creates a task on the server: refresh task lists too.
+      invalidatesTags: (result) =>
+        result?.actionType === 'reminder_set' ? ['Assistant', { type: 'Tasks', id: 'LIST' }] : ['Assistant'],
     }),
     scanBill: builder.mutation<ScannedBillResult, { imageBase64?: string; mimeType?: string }>({
       query: (body) => ({ url: '/assistant/scan-bill', method: 'POST', body: body || { imageBase64: 'placeholder' } }),

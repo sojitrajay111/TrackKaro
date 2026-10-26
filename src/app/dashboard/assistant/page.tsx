@@ -12,7 +12,7 @@ const PROMPTS = [
   "Can I afford a ₹20,000 phone this month?",
   "Show my spending this month",
   "How much money can I safely spend this month?",
-  "Remind me to pay electricity bill",
+  "Remind me tomorrow at 9 AM to pay electricity bill",
   "How can I save more money?",
 ];
 

@@ -9,6 +9,7 @@ import { addDays, dueLabel } from "@/lib/finance";
 import { todayKey } from "@/lib/form";
 import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
 import type { PlannerTask } from "@/store/types";
+import { formatTaskTime } from "@/lib/task-time";
 import { Illustration } from "@/components/ui/illustration";
 
 type View = "todo" | "done" | "all";
@@ -140,7 +141,7 @@ export default function TasksPage() {
                         <b className={`block truncate text-[16px] font-bold ${done ? "text-foreground-muted line-through" : "text-foreground"}`}>{t.title}</b>
                         <small className="block truncate text-[14px] text-foreground-muted">
                           {dueLabel(t.dueDate)}
-                          {t.dueTime ? ` · ${t.dueTime}` : ""}
+                          {t.dueTime ? ` · ${formatTaskTime(t.dueTime)}` : ""}
                           {t.notes ? ` · ${t.notes}` : ""}
                         </small>
                       </button>

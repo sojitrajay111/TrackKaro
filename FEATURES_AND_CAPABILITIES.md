@@ -4,6 +4,12 @@ Everything you can do on the **TrackKaro website**: the public marketing site an
 
 **Last checked against the code:** 26 Oct 2026. The website and the app use the same backend and account, so a change made in one shows up in the other.
 
+## ✨ New: voice reminders & smart task time
+
+- **Voice task parsing:** Type or say *"remind me tomorrow at 4:55 PM to pay the pizza bill"* in the AI Assistant, or dictate a task using the microphone in the mobile app's Task sheet. TrackKaro parses the task title, date, time, and priority automatically (AI-driven with fallback rules), scheduling it directly into Tasks and the Calendar.
+- **Precise time selection & presets:** Tasks support full due time (`dueTime`) selection across both creation and editing. Includes instant preset shortcuts (**Morning 09:00 AM**, **Afternoon 02:00 PM**, **Evening 06:00 PM**, **Night 09:00 PM**), custom time picking, and 1-tap time clearing.
+- **Calendar & Agenda time badges:** Scheduled tasks render with an emerald clock badge and formatted time (`05:00 PM`) in day agendas and overview lists.
+
 ---
 
 ## Quick navigation
@@ -159,8 +165,17 @@ Everything you can do on the **TrackKaro website**: the public marketing site an
 
 `/dashboard/tasks`
 
-- **Add, edit, complete and delete** tasks, each with a due date, an optional time, priority and notes.
-- Open tasks also show on the Overview and in the Calendar.
+- **Full task lifecycle:** Add, edit, complete (`todo`/`done`), and delete tasks.
+- **Due dates & precise times:** Due date with optional due time (`dueTime`, e.g. `"05:00 PM"`).
+- **Time selection & preset chips:**
+  - Works across both **creating a new task** and **editing an existing task**.
+  - One-tap quick presets: **Morning (09:00 AM)**, **Afternoon (02:00 PM)**, **Evening (06:00 PM)**, **Night (09:00 PM)**.
+  - Interactive custom time picker (hours, minutes in 5-min intervals, AM/PM).
+  - Single-tap clear (`✕`) to remove time without deleting the task.
+- **Voice natural-language parsing:** Dictate task descriptions (e.g. *"Call insurance agent tomorrow at 4 pm"*); title, due date, due time, and priority are extracted automatically.
+- **Priorities & notes:** Priority chips (**Low**, **Medium**, **High**) with semantic accent colors, plus optional detailed notes.
+- **Smart sorting:** Tasks are sorted chronologically by `${dueDate}${dueTime}`.
+- **Overview & Calendar integration:** Open tasks appear in the Overview ("Next two weeks" / "Coming Up") and on the Calendar day agenda with time badges.
 
 ## 12. Calendar
 
@@ -168,7 +183,7 @@ Everything you can do on the **TrackKaro website**: the public marketing site an
 
 - **Month grid** of bills due, renewals, open tasks and spending.
 - **Hover previews:** hovering over a day shows what's on it, with a smooth animation.
-- **Day agenda** with filters. Mark bills paid and tick off tasks there.
+- **Day agenda with time badges:** View scheduled events for selected dates. Task events prominently show their **scheduled time badge** (`05:00 PM` with clock icon), priority pill, and completion status. Mark bills paid and tick off tasks directly from the agenda.
 - **Add to a day:** a payment, bill, renewal or task, with the date filled in.
 - Fits any screen size, with nothing spilling out of the day cells.
 
@@ -197,6 +212,7 @@ Everything you can do on the **TrackKaro website**: the public marketing site an
 `/dashboard/assistant`
 
 - **Chat about your money,** with **Try asking** prompts to get started.
+- **Creates reminders:** "remind me tomorrow at 4:55 PM to pay the pizza bill" adds the task with its date and time (AI reads it; rules take over if the AI is unavailable). It shows in Tasks and the calendar here, and the phone app rings at that time.
 - **Voice questions** through the browser's speech recognition.
 - **How it works** panel explaining what the assistant can see and do.
 
@@ -242,7 +258,6 @@ These work differently from the app because of what browsers allow:
 | Push notifications | Only while TrackKaro is open in a tab. Alerts with the tab closed (web push) aren't planned for now. |
 | Import a phone contact | Only in browsers with the Contact Picker (Chrome on Android). |
 | Voice | Chrome, Edge and Safari. Not Firefox. |
-| Savings dashboard | Not on the website. It was removed on purpose and is still in the app. |
 
 ---
 
@@ -260,7 +275,8 @@ These work differently from the app because of what browsers allow:
 | Split Groups | 4 split types, bill scan, Simplify debts on/off, settle up, confirmations | `/dashboard/groups` |
 | Bills | Repeats, roll forward, undo, mark paid | `/dashboard/reminders` |
 | Subscriptions | Renewals and totals | `/dashboard/subscriptions` |
-| Tasks | Priorities, due dates | `/dashboard/tasks` |
+| **Voice reminders (new)** | Voice-to-task parsing in Assistant & Task modal auto-fills title, date, time and priority | `/dashboard/assistant`, `/dashboard/tasks` |
+| Tasks | Add/edit with due dates, precise time selection, preset chips, agenda time badges, priorities, notes | `/dashboard/tasks` |
 | Calendar | Month grid, hover previews, add to a day, mark paid | `/dashboard/calendar` |
 | Deals | Live search, lazy loading with prefetch, filters, wishlist, detail, buy check, alerts | `/dashboard/deals` |
 | AI Assistant | Chat, prompts, voice | `/dashboard/assistant` |

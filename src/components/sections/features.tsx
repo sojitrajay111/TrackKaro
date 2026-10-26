@@ -9,9 +9,14 @@ type Feature = {
   scene: SceneName;
   tint: string;
   wide?: boolean;
+  /** Small label next to the title, e.g. "New". */
+  badge?: string;
+  /** An example of what to say, shown as a quote. */
+  example?: string;
 };
 
-/** Only features that exist in the app and on the web today. */
+/** Only features that exist in the app and on the web today. Seven cards: the two wide ones
+ * keep the 3-column grid full (2+1, 1+1+1, 1+2). */
 const FEATURES: Feature[] = [
   {
     title: "Spending & budgets",
@@ -56,6 +61,16 @@ const FEATURES: Feature[] = [
     scene: "person-finding-answer",
     tint: "var(--violet)",
   },
+  {
+    title: "Just say it, we'll remind you",
+    body: "Speak a reminder the way you'd tell a friend. TrackKaro works out what, when and what time, adds it to your tasks, and your phone rings right on time.",
+    example: "Set reminder for tomorrow 4:55 PM to pay the pizza bill",
+    points: ["English, हिंदी or ગુજરાતી — “kal shaam 5 baje” works too", "Shows in Tasks and the calendar on phone and web"],
+    scene: "person-checking-wristwatch",
+    tint: "var(--pine)",
+    wide: true,
+    badge: "New",
+  },
 ];
 
 export function Features() {
@@ -84,8 +99,30 @@ export function Features() {
                   <Illustration name={f.scene} height={100} color={f.tint} float={false} className="transition duration-500 group-hover:scale-105" />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-[20px] font-extrabold tracking-[-0.02em] text-foreground">{f.title}</h3>
+                  <h3 className="flex flex-wrap items-center gap-2 text-[20px] font-extrabold tracking-[-0.02em] text-foreground">
+                    {f.title}
+                    {f.badge && (
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[12px] font-extrabold uppercase tracking-[0.06em]"
+                        style={{ background: `color-mix(in srgb, ${f.tint} 16%, transparent)`, color: f.tint }}
+                      >
+                        {f.badge}
+                      </span>
+                    )}
+                  </h3>
                   <p className="mt-1.5 text-[15px] leading-relaxed text-foreground-muted">{f.body}</p>
+                  {f.example && (
+                    <p
+                      className="mt-3 flex items-start gap-2 rounded-[14px] border px-3.5 py-2.5 text-[15px] font-semibold text-foreground"
+                      style={{ borderColor: `color-mix(in srgb, ${f.tint} 30%, transparent)`, background: `color-mix(in srgb, ${f.tint} 7%, transparent)` }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={f.tint} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="mt-1 shrink-0" aria-hidden>
+                        <rect x="9" y="3" width="6" height="11" rx="3" />
+                        <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" />
+                      </svg>
+                      <q className="before:content-['“'] after:content-['”']" style={{ quotes: "none" }}>{f.example}</q>
+                    </p>
+                  )}
                   <ul className="mt-3 grid gap-1.5">
                     {f.points.map((p) => (
                       <li key={p} className="flex items-start gap-2 text-[14px] font-semibold text-foreground">

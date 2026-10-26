@@ -20,6 +20,7 @@ import { useGetTasksQuery, useUpdateTaskMutation } from "@/store/api/tasksApi";
 import { useRecordDealClickMutation, useSearchDealsQuery } from "@/store/api/dealsApi";
 import { CATEGORY_DEAL_SEARCH, DEAL_CATEGORIES, mapSearchResponseToDeals, type DealCategory } from "@/lib/deal-search";
 import { resolveDealProductImage } from "@/lib/deal-images";
+import { formatTaskTime, taskTimeMinutes } from "@/lib/task-time";
 import { Illustration } from "@/components/ui/illustration";
 
 interface CustomerSummary {
@@ -268,20 +269,22 @@ export default function DashboardOverviewPage() {
       const [y, m, d] = s.slice(0, 10).split("-").map(Number);
       return new Date(y, m - 1, d).getTime();
     };
-    const items: { key: string; kind: UpcomingKind; time: number; title: string; amount?: number; refId: string }[] = [];
+    const items: { key: string; kind: UpcomingKind; time: number; title: string; amount?: number; refId: string; clock?: string; minutes?: number }[] = [];
     for (const r of reminders) if (r.status === "pending" && r.dueDate && at(r.dueDate) <= horizon) items.push({ key: `b-${r.id}`, kind: "bill", time: at(r.dueDate), title: r.title, amount: r.amount, refId: r.id });
     for (const s of subscriptions) {
       if (!s.nextBillingDate) continue;
       const t = at(s.nextBillingDate);
       if (t >= today.getTime() && t <= horizon) items.push({ key: `s-${s.id}`, kind: "sub", time: t, title: s.name, amount: s.amount, refId: s.id });
     }
-    for (const t of tasks) if (t.status !== "done" && at(t.dueDate) <= horizon) items.push({ key: `t-${t.id}`, kind: "task", time: at(t.dueDate), title: t.title, refId: t.id });
+    for (const t of tasks)
+      if (t.status !== "done" && at(t.dueDate) <= horizon)
+        items.push({ key: `t-${t.id}`, kind: "task", time: at(t.dueDate), title: t.title, refId: t.id, clock: formatTaskTime(t.dueTime) || undefined, minutes: taskTimeMinutes(t.dueTime) });
     for (const k of khataEntries) {
       if (k.status !== "pending" || !k.dueDate || at(k.dueDate) > horizon) continue;
       const gave = k.type === "gave";
       items.push({ key: `k-${k.id}`, kind: gave ? "khata-in" : "khata-out", time: at(k.dueDate), title: gave ? `Collect from ${k.personName}` : `Pay back ${k.personName}`, amount: k.amount, refId: k.personName });
     }
-    return items.sort((a, b) => a.time - b.time).map((it) => {
+    return items.sort((a, b) => a.time - b.time || (a.minutes ?? -1) - (b.minutes ?? -1)).map((it) => {
       const days = Math.round((it.time - today.getTime()) / 86_400_000);
       const d = new Date(it.time);
       return { ...it, day: d.getDate(), month: d.toLocaleDateString("en-US", { month: "short" }), days };
@@ -558,6 +561,7 @@ export default function DashboardOverviewPage() {
                           <i className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: meta.color }} />
                           <span className="truncate">
                             {meta.label} · <span className={u.days < 0 ? "font-bold text-[var(--bad)]" : u.days <= 2 ? "font-bold text-[var(--warn)]" : ""}>{when}</span>
+                            {u.clock ? ` · ${u.clock}` : ""}
                           </span>
                         </span>
                       </span>

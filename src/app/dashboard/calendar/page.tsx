@@ -13,6 +13,7 @@ import { useGetRemindersQuery, useUndoReminderPaymentMutation, useUpdateReminder
 import { paidRows, upcomingRepeats } from "@/lib/reminders";
 import { useGetSubscriptionsQuery } from "@/store/api/subscriptionsApi";
 import type { BillReminder, PlannerTask, Subscription } from "@/store/types";
+import { formatTaskTime } from "@/lib/task-time";
 import { Illustration } from "@/components/ui/illustration";
 
 type Kind = "spend" | "task" | "bill" | "sub";
@@ -30,6 +31,8 @@ interface CalEvent {
   upcoming?: boolean;
   /** Bills: this paid occurrence is the latest payment, so it can be undone. */
   canUndo?: boolean;
+  /** Tasks: due time, already formatted ("6:10 PM"). */
+  time?: string;
   task?: PlannerTask;
   bill?: BillReminder;
   sub?: Subscription;
@@ -115,7 +118,7 @@ export default function CalendarPage() {
     }
     for (const t of tasks) {
       const d = t.dueDate.slice(0, 10);
-      if (inMonth(d)) list.push({ id: `k-${t.id}`, kind: "task", date: d, title: t.title, done: t.status === "done", task: t });
+      if (inMonth(d)) list.push({ id: `k-${t.id}`, kind: "task", date: d, title: t.title, done: t.status === "done", time: formatTaskTime(t.dueTime) || undefined, task: t });
     }
     // Bills: the current due date (unpaid), each settled period (paid), and later repeats.
     for (const b of bills) {
@@ -474,6 +477,7 @@ export default function CalendarPage() {
                       {e.kind === "bill" && (e.done || e.upcoming) && (
                         <span className="shrink-0 text-[12px] font-bold text-foreground-muted">{e.done ? "Paid" : "Upcoming"}</span>
                       )}
+                      {e.kind === "task" && e.time && !e.done && <span className="shrink-0 text-[12px] font-bold text-foreground-muted">{e.time}</span>}
                       {e.kind === "task" && e.done && <span className="shrink-0 text-[12px] font-bold text-foreground-muted">Done</span>}
                       {e.amount != null && (
                         <b className={`shrink-0 font-extrabold num ${e.income ? "text-[var(--good)]" : "text-foreground"}`}>
@@ -540,6 +544,7 @@ export default function CalendarPage() {
                           <b className={`block truncate font-bold ${e.done ? "text-foreground-muted line-through" : "text-foreground"}`}>{e.title}</b>
                           <small className="block truncate text-[14px] text-foreground-muted">
                             {e.kind === "spend" ? (e.income ? "Money in" : "Money out") : KIND_META[e.kind].one}
+                            {e.time ? ` · ${e.time}` : ""}
                             {e.kind === "bill" && e.upcoming ? ` · repeats ${e.bill?.frequency.toLowerCase()}` : ""}
                             {e.kind !== "spend" ? " · tap to edit" : ""}
                           </small>
