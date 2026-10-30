@@ -212,7 +212,7 @@ Everything you can do on the **TrackKaro website**: the public marketing site an
 `/dashboard/assistant`
 
 - **Chat about your money,** with **Try asking** prompts to get started.
-- **Creates reminders:** "remind me tomorrow at 4:55 PM to pay the pizza bill" adds the task with its date and time (AI reads it; rules take over if the AI is unavailable). It shows in Tasks and the calendar here, and the phone app rings at that time.
+- **Creates reminders:** "remind me tomorrow at 4:55 PM to pay the pizza bill" adds the task with its date and time (AI reads it; rules take over if the AI is unavailable). It shows in Tasks and the calendar here, and the phone app rings at that time (once the app has been opened since the task was added, so it can schedule the reminder).
 - **Voice questions** through the browser's speech recognition.
 - **How it works** panel explaining what the assistant can see and do.
 

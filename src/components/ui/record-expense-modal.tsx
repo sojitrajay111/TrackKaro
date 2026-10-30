@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
 import { CategoryTile } from "@/components/ui/category-icon";
-import { inputCls } from "@/lib/form";
+import { inputCls, todayKey } from "@/lib/form";
 import { useAddTransactionMutation } from "@/store/api/transactionsApi";
 import { useScanBillMutation, useSmartParseVoiceMutation } from "@/store/api/assistantApi";
 import { useI18n } from "@/i18n";
@@ -51,7 +51,7 @@ export function RecordExpenseModal({ isOpen, onClose, defaultType = "expense" }:
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<CategoryName>("Food");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("UPI");
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => todayKey());
   const [error, setError] = useState<string | null>(null);
 
   const [addTransaction, { isLoading }] = useAddTransactionMutation();

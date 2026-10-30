@@ -1,4 +1,5 @@
 import type { CategoryName, ExpenseGroup, GroupExpense, GroupInvitePreview, PendingGroupConfirmation, Transaction } from '@/store/types';
+import { isOfflineId } from '@/lib/offline-queue';
 import { apiSlice } from './apiSlice';
 
 type ConfirmGroupExpenseRequest = { groupId: string; expenseId: string; category: CategoryName };
@@ -42,6 +43,29 @@ type UpdateGroupRequest = {
   simplifyDebts?: boolean;
 };
 
+/**
+ * Saved offline (the queue answers with an `offline-…` id): show it in the group straight away,
+ * since the refetch can't run until the connection is back. Balances update when it syncs.
+ */
+async function showIfOffline(
+  groupId: string,
+  queryFulfilled: Promise<{ data: GroupExpense }>,
+  dispatch: (action: unknown) => unknown,
+) {
+  try {
+    const { data } = await queryFulfilled;
+    if (!isOfflineId(data?.id)) return;
+    dispatch(
+      groupsApi.util.updateQueryData('getGroups', undefined, (groups) => {
+        const group = groups.find((g) => g.id === groupId);
+        if (group) group.expenses = [{ ...data, groupId } as GroupExpense, ...(group.expenses ?? [])];
+      }),
+    );
+  } catch {
+    // the form shows the error
+  }
+}
+
 export const groupsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getGroups: builder.query<ExpenseGroup[], void>({
@@ -74,6 +98,7 @@ export const groupsApi = apiSlice.injectEndpoints({
 
     addGroupExpense: builder.mutation<GroupExpense, AddGroupExpenseRequest>({
       query: ({ groupId, ...body }) => ({ url: `/groups/${groupId}/expenses`, method: 'POST', body }),
+      onQueryStarted: ({ groupId }, { dispatch, queryFulfilled }) => showIfOffline(groupId, queryFulfilled, dispatch),
       invalidatesTags: (_result, _error, { groupId }) => [
         { type: 'Groups', id: groupId },
         { type: 'Groups', id: 'LIST' },
@@ -114,6 +139,7 @@ export const groupsApi = apiSlice.injectEndpoints({
 
     recordGroupSettlement: builder.mutation<GroupExpense, RecordSettlementRequest>({
       query: ({ groupId, ...body }) => ({ url: `/groups/${groupId}/settlements`, method: 'POST', body }),
+      onQueryStarted: ({ groupId }, { dispatch, queryFulfilled }) => showIfOffline(groupId, queryFulfilled, dispatch),
       invalidatesTags: (_result, _error, { groupId }) => [
         { type: 'Groups', id: groupId },
         { type: 'Groups', id: 'LIST' },

@@ -1,11 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState, useMemo, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
 import { GroupFormModal, JoinGroupModal } from "@/components/groups/group-modals";
-import { inputCls } from "@/lib/form";
+import { inputCls, todayKey, apiErrorMessage } from "@/lib/form";
 import { OnQueryParam } from "@/components/ui/query-param";
 import { ContactPickerButton } from "@/components/ui/contact-picker-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,18 +12,16 @@ import { CustomerLedgerDrawer } from "@/components/khata/customer-ledger-drawer"
 import { GroupDrawer } from "@/components/groups/group-drawer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { avatarTint, initialsOf } from "@/lib/avatar";
-import { useI18n } from "@/i18n";
 import {
   useGetKhataEntriesQuery,
   useAddKhataEntryMutation,
-  useToggleKhataStatusMutation,
   useDeleteKhataEntryMutation,
 } from "@/store/api/khataApi";
 import {
   useGetGroupsQuery,
   useDeleteGroupMutation,
 } from "@/store/api/groupsApi";
-import type { ExpenseGroup, KhataEntry, KhataType } from "@/store/types";
+import type { ExpenseGroup, KhataType } from "@/store/types";
 import { Illustration } from "@/components/ui/illustration";
 
 type KhataSubTab = "personal" | "groups";
@@ -64,22 +61,17 @@ function OpenNewFromQuery({ onOpen }: { onOpen: (type: KhataType) => void }) {
 }
 
 export default function KhataPage() {
-  const { t } = useI18n();
-
   // Queries & Mutations
   const {
     data: khataEntries = [],
     isLoading: loadingKhata,
-    refetch: refetchKhata,
   } = useGetKhataEntriesQuery();
   const {
     data: expenseGroups = [],
     isLoading: loadingGroups,
-    refetch: refetchGroups,
   } = useGetGroupsQuery();
 
   const [addKhataEntry, { isLoading: isAddingKhata }] = useAddKhataEntryMutation();
-  const [toggleKhataStatus, { isLoading: isToggling }] = useToggleKhataStatusMutation();
   const [deleteKhataEntry, { isLoading: isDeletingKhata }] = useDeleteKhataEntryMutation();
 
   const [deleteGroup, { isLoading: isDeletingGroup }] = useDeleteGroupMutation();
@@ -93,6 +85,8 @@ export default function KhataPage() {
 
   // Modal States
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
@@ -107,7 +101,7 @@ export default function KhataPage() {
   const [khataPhone, setKhataPhone] = useState("");
   const [khataAmount, setKhataAmount] = useState("");
   const [khataType, setKhataType] = useState<KhataType>("gave");
-  const [khataDate, setKhataDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [khataDate, setKhataDate] = useState(() => todayKey());
   const [khataDueDate, setKhataDueDate] = useState("");
   const [khataNotes, setKhataNotes] = useState("");
 
@@ -219,22 +213,6 @@ export default function KhataPage() {
     });
   }, [customerSummaries, filter, searchQuery]);
 
-  // Entries for the Currently Selected Customer (for statement modal)
-  const activeCustomerEntries = useMemo(() => {
-    if (!selectedCustomer) return [];
-    return khataEntries.filter(
-      (k) => k.personName.toLowerCase() === selectedCustomer.toLowerCase()
-    );
-  }, [khataEntries, selectedCustomer]);
-
-  const activeCustomerSummary = useMemo(() => {
-    if (!selectedCustomer) return null;
-    return (
-      customerSummaries.find(
-        (c) => c.personName.toLowerCase() === selectedCustomer.toLowerCase()
-      ) || null
-    );
-  }, [customerSummaries, selectedCustomer]);
 
   // Handlers
   const handleOpenAdd = (type: KhataType, prefilledName = "") => {
@@ -251,13 +229,23 @@ export default function KhataPage() {
     }
     setKhataAmount("");
     setKhataNotes("");
+    setAddError(null);
     setShowAddModal(true);
   };
 
   const handleAddSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(khataAmount);
-    if (isNaN(amt) || amt <= 0 || !khataPersonName.trim()) return;
+    // Say what's missing instead of the Save button silently doing nothing.
+    if (!khataPersonName.trim()) {
+      setAddError("Add the person's name.");
+      return;
+    }
+    if (isNaN(amt) || amt <= 0) {
+      setAddError("Enter an amount above ₹0.");
+      return;
+    }
+    setAddError(null);
 
     try {
       await addKhataEntry({
@@ -275,17 +263,10 @@ export default function KhataPage() {
       setKhataAmount("");
       setKhataNotes("");
     } catch (err) {
-      console.error("Failed to add khata entry:", err);
+      setAddError(apiErrorMessage(err, "Couldn't save this entry. Check your connection and try again."));
     }
   };
 
-  const handleToggleStatus = async (id: string) => {
-    try {
-      await toggleKhataStatus(id).unwrap();
-    } catch (err) {
-      console.error("Failed to toggle status:", err);
-    }
-  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTargetId) return;
@@ -293,7 +274,7 @@ export default function KhataPage() {
       await deleteKhataEntry(deleteTargetId).unwrap();
       setDeleteTargetId(null);
     } catch (err) {
-      console.error("Failed to delete khata entry:", err);
+      setDeleteError(apiErrorMessage(err, "Couldn't delete this entry. Please try again."));
     }
   };
 
@@ -303,7 +284,7 @@ export default function KhataPage() {
       await deleteGroup(groupToDeleteId).unwrap();
       setGroupToDeleteId(null);
     } catch (err) {
-      console.error("Failed to delete group:", err);
+      setDeleteError(apiErrorMessage(err, "Couldn't delete this group. Please try again."));
     }
   };
 
@@ -895,6 +876,11 @@ export default function KhataPage() {
             <input type="text" placeholder="e.g. Dinner bill, grocery advance" value={khataNotes} onChange={(e) => setKhataNotes(e.target.value)} className={inputCls} />
           </ModalField>
 
+          {addError && (
+            <p role="alert" className="text-[15px] font-[650] text-[var(--bad)]">
+              {addError}
+            </p>
+          )}
           <ModalFooter onCancel={() => setShowAddModal(false)} confirmLabel={khataType === "gave" ? "Save · you gave" : "Save · you got"} isSubmitting={isAddingKhata} />
         </form>
       </Modal>
@@ -925,9 +911,13 @@ export default function KhataPage() {
       {/* ============================================================== */}
       <ConfirmDialog
         isOpen={Boolean(deleteTargetId)}
-        onCancel={() => setDeleteTargetId(null)}
+        onCancel={() => {
+          setDeleteTargetId(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteConfirm}
         isWorking={isDeletingKhata}
+        error={deleteError}
         title="Delete this khata entry?"
         description="It's removed from this person's ledger for good."
       />
@@ -937,9 +927,13 @@ export default function KhataPage() {
       {/* ============================================================== */}
       <ConfirmDialog
         isOpen={Boolean(groupToDeleteId)}
-        onCancel={() => setGroupToDeleteId(null)}
+        onCancel={() => {
+          setGroupToDeleteId(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleDeleteGroupConfirm}
         isWorking={isDeletingGroup}
+        error={deleteError}
         title="Delete this shared group?"
         description="All expenses and settlements in it are deleted too. This can't be undone."
         confirmLabel="Delete group"

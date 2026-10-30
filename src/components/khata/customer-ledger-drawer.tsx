@@ -13,6 +13,7 @@ import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/componen
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Drawer, useCountUp } from "@/components/ui/drawer";
 import { avatarTint, initialsOf } from "@/lib/avatar";
+import { apiErrorMessage, todayKey } from "@/lib/form";
 
 interface CustomerLedgerDrawerProps {
   isOpen: boolean;
@@ -44,6 +45,8 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
   const [settleAll, { isLoading: isSettling }] = useSettleAllKhataForPersonMutation();
   const [confirmSettle, setConfirmSettle] = useState(false);
   const [settleError, setSettleError] = useState<string | null>(null);
+  /** Failed settle/unsettle, delete or quick-add, shown above the entries. */
+  const [actionError, setActionError] = useState<string | null>(null);
   const [statementMsg, setStatementMsg] = useState<string | null>(null);
 
   const [copiedPhone, setCopiedPhone] = useState(false);
@@ -56,7 +59,7 @@ export function CustomerLedgerDrawer({ isOpen, onClose, customerName, entries }:
   const [quickAmount, setQuickAmount] = useState("");
   const [quickType, setQuickType] = useState<KhataType>("gave");
   const [quickNotes, setQuickNotes] = useState("");
-  const [quickDate, setQuickDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [quickDate, setQuickDate] = useState(() => todayKey());
 
   // Keep showing the last person while the drawer animates closed.
   const [lastName, setLastName] = useState(customerName);
@@ -217,25 +220,32 @@ th{font-size:12px;text-transform:uppercase;color:#62766c}.r{text-align:right}foo
 
   const handleToggle = async (id: string) => {
     try {
+      setActionError(null);
       await toggleKhataStatus(id).unwrap();
     } catch (err) {
-      console.error("Failed to toggle khata status:", err);
+      setActionError(apiErrorMessage(err, "Couldn't update this entry. Please try again."));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
+      setActionError(null);
       await deleteKhataEntry(id).unwrap();
       setDeletingId(null);
     } catch (err) {
-      console.error("Failed to delete khata entry:", err);
+      setActionError(apiErrorMessage(err, "Couldn't delete this entry. Please try again."));
     }
   };
 
   const handleQuickAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amt = parseFloat(quickAmount);
-    if (isNaN(amt) || amt <= 0 || !name) return;
+    if (!name) return;
+    if (isNaN(amt) || amt <= 0) {
+      setActionError("Enter an amount above ₹0.");
+      return;
+    }
+    setActionError(null);
     try {
       await addKhataEntry({
         personName: name,
@@ -250,7 +260,7 @@ th{font-size:12px;text-transform:uppercase;color:#62766c}.r{text-align:right}foo
       setQuickNotes("");
       setShowQuickAdd(false);
     } catch (err) {
-      console.error("Failed to add entry:", err);
+      setActionError(apiErrorMessage(err, "Couldn't save this entry. Check your connection and try again."));
     }
   };
 
@@ -494,6 +504,12 @@ th{font-size:12px;text-transform:uppercase;color:#62766c}.r{text-align:right}foo
             </button>
           </div>
         </form>
+      )}
+
+      {actionError && (
+        <p role="alert" className="text-[15px] font-[650] text-[var(--bad)]">
+          {actionError}
+        </p>
       )}
 
       {/* 6. Entries */}

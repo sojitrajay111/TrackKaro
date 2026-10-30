@@ -8,7 +8,7 @@ import { TransactionDetail } from "@/components/expenses/transaction-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Modal, ModalField, ModalFooter, ModalSegmentedPicker } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { inputCls } from "@/lib/form";
+import { inputCls, todayKey } from "@/lib/form";
 import {
   useGetTransactionsQuery,
   useAddTransactionMutation,
@@ -82,7 +82,7 @@ export default function ExpensesPage() {
   const [editCategory, setEditCategory] = useState<CategoryName>("Food");
   const [editPaymentMethod, setEditPaymentMethod] = useState<PaymentMethod>("UPI");
   const [editScope, setEditScope] = useState<TransactionScope>("Personal");
-  const [editDate, setEditDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [editDate, setEditDate] = useState(() => todayKey());
   const [editNotes, setEditNotes] = useState("");
 
   // New Transaction Form State
@@ -93,7 +93,7 @@ export default function ExpensesPage() {
   const [txCategory, setTxCategory] = useState<CategoryName>("Food");
   const [txPaymentMethod, setTxPaymentMethod] = useState<PaymentMethod>("UPI");
   const [txScope] = useState<TransactionScope>("Personal");
-  const [txDate, setTxDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [txDate, setTxDate] = useState(() => todayKey());
   const [txNotes, setTxNotes] = useState("");
 
   // Month Formatters
@@ -292,7 +292,7 @@ export default function ExpensesPage() {
     setTxCategory(tx.category);
     setTxPaymentMethod(tx.paymentMethod || "UPI");
     setTxNotes(tx.notes || "");
-    setTxDate(new Date().toISOString().split("T")[0]);
+    setTxDate(todayKey());
     handleCloseViewingTx();
     setTimeout(() => setShowAddModal(true), 260);
   };

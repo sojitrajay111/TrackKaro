@@ -21,6 +21,7 @@ import { khataApi } from "@/store/api/khataApi";
 import { budgetsApi } from "@/store/api/budgetsApi";
 import { remindersApi } from "@/store/api/remindersApi";
 import { groupsApi } from "@/store/api/groupsApi";
+import { todayKey } from "@/lib/form";
 
 type SectionId = "profile" | "appearance" | "notifications" | "data";
 type Gender = "male" | "female" | "other" | "unspecified";
@@ -366,7 +367,7 @@ export default function SettingsPage() {
 
   // PDF report for a date range (defaults to this month so far)
   const [repFrom, setRepFrom] = useState(() => new Date().toISOString().slice(0, 8) + "01");
-  const [repTo, setRepTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [repTo, setRepTo] = useState(() => todayKey());
   const [repStatus, setRepStatus] = useState<string | null>(null);
   const handlePdfReport = async () => {
     setRepStatus(null);
@@ -452,7 +453,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `TrackKaro-backup-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `TrackKaro-backup-${todayKey()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       setExportStatus("done");
